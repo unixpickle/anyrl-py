@@ -59,24 +59,26 @@ class TFActorCritic(Model):
             self._build()
 
     @abstractmethod
-    def actor_log_probs(self, rollouts):
+    def batches(self, rollouts, batch_size=None):
         """
-        Compute the action log probabilities for a list of
-        rollouts.
+        Create an iterator of mini-batches for training
+        the actor and the critic.
 
-        The result is a Tensor of log probabilities in the
-        flattened ordering defined for rollouts.
-        """
-        pass
+        Each mini-batch is a dict with these keys:
+         - 'rollout_idxs': rollout index for each sample
+         - 'timestep_idxs': timestep index for each asmple
+         - 'log_probs': log-probability for each action
+                        (as a 1-D Tensor)
+         - 'pred_vals': predicted value for each sample
 
-    @abstractmethod
-    def critic_predictions(self, rollouts):
-        """
-        Compute the predicted value function for a list of
-        rollouts.
+        The mini-batch may have another key 'action_params'
+        which is the raw Tensor that is fed into an action
+        distribution.
+        This can be used to compute entropy, KL, etc.
 
-        The result is a Tensor of value predictions in the
-        flattened ordering defined for rollouts.
+        Arguments:
+        rollouts -- a list of (partial) rollouts
+        batch_size -- the approximate mini-batch size
         """
         pass
 

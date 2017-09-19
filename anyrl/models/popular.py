@@ -25,7 +25,7 @@ class FeedforwardAC(TFActorCritic):
         critic -- take output of base and produce value
                   prediction.
         """
-        super(FeedforwardAC, self).__init__(action_dist)
+        super(FeedforwardAC, self).__init__(session, action_dist)
 
         # Set these in your constructor.
         self._obs_placeholder = None
@@ -49,8 +49,21 @@ class FeedforwardAC(TFActorCritic):
         }
 
     def batches(self, rollouts, batch_size=None):
-        # TODO: create mini-batches and apply the model.
-        raise Exception('not yet implemented')
+        obses, rollout_idxs, timestep_idxs = _frames_from_rollouts(rollouts)
+        while True:
+            if batch_size is None or batch_size > len(obses):
+                mini_indices = range(len(obses))
+            else:
+                mini_indices = np.random.choice(len(obses), size=batch_size,
+                                                replace=False)
+            obses = np.array(np.take(obses, mini_indices))
+            yield {
+                'rollout_idxs': np.take(rollout_idxs, mini_indices),
+                'timestep_idxs': np.take(timestep_idxs, mini_indices),
+                'critic_outs': self._critic_out,
+                'actor_outs': self._actor_out,
+                'feed_dict': {self._obs_placeholder: obses}
+            }
 
 class MLP(FeedforwardAC):
     """
@@ -90,3 +103,25 @@ def _product(vals):
     for val in vals:
         prod *= val
     return prod
+
+def _frames_from_rollouts(rollouts):
+    """
+    Flatten out the rollouts and produce a list of
+    observations, rollout indices, and timestep indices.
+
+    Does not include trailing observations for truncated
+    rollouts.
+
+    For example, [[obs1, obs2], [obs3, obs4, obs5]] would
+    become ([obs1, obs2, ..., obs5], [0, 0, 1, 1, 1],
+    [0, 1, 0, 1, 2])
+    """
+    obs = []
+    rollout_indices = []
+    timestep_indices = []
+    for rollout_idx, rollout in enumerate(rollouts):
+        for timestep_idx, obs in enumerate(rollout.step_observations):
+            obs.append(obs)
+            rollout_indices.append(rollout_idx)
+            timestep_indices.append(timestep_idx)
+    return obs, rollout_indices, timestep_indices

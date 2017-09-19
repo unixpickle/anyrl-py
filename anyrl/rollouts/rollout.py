@@ -43,6 +43,15 @@ class Rollout:
         return len(self.rewards)
 
     @property
+    def step_observations(self):
+        """
+        Returns a list of observations that does not
+        include the trailing observation for truncated
+        episodes.
+        """
+        return self.observations[:self.num_steps]
+
+    @property
     def total_reward(self):
         """
         Get the total reward across all steps.

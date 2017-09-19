@@ -40,14 +40,13 @@ class FeedforwardAC(TFActorCritic):
         return None
 
     def step(self, observations, states):
-        with self.graph.as_default(): # pylint: disable=E1129
-            feed_dict = {self._obs_placeholder: observations}
-            act, val = self.session.run((self._actor_out, self._critic_out), feed_dict)
-            return {
-                'actions': self.action_dist.sample(act),
-                'states': None,
-                'values': np.array(val)
-            }
+        feed_dict = {self._obs_placeholder: observations}
+        act, val = self.session.run((self._actor_out, self._critic_out), feed_dict)
+        return {
+            'actions': self.action_dist.sample(act),
+            'states': None,
+            'values': np.array(val)
+        }
 
     def batches(self, rollouts, batch_size=None):
         # TODO: create mini-batches and apply the model.
@@ -57,6 +56,7 @@ class MLP(FeedforwardAC):
     """
     A multi-layer perceptron actor-critic model.
     """
+    # pylint: disable=R0913
     def __init__(self, session, action_dist, obs_vectorizer, layer_sizes,
                  activation=tf.nn.relu):
         """
@@ -69,21 +69,21 @@ class MLP(FeedforwardAC):
         layer_sizes -- list of hidden layer sizes.
         """
         super(MLP, self).__init__(session, action_dist)
-        with self.graph.as_default(): # pylint: disable=E1129
-            in_batch_shape = (None,) + obs_vectorizer.shape
-            self._obs_placeholder = tf.placeholder(tf.float32, shape=in_batch_shape)
 
-            # Iteratively generate hidden layers.
-            layer_in_size = _product(obs_vectorizer.shape)
-            layer_in = tf.reshape(self._obs_placeholder, (layer_in_size,))
-            for out_size in layer_sizes:
-                layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
-                layer_in_size = out_size
+        in_batch_shape = (None,) + obs_vectorizer.shape
+        self._obs_placeholder = tf.placeholder(tf.float32, shape=in_batch_shape)
 
-            self._actor_out = fully_connected(layer_in, action_dist.param_size,
-                                              activation_fn=None,
-                                              weights_initializer=tf.zeros_initializer())
-            self._critic_out = fully_connected(layer_in, 1, activation_fn=None)
+        # Iteratively generate hidden layers.
+        layer_in_size = _product(obs_vectorizer.shape)
+        layer_in = tf.reshape(self._obs_placeholder, (layer_in_size,))
+        for out_size in layer_sizes:
+            layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
+            layer_in_size = out_size
+
+        self._actor_out = fully_connected(layer_in, action_dist.param_size,
+                                          activation_fn=None,
+                                          weights_initializer=tf.zeros_initializer())
+        self._critic_out = fully_connected(layer_in, 1, activation_fn=None)
 
 def _product(vals):
     prod = 1

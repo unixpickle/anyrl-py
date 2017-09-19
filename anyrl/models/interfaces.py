@@ -4,8 +4,6 @@ Abstractions for RL policies and value functions.
 
 from abc import ABC, abstractmethod, abstractproperty
 
-import tensorflow as tf
-
 class Model(ABC):
     """
     An abstract RL policy and (optional) value function.
@@ -57,7 +55,6 @@ class TFActorCritic(Model):
     """
     def __init__(self, session, action_dist):
         self.session = session
-        self.graph = tf.Graph()
         self.action_dist = action_dist
 
     @abstractmethod

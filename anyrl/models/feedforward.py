@@ -34,6 +34,16 @@ class FeedforwardAC(TFActorCritic):
         self._actor_out = None
         self._critic_out = None
 
+    def scale_outputs(self, scale):
+        """
+        Scale the network outputs by the given amount.
+
+        This may be called right after initializing the
+        model to help deal with different reward scales.
+        """
+        self._critic_out *= scale
+        self._actor_out *= scale
+
     @property
     def stateful(self):
         return False

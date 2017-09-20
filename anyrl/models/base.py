@@ -58,6 +58,16 @@ class TFActorCritic(Model):
         self.action_dist = action_dist
 
     @abstractmethod
+    def batch_outputs(self):
+        """
+        Return two TF tensors: actor_outs and critic_outs.
+
+        These tensors are used in conjunction with the
+        feed_dict returned by batches().
+        """
+        pass
+
+    @abstractmethod
     def batches(self, rollouts, batch_size=None):
         """
         Create an iterator of mini-batches for training
@@ -66,8 +76,6 @@ class TFActorCritic(Model):
         Each mini-batch is a dict with these keys:
          - 'rollout_idxs': rollout index for each sample
          - 'timestep_idxs': timestep index for each sample
-         - 'critic_outs': predicted value for each sample
-         - 'actor_outs': action parameters for each sample
          - 'feed_dict': inputs that the graph depends on
 
         Arguments:

@@ -48,6 +48,9 @@ class FeedforwardAC(TFActorCritic):
             'values': np.array(val)
         }
 
+    def batch_outputs(self):
+        return self._actor_out, self._critic_out
+
     def batches(self, rollouts, batch_size=None):
         obses, rollout_idxs, timestep_idxs = _frames_from_rollouts(rollouts)
         while True:
@@ -60,8 +63,6 @@ class FeedforwardAC(TFActorCritic):
             yield {
                 'rollout_idxs': np.take(rollout_idxs, mini_indices),
                 'timestep_idxs': np.take(timestep_idxs, mini_indices),
-                'critic_outs': self._critic_out,
-                'actor_outs': self._actor_out,
                 'feed_dict': {self._obs_placeholder: obses}
             }
 

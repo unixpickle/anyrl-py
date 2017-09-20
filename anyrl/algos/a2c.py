@@ -60,7 +60,7 @@ class A2C:
         feed_dict[self._actions] = self.model.action_dist.to_vecs(actions)
         return feed_dict
 
-    def maximize(self,
+    def optimize(self,
                  max_grad_norm=0.5,
                  learning_rate=7e-4,
                  rms_decay=0.99,

@@ -1,5 +1,5 @@
 """
-Popular RL models in the literature.
+Stateless neural network models.
 """
 
 import numpy as np

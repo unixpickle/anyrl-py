@@ -5,7 +5,7 @@ Parameteric categorical distributions.
 import numpy as np
 import tensorflow as tf
 
-from .interfaces import Distribution
+from .base import Distribution
 
 class CategoricalSoftmax(Distribution):
     """

@@ -2,5 +2,5 @@
 Various models for Reinforcement Learning agents.
 """
 
-from .interfaces import Model, TFActorCritic
+from .base import Model, TFActorCritic
 from .popular import FeedforwardAC

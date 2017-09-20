@@ -5,7 +5,7 @@ A synchronous version of advantage actor-critic.
 import tensorflow as tf
 
 from .advantages import GAE
-from .util import select_from_batch, select_model_out_from_batch
+from . import util
 
 # pylint: disable=R0902
 class A2C:
@@ -36,15 +36,16 @@ class A2C:
         self._target_vals = tf.placeholder(tf.float32, (None,))
         self._actions = tf.placeholder(tf.float32, (None,))
 
-        actor, critic = model.batch_outputs()
+        actor, critic, mask = model.batch_outputs()
 
         log_probs = model.action_dist.log_probs(actor, self._actions)
-        self.actor_loss = tf.reduce_mean(log_probs * self._advs)
-        self.critic_loss = tf.reduce_mean(tf.square(critic - self._target_vals))
-        self.regularization = (tf.reduce_mean(model.action_dist.entropy(actor)) *
-                               entropy_reg)
-        self.objective = (self.actor_loss + self.regularization -
-                          vf_coeff*self.critic_loss)
+        entropies = model.action_dist.entropy(actor)
+        critic_error = self._target_vals - critic
+        self.actor_loss = util.masked_mean(mask, log_probs * self._advs)
+        self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
+        self.entropy = util.masked_mean(mask, entropies)
+        self.objective = (self.actor_loss + entropy_reg * self.entropy -
+                          vf_coeff * self.critic_loss)
 
     def feed_dict(self, rollouts):
         """
@@ -54,10 +55,10 @@ class A2C:
         batch = next(self.model.batches(rollouts))
         advs = self._adv_est.advantages(rollouts)
         targets = self._adv_est.targets(rollouts)
-        actions = select_model_out_from_batch('actions', rollouts, batch)
+        actions = util.select_model_out_from_batch('actions', rollouts, batch)
         feed_dict = batch['feed_dict']
-        feed_dict[self._advs] = select_from_batch(advs, batch)
-        feed_dict[self._target_vals] = select_from_batch(targets, batch)
+        feed_dict[self._advs] = util.select_from_batch(advs, batch)
+        feed_dict[self._target_vals] = util.select_from_batch(targets, batch)
         feed_dict[self._actions] = self.model.action_dist.to_vecs(actions)
         return feed_dict
 

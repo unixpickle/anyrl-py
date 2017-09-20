@@ -2,6 +2,8 @@
 Helper routines for training algorithms.
 """
 
+import tensorflow as tf
+
 def select_from_batch(advs, batch):
     """
     Take a rollout-shaped list of lists and select the
@@ -17,3 +19,10 @@ def select_model_out_from_batch(key, rollouts, batch):
     """
     vals = [[m[key][0] for m in r.model_outs] for r in rollouts]
     return select_from_batch(vals, batch)
+
+def masked_mean(mask, vals):
+    """
+    Mask the values and compute the mean of the masked
+    elements.
+    """
+    return tf.reduce_sum(vals * mask) / tf.reduce_sum(mask)

@@ -60,7 +60,11 @@ class TFActorCritic(Model):
     @abstractmethod
     def batch_outputs(self):
         """
-        Return two TF tensors: actor_outs and critic_outs.
+        Return three TF tensors: actor_outs, critic_outs,
+        mask.
+
+        The mask is a Tensor of 0's and 1's, where 1
+        indicates that the sample is valid.
 
         These tensors are used in conjunction with the
         feed_dict returned by batches().
@@ -77,6 +81,12 @@ class TFActorCritic(Model):
           'rollout_idxs': rollout index for each sample
           'timestep_idxs': timestep index for each sample
           'feed_dict': inputs that the graph depends on
+
+        There is a one-to-one correspondence between
+        samples in the batch and values in the Tensors
+        produced by batch_outputs.
+        Masked samples should have 0's in rollout_idxs and
+        timestep_idxs.
 
         Args:
           rollouts: a list of (partial) rollouts

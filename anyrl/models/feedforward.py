@@ -53,7 +53,8 @@ class FeedforwardAC(TFActorCritic):
         }
 
     def batch_outputs(self):
-        return self._actor_out, self._critic_out
+        mask = tf.ones(tf.shape(self._actor_out)[:1])
+        return self._actor_out, self._critic_out, mask
 
     def batches(self, rollouts, batch_size=None):
         obses, rollout_idxs, timestep_idxs = _frames_from_rollouts(rollouts)

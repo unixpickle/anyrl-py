@@ -37,19 +37,19 @@ class PPO:
         param_size = model.action_dist.param_size
         self._orig_action_params = tf.placeholder(tf.float32, (None, param_size))
 
-        actor, critic = model.batch_outputs()
+        actor, critic, mask = model.batch_outputs()
 
         new_log_probs = model.action_dist.log_probs(actor, self._actions)
         old_log_probs = model.action_dist.log_probs(self._orig_action_params,
                                                     self._actions)
-
-        self.actor_loss = _clipped_objective(new_log_probs, old_log_probs,
-                                             self._advs, epsilon)
-        self.critic_loss = tf.reduce_mean(tf.square(critic - self._target_vals))
-        self.regularization = (tf.reduce_mean(model.action_dist.entropy(actor)) *
-                               entropy_reg)
-        self.objective = (self.actor_loss + self.regularization -
-                          vf_coeff*self.critic_loss)
+        clipped_obj = _clipped_objective(new_log_probs, old_log_probs,
+                                         self._advs, epsilon)
+        critic_error = self._target_vals - critic
+        self.actor_loss = util.masked_mean(mask, clipped_obj)
+        self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
+        self.entropy = util.masked_mean(mask, model.action_dist.entropy(actor))
+        self.objective = (self.actor_loss + entropy_reg * self.entropy -
+                          vf_coeff * self.critic_loss)
 
     def feed_dict(self, rollouts, batch):
         """
@@ -92,9 +92,8 @@ class PPO:
 
 def _clipped_objective(new_log_probs, old_log_probs, advs, epsilon):
     """
-    Compute the mean clipped PPO objective.
+    Compute the component-wise clipped PPO objective.
     """
     prob_ratio = tf.exp(new_log_probs - old_log_probs)
     clipped_ratio = tf.clip_by_value(prob_ratio, 1-epsilon, 1+epsilon)
-    mins = tf.minimum(advs*clipped_ratio, advs*prob_ratio)
-    return tf.reduce_mean(mins)
+    return tf.minimum(advs*clipped_ratio, advs*prob_ratio)

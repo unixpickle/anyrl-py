@@ -10,10 +10,10 @@ def select_from_batch(advs, batch):
     indices = zip(batch['rollout_idxs'], batch['timestep_idxs'])
     return [advs[x][y] for x, y in indices]
 
-def select_acts_from_batch(rollouts, batch):
+def select_model_out_from_batch(key, rollouts, batch):
     """
-    Select the actions corresponding to the indices from
-    the mini-batch.
+    Select a model_outs key corresponding to the indices
+    from the mini-batch.
     """
-    acts = [[m['actions'][0] for m in r.model_outs] for r in rollouts]
-    return select_from_batch(acts, batch)
+    vals = [[m[key][0] for m in r.model_outs] for r in rollouts]
+    return select_from_batch(vals, batch)

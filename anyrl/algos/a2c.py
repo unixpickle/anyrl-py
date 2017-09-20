@@ -5,7 +5,7 @@ A synchronous version of advantage actor-critic.
 import tensorflow as tf
 
 from .advantages import GAE
-from .util import select_from_batch, select_acts_from_batch
+from .util import select_from_batch, select_model_out_from_batch
 
 # pylint: disable=R0902
 class A2C:
@@ -54,7 +54,7 @@ class A2C:
         batch = next(self.model.batches(rollouts))
         advs = self._adv_est.advantages(rollouts)
         targets = self._adv_est.targets(rollouts)
-        actions = select_acts_from_batch(rollouts, batch)
+        actions = select_model_out_from_batch('actions', rollouts, batch)
         feed_dict = batch['feed_dict']
         feed_dict[self._advs] = select_from_batch(advs, batch)
         feed_dict[self._target_vals] = select_from_batch(targets, batch)

@@ -8,6 +8,8 @@ from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
 
+# pylint: disable=E1129
+
 class FeedforwardAC(TFActorCritic):
     """
     A base class for any feed-forward actor-critic model.
@@ -90,14 +92,18 @@ class MLP(FeedforwardAC):
         # Iteratively generate hidden layers.
         layer_in_size = _product(obs_vectorizer.shape)
         layer_in = tf.reshape(self._obs_placeholder, (layer_in_size,))
-        for out_size in layer_sizes:
-            layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
+        for layer_idx, out_size in enumerate(layer_sizes):
+            with tf.variable_scope('layer_' + str(layer_idx)):
+                layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
             layer_in_size = out_size
 
-        self._actor_out = fully_connected(layer_in, action_dist.param_size,
-                                          activation_fn=None,
-                                          weights_initializer=tf.zeros_initializer())
-        self._critic_out = fully_connected(layer_in, 1, activation_fn=None)
+        with tf.variable_scope('actor'):
+            self._actor_out = fully_connected(layer_in, action_dist.param_size,
+                                              activation_fn=None,
+                                              weights_initializer=tf.zeros_initializer())
+
+        with tf.variable_scope('critic'):
+            self._critic_out = fully_connected(layer_in, 1, activation_fn=None)
 
 def _product(vals):
     prod = 1

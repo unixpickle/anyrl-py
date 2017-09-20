@@ -9,8 +9,8 @@ class Distribution(ABC):
     A parametric probability distribution.
 
     All methods operate on and produce TensorFlow tensors
-    except for sample(), which takes an array and produces
-    a batch of space-specific objects.
+    except for sample() and vec_samples(), which operate
+    on native arrays and space-specific objects.
     """
     @abstractproperty
     def param_size(self):
@@ -25,6 +25,14 @@ class Distribution(ABC):
         """
         Create a list of samples from the distribution
         given the batch of parameter vectors.
+        """
+        pass
+
+    @abstractmethod
+    def vec_samples(self, samples):
+        """
+        Convert the sampled space elements into an array
+        that can be fed into log_probs via feed_dict.
         """
         pass
 

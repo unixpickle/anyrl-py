@@ -7,6 +7,7 @@ import tensorflow as tf
 from .advantages import GAE
 from .util import select_from_batch, select_acts_from_batch
 
+# pylint: disable=R0902
 class A2C:
     """
     Train TensorFlow actor-critic models using A2C.

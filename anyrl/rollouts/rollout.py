@@ -15,6 +15,8 @@ class Rollout:
     A sequence of observations, actions, and rewards that
     were recorded by running an agent in an environment.
 
+    Model outputs are sliced to a batch size of one.
+
     Rollouts may represent total episodes, but they may
     also represent a sliced version of the episode.
     The trunc_start and trunc_end fields indicate whether
@@ -52,8 +54,25 @@ class Rollout:
         return self.observations[:self.num_steps]
 
     @property
+    def step_model_outs(self):
+        """
+        Returns a list of model outputs that does not
+        include the trailing output for truncated
+        episodes.
+        """
+        return self.model_outs[:self.num_steps]
+
+    @property
     def total_reward(self):
         """
         Get the total reward across all steps.
         """
         return sum(self.rewards)
+
+    def predicted_value(self, timestep):
+        """
+        Get the predicted value at the given timestep.
+
+        This only works if the model generated values.
+        """
+        return self.model_outs[timestep]['values'][0]

@@ -15,5 +15,5 @@ def select_acts_from_batch(rollouts, batch):
     Select the actions corresponding to the indices from
     the mini-batch.
     """
-    acts = [[m['action'] for m in r.model_outs] for r in rollouts]
+    acts = [[m['actions'][0] for m in r.model_outs] for r in rollouts]
     return select_from_batch(acts, batch)

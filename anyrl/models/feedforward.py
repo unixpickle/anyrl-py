@@ -48,7 +48,7 @@ class FeedforwardAC(TFActorCritic):
             'action_params': act,
             'actions': self.action_dist.sample(act),
             'states': None,
-            'values': np.array(val)
+            'values': np.array(val).flatten()
         }
 
     def batch_outputs(self):
@@ -62,7 +62,7 @@ class FeedforwardAC(TFActorCritic):
             else:
                 mini_indices = np.random.choice(len(obses), size=batch_size,
                                                 replace=False)
-            obses = np.array(np.take(obses, mini_indices))
+            obses = np.array(np.take(obses, mini_indices, axis=0))
             yield {
                 'rollout_idxs': np.take(rollout_idxs, mini_indices),
                 'timestep_idxs': np.take(timestep_idxs, mini_indices),
@@ -92,7 +92,8 @@ class MLP(FeedforwardAC):
 
         # Iteratively generate hidden layers.
         layer_in_size = _product(obs_vectorizer.shape)
-        layer_in = tf.reshape(self._obs_placeholder, (layer_in_size,))
+        vectorized_shape = (tf.shape(self._obs_placeholder)[0], layer_in_size)
+        layer_in = tf.reshape(self._obs_placeholder, vectorized_shape)
         for layer_idx, out_size in enumerate(layer_sizes):
             with tf.variable_scope('layer_' + str(layer_idx)):
                 layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
@@ -124,12 +125,12 @@ def _frames_from_rollouts(rollouts):
     become ([obs1, obs2, ..., obs5], [0, 0, 1, 1, 1],
     [0, 1, 0, 1, 2])
     """
-    obs = []
+    all_obs = []
     rollout_indices = []
     timestep_indices = []
     for rollout_idx, rollout in enumerate(rollouts):
         for timestep_idx, obs in enumerate(rollout.step_observations):
-            obs.append(obs)
+            all_obs.append(obs)
             rollout_indices.append(rollout_idx)
             timestep_indices.append(timestep_idx)
-    return obs, rollout_indices, timestep_indices
+    return all_obs, rollout_indices, timestep_indices

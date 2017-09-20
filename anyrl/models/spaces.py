@@ -64,6 +64,7 @@ class BoxVectorizer(SpaceVectorizer):
     def space(self):
         return self._space
 
+    @property
     def shape(self):
         return self.space.low.shape
 

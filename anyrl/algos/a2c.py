@@ -37,7 +37,7 @@ class A2C:
 
         actor, critic = model.batch_outputs()
 
-        actor_loss = model.action_dist.log_probs(actor, self._actions)
+        actor_loss = self._advs * model.action_dist.log_probs(actor, self._actions)
         critic_loss = tf.square(critic - self._target_vals)
         regularization = entropy_reg * model.action_dist.entropy(actor)
         self.objective = tf.reduce_mean(actor_loss - vf_coeff*critic_loss +
@@ -48,7 +48,7 @@ class A2C:
         Generate a TensorFlow feed_dict that feeds the
         rollouts into the objective.
         """
-        batch = next(self.model.batches())
+        batch = next(self.model.batches(rollouts))
         advs = self._adv_est.advantages(rollouts)
         targets = self._adv_est.targets(rollouts)
         actions = select_acts_from_batch(rollouts, batch)
@@ -77,3 +77,5 @@ class A2C:
 
     # TODO: API that supports schedules and runs the
     # entire training loop for us.
+    # TODO: instance attributes for different parts of
+    # objective, for logging.

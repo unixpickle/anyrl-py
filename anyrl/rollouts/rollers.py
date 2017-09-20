@@ -39,8 +39,8 @@ class BasicRoller(Roller):
             states = self.model.start_state(1)
             rollout = empty_rollout(states)
             obs = self.env.reset()
-            rollout.observations.append(obs)
             while True:
+                rollout.observations.append(obs)
                 model_out = self.model.step([obs], states)
                 rollout.model_outs.append(model_out)
                 states = model_out['states']

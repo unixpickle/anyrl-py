@@ -9,8 +9,8 @@ class Distribution(ABC):
     A parametric probability distribution.
 
     All methods operate on and produce TensorFlow tensors
-    except for sample() and vec_samples(), which operate
-    on native arrays and space-specific objects.
+    except for sample() and to_vecs(), which operate on
+    native arrays and space-specific objects.
     """
     @abstractproperty
     def param_size(self):
@@ -29,7 +29,7 @@ class Distribution(ABC):
         pass
 
     @abstractmethod
-    def vec_samples(self, samples):
+    def to_vecs(self, samples):
         """
         Convert the sampled space elements into an array
         that can be fed into log_probs via feed_dict.
@@ -37,7 +37,7 @@ class Distribution(ABC):
         pass
 
     @abstractmethod
-    def log_probs(self, param_batch, samples):
+    def log_probs(self, param_batch, sample_vecs):
         """
         Compute the log probability (or log density) of
         the samples, given the parameters.

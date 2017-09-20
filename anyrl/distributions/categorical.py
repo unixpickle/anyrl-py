@@ -22,12 +22,12 @@ class CategoricalSoftmax(Distribution):
         probs = np.exp(np.array(param_batch))
         return [np.random.choice(len(p), p=p) for p in probs]
 
-    def vec_samples(self, samples):
+    def to_vecs(self, samples):
         return np.array(samples)
 
-    def log_probs(self, param_batch, samples):
+    def log_probs(self, param_batch, sample_vecs):
         loss_func = tf.nn.softmax_cross_entropy_with_logits
-        one_hot = tf.one_hot(indices=samples, depth=tf.shape(param_batch)[-1])
+        one_hot = tf.one_hot(indices=sample_vecs, depth=self.num_options)
         return tf.negative(loss_func(labels=one_hot, logits=param_batch))
 
     def entropy(self, param_batch):

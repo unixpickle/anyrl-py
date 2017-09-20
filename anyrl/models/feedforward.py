@@ -45,6 +45,7 @@ class FeedforwardAC(TFActorCritic):
         feed_dict = {self._obs_placeholder: observations}
         act, val = self.session.run((self._actor_out, self._critic_out), feed_dict)
         return {
+            'action_params': act,
             'actions': self.action_dist.sample(act),
             'states': None,
             'values': np.array(val)

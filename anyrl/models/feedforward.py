@@ -80,11 +80,11 @@ class MLP(FeedforwardAC):
         """
         Create an MLP model.
 
-        Arguments:
-        session -- TF session
-        action_dist -- an action Distribution
-        obs_vectorizer -- an observation SpaceVectorizer.
-        layer_sizes -- list of hidden layer sizes.
+        Args:
+          session: TF session.
+          action_dist: an action Distribution.
+          obs_vectorizer: an observation SpaceVectorizer.
+          layer_sizes: list of hidden layer sizes.
         """
         super(MLP, self).__init__(session, action_dist)
 

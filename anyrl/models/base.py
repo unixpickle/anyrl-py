@@ -35,9 +35,9 @@ class Model(ABC):
         of environments.
 
         Returns a dict with the following keys:
-        - 'actions': batch of actions, one per env
-        - 'states': new states after the step
-        - 'values': (optional) predicted value function
+          'actions': batch of actions, one per env
+          'states': new states after the step
+          'values': (optional) predicted value function
 
         The returned dict may include an 'action_params'
         key as well, indicating the parameters that were
@@ -74,12 +74,12 @@ class TFActorCritic(Model):
         the actor and the critic.
 
         Each mini-batch is a dict with these keys:
-         - 'rollout_idxs': rollout index for each sample
-         - 'timestep_idxs': timestep index for each sample
-         - 'feed_dict': inputs that the graph depends on
+          'rollout_idxs': rollout index for each sample
+          'timestep_idxs': timestep index for each sample
+          'feed_dict': inputs that the graph depends on
 
-        Arguments:
-        rollouts -- a list of (partial) rollouts
-        batch_size -- the approximate mini-batch size
+        Args:
+          rollouts: a list of (partial) rollouts
+          batch_size: the approximate mini-batch size
         """
         pass

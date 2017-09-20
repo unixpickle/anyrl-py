@@ -17,15 +17,6 @@ class FeedforwardAC(TFActorCritic):
     def __init__(self, session, action_dist):
         """
         Construct a feed-forward model.
-
-        Arguments:
-        action_dist -- action probability distribution.
-        base -- take an observation batch and produce a
-                Tensor to be fed into actor and critic.
-        actor -- take output of base and produce input for
-                 action distribution.
-        critic -- take output of base and produce value
-                  prediction.
         """
         super(FeedforwardAC, self).__init__(session, action_dist)
 

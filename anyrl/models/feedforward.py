@@ -7,6 +7,7 @@ import tensorflow as tf
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
+from .util import mini_batches
 
 # pylint: disable=E1129
 
@@ -53,17 +54,12 @@ class FeedforwardAC(TFActorCritic):
         }
 
     def batch_outputs(self):
-        mask = tf.ones(tf.shape(self._actor_out)[:1])
+        mask = tf.ones(tf.shape(self._critic_out))
         return self._actor_out, self._critic_out, mask
 
     def batches(self, rollouts, batch_size=None):
         obses, rollout_idxs, timestep_idxs = _frames_from_rollouts(rollouts)
-        while True:
-            if batch_size is None or batch_size > len(obses):
-                mini_indices = range(len(obses))
-            else:
-                mini_indices = np.random.choice(len(obses), size=batch_size,
-                                                replace=False)
+        for mini_indices in mini_batches([1]*len(obses), batch_size):
             obses = np.array(np.take(obses, mini_indices, axis=0))
             yield {
                 'rollout_idxs': np.take(rollout_idxs, mini_indices),

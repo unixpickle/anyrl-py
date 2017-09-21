@@ -2,6 +2,9 @@
 Tests for TensorFlow actor-critic models.
 """
 
+# pylint: disable=E0611
+# pylint: disable=E1129
+
 import unittest
 
 import gym
@@ -12,8 +15,6 @@ from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple
 from anyrl.rollouts import BasicRoller
 from anyrl.distributions import gym_space_distribution
 from anyrl.models import space_vectorizer, MLP, RNNCellAC
-
-# pylint: disable=E1129
 
 """
 The environment to use for testing rollout consistency.

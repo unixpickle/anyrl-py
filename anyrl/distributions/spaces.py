@@ -21,7 +21,7 @@ def gym_space_distribution(space):
     Create a Distribution from a gym.Space.
 
     If the space is not supported, throws an
-    UnsupportedSpace exception.
+    UnsupportedActionSpace exception.
     """
     if isinstance(space, spaces.Discrete):
         return CategoricalSoftmax(space.n)

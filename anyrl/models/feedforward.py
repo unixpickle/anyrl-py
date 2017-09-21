@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
-from .util import mini_batches
+from .util import mini_batches, product
 
 # pylint: disable=E1129
 
@@ -89,7 +89,7 @@ class MLP(FeedforwardAC):
         self._obs_placeholder = tf.placeholder(tf.float32, shape=in_batch_shape)
 
         # Iteratively generate hidden layers.
-        layer_in_size = _product(obs_vectorizer.shape)
+        layer_in_size = product(obs_vectorizer.shape)
         vectorized_shape = (tf.shape(self._obs_placeholder)[0], layer_in_size)
         layer_in = tf.reshape(self._obs_placeholder, vectorized_shape)
         for layer_idx, out_size in enumerate(layer_sizes):
@@ -104,12 +104,6 @@ class MLP(FeedforwardAC):
 
         with tf.variable_scope('critic'):
             self._critic_out = fully_connected(layer_in, 1, activation_fn=None)
-
-def _product(vals):
-    prod = 1
-    for val in vals:
-        prod *= val
-    return prod
 
 def _frames_from_rollouts(rollouts):
     """

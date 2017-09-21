@@ -34,3 +34,12 @@ def _infinite_random_shuffle(num_elements):
     while True:
         for elem in np.random.permutation(num_elements):
             yield elem
+
+def product(vals):
+    """
+    Compute the product of values in a list-like object.
+    """
+    prod = 1
+    for val in vals:
+        prod *= val
+    return prod

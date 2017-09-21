@@ -23,7 +23,7 @@ class RecurrentAC(TFActorCritic):
         super(RecurrentAC, self).__init__(session, action_dist)
 
         self._seq_lens = tf.placeholder(tf.int32, shape=(None,))
-        self._is_init_state = tf.placeholder(tf.bool, shape=tf.shape(self._seq_lens))
+        self._is_init_state = tf.placeholder(tf.bool, shape=(None,))
 
         # Set this to a variable or a tuple of variables
         # for your model's initial state.
@@ -78,9 +78,10 @@ class RecurrentAC(TFActorCritic):
 
     def step(self, observations, states):
         feed_dict = {
-            self._obs_seq_placeholder: observations,
+            self._seq_lens: [1] * len(observations),
             self._is_init_state: [False] * len(observations),
-            self._mask_placeholder: [[1] * len(observations)]
+            self._obs_seq_placeholder: [[x] for x in observations],
+            self._mask_placeholder: [[[1]]] * len(observations)
         }
 
         if isinstance(self._first_state_placeholders, tuple):
@@ -123,16 +124,17 @@ class RecurrentAC(TFActorCritic):
             timestep_idxs = []
             for rollout_idx, rollout in zip(rollout_indices, batch):
                 obs_seq = rollout.step_observations
-                empty_obs = np.array(np.array(obs_seq[0]).shape)
+                empty_obs = np.zeros(np.array(obs_seq[0]).shape)
                 obs_seqs.append(_pad(obs_seq, max_len, value=empty_obs))
                 is_inits.append(not rollout.trunc_start)
-                masks.append(_pad([1]*rollout.num_steps, max_len))
+                masks.append(_pad([[1]]*rollout.num_steps, max_len, value=[0]))
                 rollout_idxs.extend(_pad([rollout_idx]*rollout.num_steps, max_len))
                 timestep_idxs.extend(_pad(list(range(rollout.num_steps)), max_len))
             feed_dict = {
                 self._obs_seq_placeholder: obs_seqs,
                 self._is_init_state: is_inits,
-                self._mask_placeholder: masks
+                self._mask_placeholder: masks,
+                self._seq_lens: [r.num_steps for r in batch]
             }
             self._add_first_states(feed_dict, batch)
             yield {
@@ -147,14 +149,10 @@ class RecurrentAC(TFActorCritic):
         """
         if isinstance(self._init_state_vars, tuple):
             for i, placeholder in enumerate(self._first_state_placeholders):
-                first_states = []
-                for rollout in rollouts:
-                    first_states.append(rollout.start_state[i])
+                first_states = [r.start_state[i][0] for r in rollouts]
                 feed_dict[placeholder] = first_states
         else:
-            first_states = []
-            for rollout in rollouts:
-                first_states.append(rollout.start_state)
+            first_states = [r.start_state[0] for r in rollouts]
             feed_dict[self._first_state_placeholders] = first_states
 
     def _create_state_fields(self, dtype, state_size):
@@ -162,17 +160,16 @@ class RecurrentAC(TFActorCritic):
         Set self._first_state_placeholders and
         self._init_state_vars.
         """
-        batch_size = tf.shape(self._seq_lens)[0]
         if isinstance(state_size, tuple):
             self._first_state_placeholders = ()
             self._init_state_vars = ()
             for sub_shape in state_size:
-                placeholder = tf.placeholder(dtype, _batch_shape(batch_size, sub_shape))
+                placeholder = tf.placeholder(dtype, _add_outer_none(sub_shape))
                 variable = tf.Variable(tf.zeros(sub_shape))
                 self._first_state_placeholders += (placeholder,)
                 self._init_state_vars += (variable,)
         else:
-            placeholder = tf.placeholder(dtype, _batch_shape(batch_size, state_size))
+            placeholder = tf.placeholder(dtype, _add_outer_none(state_size))
             variable = tf.Variable(tf.zeros(state_size))
             self._first_state_placeholders = placeholder
             self._init_state_vars = variable
@@ -182,17 +179,21 @@ class RNNCellAC(RecurrentAC):
     A recurrent actor-critic that uses a TensorFlow
     RNNCell.
     """
-    def __init__(self, session, action_dist, obs_vectorizer, make_cell):
+    # pylint: disable=R0913
+    # pylint: disable=R0914
+    def __init__(self, session, action_dist, obs_vectorizer, make_cell,
+                 make_state_tuple=lambda x: x):
         super(RNNCellAC, self).__init__(session, action_dist)
-        batch_size = tf.shape(self._seq_lens)[0]
-        obs_seq_shape = (batch_size, None) + obs_vectorizer.shape
+        obs_seq_shape = (None, None) + obs_vectorizer.shape
         self._obs_seq_placeholder = tf.placeholder(tf.float32, obs_seq_shape)
+        self._mask_placeholder = tf.placeholder(tf.float32, (None, None, 1))
+
+        batch_size = tf.shape(self._obs_seq_placeholder)[0]
         seq_len = tf.shape(self._obs_seq_placeholder)[1]
-        self._mask_placeholder = tf.placeholder(tf.float32, (batch_size, seq_len, 1))
-        obs_vec_size = product(obs_vectorizer.shape)
-        flat_shape = tf.concat([tf.shape(self._obs_seq_placeholder)[:2],
-                                [obs_vec_size]], axis=0)
+        obs_size = product(obs_vectorizer.shape)
+        flat_shape = (batch_size, seq_len, obs_size)
         flattened_seq = tf.reshape(self._obs_seq_placeholder, flat_shape)
+
         with tf.variable_scope('cell'):
             cell = make_cell()
         with tf.variable_scope('states'):
@@ -200,15 +201,17 @@ class RNNCellAC(RecurrentAC):
         init_state = _mix_init_states(self._is_init_state, self._init_state_vars,
                                       self._first_state_placeholders)
         with tf.variable_scope('base'):
+            state_tuple = make_state_tuple(init_state)
             base, states = tf.nn.dynamic_rnn(cell, flattened_seq,
                                              sequence_length=self._seq_lens,
-                                             initial_state=init_state)
+                                             initial_state=state_tuple)
         with tf.variable_scope('actor'):
-            self._actor_out = fully_connected(base, action_dist.param_size,
-                                              activation_fn=None,
-                                              weights_initializer=tf.zeros_initializer())
+            zeros = tf.zeros_initializer()
+            self._actor_out_seq = fully_connected(base, action_dist.param_size,
+                                                  activation_fn=None,
+                                                  weights_initializer=zeros)
         with tf.variable_scope('critic'):
-            self._critic_out = fully_connected(base, 1, activation_fn=None)
+            self._critic_out_seq = fully_connected(base, 1, activation_fn=None)
         self._states_out = states
 
 def _pad(unpadded, length, value=0):
@@ -230,19 +233,20 @@ def _mix_init_states(is_init, init_states, start_states):
     batch_size = tf.shape(start_states)[0]
     return tf.where(is_init, _batchify(batch_size, init_states), start_states)
 
-def _batch_shape(batch_size, shape):
-    """
-    Add an outer dimension to a TensorShape or Integer.
-    """
-    if isinstance(shape, tf.TensorShape):
-        return [batch_size] + shape.dims
-    return [batch_size, shape]
-
 def _batchify(batch_size, tensor):
     """
     Repeat a tensor the given number of times in the outer
     dimension.
     """
     batchable = tf.reshape(tensor, tf.concat([[1], tf.shape(tensor)], axis=0))
-    repeat_count = tf.concat([[batch_size], tf.ones(tensor.shape.ndims)], axis=0)
+    ones = tf.ones(tensor.shape.ndims, dtype=tf.int32)
+    repeat_count = tf.concat([[batch_size], ones], axis=0)
     return tf.tile(batchable, repeat_count)
+
+def _add_outer_none(shape):
+    """
+    Add None as an outer dimension for the shape.
+    """
+    if isinstance(shape, tf.TensorShape):
+        return [None] + shape.dims
+    return [None, shape]

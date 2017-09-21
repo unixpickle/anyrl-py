@@ -20,7 +20,7 @@ def mini_batches(size_per_index, batch_size=None):
     cur_size = 0
     for idx in _infinite_random_shuffle(len(size_per_index)):
         cur_indices.append(idx)
-        cur_size += size_per_index(idx)
+        cur_size += size_per_index[idx]
         if cur_size >= batch_size:
             yield cur_indices
             cur_indices = []

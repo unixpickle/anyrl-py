@@ -60,11 +60,11 @@ class FeedforwardAC(TFActorCritic):
     def batches(self, rollouts, batch_size=None):
         obses, rollout_idxs, timestep_idxs = _frames_from_rollouts(rollouts)
         for mini_indices in mini_batches([1]*len(obses), batch_size):
-            obses = np.array(np.take(obses, mini_indices, axis=0))
+            sub_obses = np.array(np.take(obses, mini_indices, axis=0))
             yield {
                 'rollout_idxs': np.take(rollout_idxs, mini_indices),
                 'timestep_idxs': np.take(timestep_idxs, mini_indices),
-                'feed_dict': {self._obs_placeholder: obses}
+                'feed_dict': {self._obs_placeholder: sub_obses}
             }
 
 class MLP(FeedforwardAC):

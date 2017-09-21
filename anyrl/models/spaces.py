@@ -17,7 +17,7 @@ class UnsupportedObsSpace(Exception):
         super(UnsupportedObsSpace, self).__init__(msg)
         self.space = space
 
-def space_vectorizer(space):
+def gym_space_vectorizer(space):
     """
     Analyze the gym.Space to create an appropriate
     SpaceVectorizer for it.

@@ -14,7 +14,7 @@ from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple
 
 from anyrl.rollouts import BasicRoller
 from anyrl.distributions import gym_space_distribution
-from anyrl.models import space_vectorizer, MLP, RNNCellAC
+from anyrl.models import gym_space_vectorizer, MLP, RNNCellAC
 
 """
 The environment to use for testing rollout consistency.
@@ -130,7 +130,7 @@ class ACTest(unittest.TestCase):
         finally:
             env.close()
         self.action_dist = gym_space_distribution(action_space)
-        self.obs_vectorizer = space_vectorizer(observation_space)
+        self.obs_vectorizer = gym_space_vectorizer(observation_space)
 
     def test_mlp(self):
         """

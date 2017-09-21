@@ -5,7 +5,7 @@ OpenAI Gym.
 
 from anyrl.algos import A2C, PPO
 from anyrl.distributions import gym_space_distribution
-from anyrl.models import MLP, space_vectorizer
+from anyrl.models import MLP, gym_space_vectorizer
 from anyrl.rollouts import BasicRoller, mean_total_reward
 import gym
 import tensorflow as tf
@@ -23,7 +23,7 @@ def run_algorithm(algo_name):
     """
     env = gym.make('CartPole-v0')
     action_dist = gym_space_distribution(env.action_space)
-    obs_vectorizer = space_vectorizer(env.observation_space)
+    obs_vectorizer = gym_space_vectorizer(env.observation_space)
 
     with tf.Session() as sess:
         model = MLP(sess, action_dist, obs_vectorizer, layer_sizes=[32])

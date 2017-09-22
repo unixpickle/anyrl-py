@@ -9,7 +9,7 @@ import cloudpickle
 import gym.spaces
 import numpy as np
 
-def batched_gym_env(env_fns, observation_space=None, num_sub_batch=1):
+def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1):
     """
     Create a BatchedEnv that controls a set of Gym
     environments.
@@ -25,7 +25,7 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batch=1):
     On top of the normal BatchedEnv interface, the result
     has action_space and observation_space attributes.
     """
-    assert len(env_fns) % num_sub_batch == 0
+    assert len(env_fns) % num_sub_batches == 0
     if observation_space is None:
         env = env_fns[0]()
         try:
@@ -33,15 +33,12 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batch=1):
         finally:
             env.close()
     sub_batches = []
-    batch_size = len(env_fns) // num_sub_batch
-    for i in range(num_sub_batch):
+    batch_size = len(env_fns) // num_sub_batches
+    for i in range(num_sub_batches):
         batch_fns = env_fns[i*batch_size : (i+1)*batch_size]
         envs = [AsyncGymEnv(fn, observation_space) for fn in batch_fns]
         sub_batches.append(envs)
-    res = BatchedAsyncEnv(sub_batches)
-    res.action_space = sub_batches[0][0].action_space
-    res.observation_space = observation_space
-    return res
+    return BatchedAsyncEnv(sub_batches)
 
 class AsyncEnv(ABC):
     """
@@ -295,14 +292,26 @@ def _sendable_observation(obs, obs_buf):
 class BatchedAsyncEnv(BatchedEnv):
     """
     A BatchedEnv that controls AsyncEnvs.
+
+    If the first AsyncEnv has an action_space and/or
+    observation_space attribute, those attributes are
+    copied.
     """
     def __init__(self, sub_batches):
         # pylint: disable=C1801
         assert len(sub_batches) > 0
-        assert all([len(x) for x in sub_batches] == len(sub_batches[0]))
-        self.action_space = sub_batches[0].action_space
-        self.observation_space = sub_batches[0].observation_space
+        first_len = len(sub_batches[0])
+        assert all([len(x) == first_len for x in sub_batches])
         self._sub_batches = sub_batches
+
+        self.action_space = None
+        self.observation_space = None
+
+        first_env = sub_batches[0][0]
+        if hasattr(first_env, 'action_space'):
+            self.action_space = sub_batches[0][0].action_space
+        if hasattr(first_env, 'observation_space'):
+            self.observation_space = sub_batches[0][0].observation_space
 
     @property
     def num_sub_batches(self):
@@ -323,6 +332,7 @@ class BatchedAsyncEnv(BatchedEnv):
         return obses
 
     def step_start(self, actions, sub_batch=0):
+        assert len(actions) == self.num_envs_per_sub_batch
         for env, action in zip(self._sub_batches[sub_batch], actions):
             env.step_start(action)
 
@@ -350,7 +360,7 @@ class _CloudpickleFunc:
         self.func = func
 
     def __call__(self, *args, **kwargs):
-        self.func(*args, **kwargs)
+        return self.func(*args, **kwargs)
 
     def __getstate__(self):
         return cloudpickle.dumps(self.func)

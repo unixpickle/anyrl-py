@@ -82,6 +82,9 @@ class AsyncEnv(ABC):
         Wait for a step_start() to finish.
 
         Returns (observation, reward, done, info).
+
+        If done is true, then the environment was reset
+        and the new observation was taken.
         """
         pass
 
@@ -159,6 +162,10 @@ class BatchedEnv(ABC):
 
         Returns (observations, rewards, dones, infos),
         where all those are list-like objects.
+
+        If a done value is true, then the environment was
+        automatically reset and the new observation was
+        returned.
         """
         pass
 
@@ -257,6 +264,8 @@ def _async_gym_worker(req_queue, resp_queue, obs_buf, make_env):
                 resp_queue.put(_sendable_observation(env.reset(), obs_buf))
             elif cmd == 'step':
                 obs, rew, done, info = env.step(action)
+                if done:
+                    obs = env.reset()
                 obs = _sendable_observation(obs, obs_buf)
                 resp_queue.put((obs, rew, done, info))
             elif cmd == 'close':

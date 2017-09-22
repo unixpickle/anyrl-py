@@ -51,3 +51,157 @@ class BasicRoller(Roller):
             num_steps += rollout.num_steps
             episodes.append(rollout)
         return episodes
+
+class TruncatedRoller(Roller):
+    """
+    Gathers a fixed number of timesteps from each
+    environment in a BatchedEnv.
+    """
+    def __init__(self, batched_env, model, num_timesteps):
+        self.batched_env = batched_env
+        self.model = model
+        self.num_timesteps = num_timesteps
+
+        # These end up being batches of sub-batches.
+        # Each sub-batch corresponds to a sub-batch of
+        # environments.
+        self._last_states = None
+        self._last_obs = None
+        self._trunc_starts = None
+
+        self.reset()
+
+    def reset(self):
+        """
+        Reset the environments, model states, and partial
+        trajectory information.
+
+        This needn't be called on new TruncatedRollers.
+        """
+        inner_dim = self.batched_env.num_envs_per_sub_batch
+        outer_dim = self.batched_env.num_sub_batches
+        self._last_obs = []
+        self._trunc_starts = [[False]*inner_dim for _ in range(outer_dim)]
+        for i in range(outer_dim):
+            self.batched_env.reset_start(sub_batch=i)
+        for i in range(outer_dim):
+            self._last_obs.append(self.batched_env.reset_wait(sub_batch=i))
+        self._last_states = [self.model.start_state(inner_dim)
+                             for _ in range(outer_dim)]
+
+    def rollouts(self):
+        """
+        Gather (possibly truncated) rollouts.
+        """
+        completed_rollouts = []
+        running_rollouts = self._starting_rollouts()
+        for _ in range(self.num_timesteps):
+            self._step(completed_rollouts, running_rollouts)
+        self._add_truncated(completed_rollouts, running_rollouts)
+        return completed_rollouts
+
+    def _starting_rollouts(self):
+        """
+        Create empty rollouts with the start states and
+        initial observations.
+        """
+        rollouts = []
+        for batch_idx, states in enumerate(self._last_states):
+            rollout_batch = []
+            for env_idx in range(self.batched_env.num_envs_per_sub_batch):
+                sub_state = _reduce_states(states, env_idx)
+                trunc = self._trunc_starts[batch_idx][env_idx]
+                rollout = empty_rollout(sub_state, trunc_start=trunc)
+                rollout_batch.append(rollout)
+            rollouts.append(rollout_batch)
+        return rollouts
+
+    # pylint: disable=R0914
+    def _step(self, completed, running):
+        """
+        Take a batched step and add completed rollouts to
+        the list.
+        Update the running rollouts to reflect new steps
+        and episodes.
+        """
+        for batch_idx, states in enumerate(self._last_states):
+            obses = self._last_obs[batch_idx]
+            model_outs = self.model.step(obses, states)
+            for env_idx, (obs, rollout) in enumerate(zip(obses, running[batch_idx])):
+                reduced_out = _reduce_model_outs(model_outs, env_idx)
+                rollout.observations.append(obs)
+                rollout.model_outs.append(reduced_out)
+            self._last_states[batch_idx] = model_outs['states']
+            self.batched_env.step_start(model_outs['actions'], sub_batch=batch_idx)
+        for batch_idx in range(self.batched_env.num_sub_batches):
+            step_out = self.batched_env.step_wait(sub_batch=batch_idx)
+            self._last_obs[batch_idx], rews, dones, _ = step_out
+            for env_idx, (rew, done) in enumerate(zip(rews, dones)):
+                running[batch_idx][env_idx].rewards.append(rew)
+                if done:
+                    self._complete_rollout(completed, running, batch_idx, env_idx)
+                else:
+                    self._trunc_starts[batch_idx][env_idx] = True
+
+    def _complete_rollout(self, completed, running, batch_idx, env_idx):
+        """
+        Finalize a rollout and start a new rollout.
+        """
+        completed.append(running[batch_idx][env_idx])
+        self._trunc_starts[batch_idx][env_idx] = False
+        start_state = self.model.start_state(1)
+        _inject_state(self._last_states[batch_idx], start_state, env_idx)
+
+        rollout = empty_rollout(start_state)
+        running[batch_idx][env_idx] = rollout
+
+    def _add_truncated(self, completed, running):
+        """
+        Add partial but non-empty rollouts to completed.
+        """
+        for batch_idx, sub_running in enumerate(running):
+            states = self._last_states[batch_idx]
+            for env_idx, rollout in sub_running:
+                if rollout.num_steps > 0:
+                    rollout.trunc_end = True
+                    last_obs = self._last_obs[batch_idx][env_idx]
+                    reduced_state = _reduce_states(states, env_idx)
+                    model_out = self.model.step([last_obs], reduced_state)
+                    rollout.observations.append(last_obs)
+                    rollout.model_outs.append(model_out)
+                    completed.append(rollout)
+
+def _reduce_states(state_batch, env_idx):
+    """
+    Reduce a batch of states to a batch of one state.
+    """
+    if state_batch is None:
+        return None
+    elif isinstance(state_batch, tuple):
+        return tuple(_reduce_states(s, env_idx) for s in state_batch)
+    return state_batch[env_idx : env_idx+1]
+
+def _inject_state(state_batch, state, env_idx):
+    """
+    Replace the state at the given index with a new state.
+    """
+    if state_batch is None:
+        return
+    elif isinstance(state_batch, tuple):
+        return tuple(_inject_state(sb, s, env_idx)
+                     for sb, s in zip(state_batch, state))
+    state_batch[env_idx : env_idx+1] = state
+
+def _reduce_model_outs(model_outs, env_idx):
+    """
+    Reduce a batch of model outputs to a batch of one
+    model output.
+    """
+    out = dict()
+    for key in model_outs:
+        val = model_outs[key]
+        if val is None:
+            out[key] = None
+        else:
+            out[key] = val[env_idx : env_idx+1]
+    return out

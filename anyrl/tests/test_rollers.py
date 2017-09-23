@@ -137,6 +137,7 @@ def _rollout_hash(rollout):
     res += str(rollout.prev_reward)
     res += str(rollout.observations)
     res += str(rollout.rewards)
+    res += str(rollout.infos)
     for out in rollout.model_outs:
         res += 'output'
         for key in sorted(out.keys()):
@@ -158,13 +159,15 @@ def _artificial_truncation(rollouts, rollout_idx, timestep_idx):
                    model_outs=to_split.model_outs[:timestep_idx+1],
                    rewards=to_split.rewards[:timestep_idx],
                    start_state=to_split.start_state,
-                   trunc_end=True)
+                   trunc_end=True,
+                   infos=to_split.infos[:timestep_idx])
     right = Rollout(observations=to_split.observations[timestep_idx:],
                     model_outs=to_split.model_outs[timestep_idx:],
                     rewards=to_split.rewards[timestep_idx:],
                     start_state=to_split.model_outs[timestep_idx-1]['states'],
                     prev_steps=timestep_idx,
-                    prev_reward=left.total_reward)
+                    prev_reward=left.total_reward,
+                    infos=to_split.infos[timestep_idx:])
     return rollouts[:rollout_idx]+[left], [right]+rollouts[rollout_idx+1:]
 
 if __name__ == '__main__':

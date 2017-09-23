@@ -11,6 +11,7 @@ def empty_rollout(start_state, prev_steps=0, prev_reward=0):
                    start_state=start_state, prev_steps=prev_steps,
                    prev_reward=prev_reward)
 
+# pylint: disable=R0902
 class Rollout:
     """
     A sequence of observations, actions, and rewards that
@@ -32,11 +33,14 @@ class Rollout:
     """
     # pylint: disable=R0913
     def __init__(self, observations, model_outs, rewards, start_state,
-                 trunc_end=False, prev_steps=0, prev_reward=0):
+                 trunc_end=False, prev_steps=0, prev_reward=0,
+                 infos=None):
         assert len(observations) == len(model_outs)
         assert len(rewards) <= len(observations)
         assert len(observations) <= len(rewards)+1
-
+        if infos is None:
+            infos = [{}] * len(rewards)
+        assert len(infos) == len(rewards)
         self.observations = observations
         self.model_outs = model_outs
         self.rewards = rewards
@@ -44,6 +48,7 @@ class Rollout:
         self.trunc_end = trunc_end
         self.prev_steps = prev_steps
         self.prev_reward = prev_reward
+        self.infos = infos
 
     @property
     def trunc_start(self):

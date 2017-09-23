@@ -44,8 +44,9 @@ class BasicRoller(Roller):
                 model_out = self.model.step([obs], states)
                 rollout.model_outs.append(model_out)
                 states = model_out['states']
-                obs, rew, done, _ = self.env.step(model_out['actions'][0])
+                obs, rew, done, info = self.env.step(model_out['actions'][0])
                 rollout.rewards.append(rew)
+                rollout.infos.append(info)
                 if done:
                     break
             num_steps += rollout.num_steps
@@ -140,9 +141,10 @@ class TruncatedRoller(Roller):
             self.batched_env.step_start(model_outs['actions'], sub_batch=batch_idx)
         for batch_idx in range(self.batched_env.num_sub_batches):
             step_out = self.batched_env.step_wait(sub_batch=batch_idx)
-            self._last_obs[batch_idx], rews, dones, _ = step_out
-            for env_idx, (rew, done) in enumerate(zip(rews, dones)):
+            self._last_obs[batch_idx], rews, dones, infos = step_out
+            for env_idx, (rew, done, info) in enumerate(zip(rews, dones, infos)):
                 running[batch_idx][env_idx].rewards.append(rew)
+                running[batch_idx][env_idx].infos.append(info)
                 if done:
                     self._complete_rollout(completed, running, batch_idx, env_idx)
                 else:

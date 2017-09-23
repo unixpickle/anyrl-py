@@ -114,6 +114,7 @@ class ModelTester:
             rollout.rewards = rollout.rewards[1:]
             rollout.model_outs = rollout.model_outs[1:]
             rollout.observations = rollout.observations[1:]
+            rollout.infos = rollout.infos[1:]
         return rollouts
 
 class ACTest(unittest.TestCase):

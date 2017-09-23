@@ -36,7 +36,6 @@ Here is the current TODO list, organized by sub-module:
 * `rollouts`
   * Roller for gathering episodes with a `BatchedEnv`.
   * Way to not record states in `model_outs` (memory saving)
-  * Way to get total episode rewards for truncated rollers
 * `algos`
   * TRPO
 * `distributions`

@@ -1,5 +1,5 @@
 """
-Statefull neural network models.
+Stateful neural network models.
 """
 
 import numpy as np

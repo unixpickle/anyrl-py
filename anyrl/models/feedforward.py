@@ -15,11 +15,11 @@ class FeedforwardAC(TFActorCritic):
     """
     A base class for any feed-forward actor-critic model.
     """
-    def __init__(self, session, action_dist):
+    def __init__(self, session, action_dist, obs_vectorizer):
         """
         Construct a feed-forward model.
         """
-        super(FeedforwardAC, self).__init__(session, action_dist)
+        super(FeedforwardAC, self).__init__(session, action_dist, obs_vectorizer)
 
         # Set these in your constructor.
         self._obs_placeholder = None
@@ -44,7 +44,9 @@ class FeedforwardAC(TFActorCritic):
         return None
 
     def step(self, observations, states):
-        feed_dict = {self._obs_placeholder: observations}
+        feed_dict = {
+            self._obs_placeholder: self.obs_vectorizer.vectorize(observations)
+        }
         act, val = self.session.run((self._actor_out, self._critic_out), feed_dict)
         return {
             'action_params': act,
@@ -64,7 +66,9 @@ class FeedforwardAC(TFActorCritic):
             yield {
                 'rollout_idxs': np.take(rollout_idxs, mini_indices),
                 'timestep_idxs': np.take(timestep_idxs, mini_indices),
-                'feed_dict': {self._obs_placeholder: sub_obses}
+                'feed_dict': {
+                    self._obs_placeholder: self.obs_vectorizer.vectorize(sub_obses)
+                }
             }
 
 class MLP(FeedforwardAC):
@@ -83,7 +87,7 @@ class MLP(FeedforwardAC):
           obs_vectorizer: an observation SpaceVectorizer.
           layer_sizes: list of hidden layer sizes.
         """
-        super(MLP, self).__init__(session, action_dist)
+        super(MLP, self).__init__(session, action_dist, obs_vectorizer)
 
         in_batch_shape = (None,) + obs_vectorizer.shape
         self._obs_placeholder = tf.placeholder(tf.float32, shape=in_batch_shape)

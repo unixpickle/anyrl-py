@@ -16,11 +16,11 @@ class RecurrentAC(TFActorCritic):
     """
     A base class for any stateful actor-critic model.
     """
-    def __init__(self, session, action_dist):
+    def __init__(self, session, action_dist, obs_vectorizer):
         """
         Construct a recurrent model.
         """
-        super(RecurrentAC, self).__init__(session, action_dist)
+        super(RecurrentAC, self).__init__(session, action_dist, obs_vectorizer)
 
         self._seq_lens = tf.placeholder(tf.int32, shape=(None,))
         self._is_init_state = tf.placeholder(tf.bool, shape=(None,))
@@ -77,10 +77,11 @@ class RecurrentAC(TFActorCritic):
         return np.array([var_val] * batch_size)
 
     def step(self, observations, states):
+        vec_obs = self.obs_vectorizer.vectorize(observations)
         feed_dict = {
             self._seq_lens: [1] * len(observations),
             self._is_init_state: [False] * len(observations),
-            self._obs_seq_placeholder: [[x] for x in observations],
+            self._obs_seq_placeholder: [[x] for x in vec_obs],
             self._mask_placeholder: [[[1]]] * len(observations)
         }
 
@@ -130,8 +131,9 @@ class RecurrentAC(TFActorCritic):
                 masks.append(_pad([[1]]*rollout.num_steps, max_len, value=[0]))
                 rollout_idxs.extend(_pad([rollout_idx]*rollout.num_steps, max_len))
                 timestep_idxs.extend(_pad(list(range(rollout.num_steps)), max_len))
+            vec_obses = [self.obs_vectorizer.vectorize(s) for s in obs_seqs]
             feed_dict = {
-                self._obs_seq_placeholder: obs_seqs,
+                self._obs_seq_placeholder: vec_obses,
                 self._is_init_state: is_inits,
                 self._mask_placeholder: masks,
                 self._seq_lens: [r.num_steps for r in batch]
@@ -183,7 +185,7 @@ class RNNCellAC(RecurrentAC):
     # pylint: disable=R0914
     def __init__(self, session, action_dist, obs_vectorizer, make_cell,
                  make_state_tuple=lambda x: x):
-        super(RNNCellAC, self).__init__(session, action_dist)
+        super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
         obs_seq_shape = (None, None) + obs_vectorizer.shape
         self._obs_seq_placeholder = tf.placeholder(tf.float32, obs_seq_shape)
         self._mask_placeholder = tf.placeholder(tf.float32, (None, None, 1))

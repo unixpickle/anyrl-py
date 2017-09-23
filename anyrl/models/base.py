@@ -48,12 +48,14 @@ class TFActorCritic(Model):
     An actor-critic model which is differentiable via
     TensorFlow.
 
-    Every TFActorCritic has an action distribution.
-    This can be accessed via model.action_dist.
+    Every TFActorCritic has an action distribution and
+    observation vectorizer, which can be accessed via
+    model.action_dist and model.obs_vectorizer.
     """
-    def __init__(self, session, action_dist):
+    def __init__(self, session, action_dist, obs_vectorizer):
         self.session = session
         self.action_dist = action_dist
+        self.obs_vectorizer = obs_vectorizer
 
     @abstractmethod
     def batch_outputs(self):

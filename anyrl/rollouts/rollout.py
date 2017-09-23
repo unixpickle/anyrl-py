@@ -17,24 +17,22 @@ class Rollout:
     A sequence of observations, actions, and rewards that
     were recorded by running an agent in an environment.
 
-    Model outputs are sliced to a batch size of one.
+    Model outputs are structured like the results of
+    Model.step(), but they have a batch size of one.
 
     Rollouts may represent total episodes, but they may
     also represent a sliced version of the episode.
-    The trunc_start and trunc_end fields indicate whether
-    the start and end states were not the beginning or end
-    of the episode.
+    The trunc_start and trunc_end properties indicate if
+    the episode was truncated at the start or the end.
     When trunc_start is True, prev_reward and prev_steps
     indicate the amount of reward and number of steps in
     the episode before this Rollout.
-
-    If a rollout is truncated at the end, it will have an
-    extra observation and model_outs value.
+    When trunc_end is true, there is an extra observation
+    and model_outs entry.
     """
     # pylint: disable=R0913
     def __init__(self, observations, model_outs, rewards, start_state,
-                 trunc_end=False, prev_steps=0, prev_reward=0,
-                 infos=None):
+                 prev_steps=0, prev_reward=0, infos=None):
         assert len(observations) == len(model_outs)
         assert len(rewards) <= len(observations)
         assert len(observations) <= len(rewards)+1
@@ -45,10 +43,17 @@ class Rollout:
         self.model_outs = model_outs
         self.rewards = rewards
         self.start_state = start_state
-        self.trunc_end = trunc_end
         self.prev_steps = prev_steps
         self.prev_reward = prev_reward
         self.infos = infos
+
+    @property
+    def trunc_end(self):
+        """
+        Get whether or not the episode completed in this
+        Rollout.
+        """
+        return len(self.observations) > self.num_steps
 
     @property
     def trunc_start(self):

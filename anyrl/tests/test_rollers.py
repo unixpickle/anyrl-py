@@ -159,7 +159,6 @@ def _artificial_truncation(rollouts, rollout_idx, timestep_idx):
                    model_outs=to_split.model_outs[:timestep_idx+1],
                    rewards=to_split.rewards[:timestep_idx],
                    start_state=to_split.start_state,
-                   trunc_end=True,
                    infos=to_split.infos[:timestep_idx])
     right = Rollout(observations=to_split.observations[timestep_idx:],
                     model_outs=to_split.model_outs[timestep_idx:],

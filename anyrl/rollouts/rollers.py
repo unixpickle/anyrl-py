@@ -172,7 +172,6 @@ class TruncatedRoller(Roller):
             states = self._last_states[batch_idx]
             for env_idx, rollout in enumerate(sub_running):
                 if rollout.num_steps > 0:
-                    rollout.trunc_end = True
                     last_obs = self._last_obs[batch_idx][env_idx]
                     reduced_state = _reduce_states(states, env_idx)
                     model_out = self.model.step([last_obs], reduced_state)

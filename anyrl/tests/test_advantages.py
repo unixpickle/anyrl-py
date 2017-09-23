@@ -36,8 +36,7 @@ def _dummy_rollout(pred_vals, rewards):
     return Rollout(observations=[[1]]*len(pred_vals),
                    model_outs=model_outs,
                    rewards=rewards,
-                   start_state=None,
-                   trunc_end=len(pred_vals) > len(rewards))
+                   start_state=None)
 
 if __name__ == '__main__':
     unittest.main()

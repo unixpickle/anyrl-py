@@ -161,7 +161,7 @@ class TruncatedRoller(Roller):
         """
         for batch_idx, sub_running in enumerate(running):
             states = self._last_states[batch_idx]
-            for env_idx, rollout in sub_running:
+            for env_idx, rollout in enumerate(sub_running):
                 if rollout.num_steps > 0:
                     rollout.trunc_end = True
                     last_obs = self._last_obs[batch_idx][env_idx]
@@ -202,6 +202,8 @@ def _reduce_model_outs(model_outs, env_idx):
         val = model_outs[key]
         if val is None:
             out[key] = None
+        elif isinstance(val, tuple):
+            out[key] = _reduce_states(val, env_idx)
         else:
             out[key] = val[env_idx : env_idx+1]
     return out

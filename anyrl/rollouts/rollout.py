@@ -3,12 +3,13 @@ Types and functions for manipulating (partial) rollouts in
 RL environments.
 """
 
-def empty_rollout(start_state, trunc_start=False):
+def empty_rollout(start_state, prev_steps=0, prev_reward=0):
     """
     Create a Rollout with no timesteps.
     """
     return Rollout(observations=[], model_outs=[], rewards=[],
-                   start_state=start_state, trunc_start=trunc_start)
+                   start_state=start_state, prev_steps=prev_steps,
+                   prev_reward=prev_reward)
 
 class Rollout:
     """
@@ -22,25 +23,38 @@ class Rollout:
     The trunc_start and trunc_end fields indicate whether
     the start and end states were not the beginning or end
     of the episode.
+    When trunc_start is True, prev_reward and prev_steps
+    indicate the amount of reward and number of steps in
+    the episode before this Rollout.
 
     If a rollout is truncated at the end, it will have an
     extra observation and model_outs value.
     """
     # pylint: disable=R0913
     def __init__(self, observations, model_outs, rewards, start_state,
-                 trunc_start=False, trunc_end=False):
+                 trunc_end=False, prev_steps=0, prev_reward=0):
         self.observations = observations
         self.model_outs = model_outs
         self.rewards = rewards
         self.start_state = start_state
-        self.trunc_start = trunc_start
         self.trunc_end = trunc_end
+        self.prev_steps = prev_steps
+        self.prev_reward = prev_reward
+
+    @property
+    def trunc_start(self):
+        """
+        Get whether or not steps were taken in the episode
+        before this Rollout.
+        """
+        return self.prev_steps > 0
 
     @property
     def num_steps(self):
         """
         Get the total number of timesteps (not including
-        the extra observation for truncated episodes).
+        the extra observation or previous timesteps for
+        truncated episodes).
         """
         return len(self.rewards)
 
@@ -65,9 +79,22 @@ class Rollout:
     @property
     def total_reward(self):
         """
-        Get the total reward across all steps.
+        Get the total reward so far in the episode.
+        This includes rewards from previous segments of
+        this episode.
         """
-        return sum(self.rewards)
+        return sum(self.rewards) + self.prev_reward
+
+    @property
+    def total_steps(self):
+        """
+        Get the total number of completed timesteps in the
+        episode.
+        This includes timesteps from previous segments of
+        this episode, but it does not include the final
+        observation for truncated episodes.
+        """
+        return self.num_steps + self.prev_steps
 
     def predicted_value(self, timestep):
         """

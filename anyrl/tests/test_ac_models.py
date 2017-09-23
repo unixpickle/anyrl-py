@@ -110,7 +110,7 @@ class ModelTester:
             outs = self.model.step([first_obs], rollout.start_state)
 
             rollout.start_state = outs['states']
-            rollout.trunc_start = True
+            rollout.prev_steps = 1
             rollout.rewards = rollout.rewards[1:]
             rollout.model_outs = rollout.model_outs[1:]
             rollout.observations = rollout.observations[1:]

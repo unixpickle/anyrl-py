@@ -67,7 +67,8 @@ class TruncatedRoller(Roller):
         # environments.
         self._last_states = None
         self._last_obs = None
-        self._trunc_starts = None
+        self._prev_steps = None
+        self._prev_reward = None
 
         self.reset()
 
@@ -81,7 +82,8 @@ class TruncatedRoller(Roller):
         inner_dim = self.batched_env.num_envs_per_sub_batch
         outer_dim = self.batched_env.num_sub_batches
         self._last_obs = []
-        self._trunc_starts = [[False]*inner_dim for _ in range(outer_dim)]
+        self._prev_steps = [[0]*inner_dim for _ in range(outer_dim)]
+        self._prev_reward = [[0]*inner_dim for _ in range(outer_dim)]
         for i in range(outer_dim):
             self.batched_env.reset_start(sub_batch=i)
         for i in range(outer_dim):
@@ -110,8 +112,11 @@ class TruncatedRoller(Roller):
             rollout_batch = []
             for env_idx in range(self.batched_env.num_envs_per_sub_batch):
                 sub_state = _reduce_states(states, env_idx)
-                trunc = self._trunc_starts[batch_idx][env_idx]
-                rollout = empty_rollout(sub_state, trunc_start=trunc)
+                prev_steps = self._prev_steps[batch_idx][env_idx]
+                prev_reward = self._prev_reward[batch_idx][env_idx]
+                rollout = empty_rollout(sub_state,
+                                        prev_steps=prev_steps,
+                                        prev_reward=prev_reward)
                 rollout_batch.append(rollout)
             rollouts.append(rollout_batch)
         return rollouts
@@ -141,14 +146,16 @@ class TruncatedRoller(Roller):
                 if done:
                     self._complete_rollout(completed, running, batch_idx, env_idx)
                 else:
-                    self._trunc_starts[batch_idx][env_idx] = True
+                    self._prev_steps[batch_idx][env_idx] += 1
+                    self._prev_reward[batch_idx][env_idx] += rew
 
     def _complete_rollout(self, completed, running, batch_idx, env_idx):
         """
         Finalize a rollout and start a new rollout.
         """
         completed.append(running[batch_idx][env_idx])
-        self._trunc_starts[batch_idx][env_idx] = False
+        for prev in [self._prev_steps, self._prev_reward]:
+            prev[batch_idx][env_idx] = 0
         start_state = self.model.start_state(1)
         _inject_state(self._last_states[batch_idx], start_state, env_idx)
 

@@ -37,7 +37,6 @@ def _dummy_rollout(pred_vals, rewards):
                    model_outs=model_outs,
                    rewards=rewards,
                    start_state=None,
-                   trunc_start=False,
                    trunc_end=len(pred_vals) > len(rewards))
 
 if __name__ == '__main__':

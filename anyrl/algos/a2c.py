@@ -34,7 +34,8 @@ class A2C:
 
         self._advs = tf.placeholder(tf.float32, (None,))
         self._target_vals = tf.placeholder(tf.float32, (None,))
-        self._actions = tf.placeholder(tf.float32, (None,))
+        self._actions = tf.placeholder(tf.float32,
+                                       (None,) + model.action_dist.out_shape)
 
         actor, critic, mask = model.batch_outputs()
 

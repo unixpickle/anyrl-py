@@ -32,10 +32,10 @@ class PPO:
 
         self._advs = tf.placeholder(tf.float32, (None,))
         self._target_vals = tf.placeholder(tf.float32, (None,))
-        self._actions = tf.placeholder(tf.float32, (None,))
-
-        param_size = model.action_dist.param_size
-        self._orig_action_params = tf.placeholder(tf.float32, (None, param_size))
+        self._actions = tf.placeholder(tf.float32,
+                                       (None,) + model.action_dist.out_shape)
+        self._orig_action_params = tf.placeholder(tf.float32,
+                                                  (None,) + model.action_dist.param_shape)
 
         actor, critic, mask = model.batch_outputs()
 

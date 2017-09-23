@@ -4,9 +4,9 @@ OpenAI Gym.
 """
 
 from anyrl.algos import A2C, PPO
-from anyrl.dists import gym_space_distribution
-from anyrl.models import MLP, gym_space_vectorizer
+from anyrl.models import MLP
 from anyrl.rollouts import BasicRoller, mean_total_reward
+from anyrl.spaces import gym_space_distribution, gym_space_vectorizer
 import gym
 import tensorflow as tf
 
@@ -54,7 +54,7 @@ def algorithm_inner_loop(name, model):
                                                   a2c.feed_dict(rollouts))
     elif name == 'ppo':
         ppo = PPO(model)
-        optimizer = ppo.optimize(learning_rate=1e-2)
+        optimizer = ppo.optimize(learning_rate=1e-3)
         return lambda rollouts: ppo.run_optimize(optimizer, rollouts)
 
 if __name__ == '__main__':

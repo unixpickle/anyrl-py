@@ -77,7 +77,7 @@ class RecurrentAC(TFActorCritic):
         return np.array([var_val] * batch_size)
 
     def step(self, observations, states):
-        vec_obs = self.obs_vectorizer.vectorize(observations)
+        vec_obs = self.obs_vectorizer.to_vecs(observations)
         feed_dict = {
             self._seq_lens: [1] * len(observations),
             self._is_init_state: [False] * len(observations),
@@ -131,7 +131,7 @@ class RecurrentAC(TFActorCritic):
                 masks.append(_pad([[1]]*rollout.num_steps, max_len, value=[0]))
                 rollout_idxs.extend(_pad([rollout_idx]*rollout.num_steps, max_len))
                 timestep_idxs.extend(_pad(list(range(rollout.num_steps)), max_len))
-            vec_obses = [self.obs_vectorizer.vectorize(s) for s in obs_seqs]
+            vec_obses = [self.obs_vectorizer.to_vecs(s) for s in obs_seqs]
             feed_dict = {
                 self._obs_seq_placeholder: vec_obses,
                 self._is_init_state: is_inits,
@@ -186,13 +186,13 @@ class RNNCellAC(RecurrentAC):
     def __init__(self, session, action_dist, obs_vectorizer, make_cell,
                  make_state_tuple=lambda x: x):
         super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
-        obs_seq_shape = (None, None) + obs_vectorizer.shape
+        obs_seq_shape = (None, None) + obs_vectorizer.out_shape
         self._obs_seq_placeholder = tf.placeholder(tf.float32, obs_seq_shape)
         self._mask_placeholder = tf.placeholder(tf.float32, (None, None, 1))
 
         batch_size = tf.shape(self._obs_seq_placeholder)[0]
         seq_len = tf.shape(self._obs_seq_placeholder)[1]
-        obs_size = product(obs_vectorizer.shape)
+        obs_size = product(obs_vectorizer.out_shape)
         flat_shape = (batch_size, seq_len, obs_size)
         flattened_seq = tf.reshape(self._obs_seq_placeholder, flat_shape)
 
@@ -209,9 +209,13 @@ class RNNCellAC(RecurrentAC):
                                              initial_state=state_tuple)
         with tf.variable_scope('actor'):
             zeros = tf.zeros_initializer()
-            self._actor_out_seq = fully_connected(base, action_dist.param_size,
-                                                  activation_fn=None,
-                                                  weights_initializer=zeros)
+            out_size = product(action_dist.param_shape)
+            actor_out_seq = fully_connected(base, out_size,
+                                            activation_fn=None,
+                                            weights_initializer=zeros)
+            self._actor_out_seq = tf.reshape(actor_out_seq,
+                                             ((batch_size, seq_len) +
+                                              action_dist.param_shape))
         with tf.variable_scope('critic'):
             self._critic_out_seq = fully_connected(base, 1, activation_fn=None)
         self._states_out = states

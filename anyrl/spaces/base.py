@@ -4,19 +4,37 @@ Abstractions for probability distributions.
 
 from abc import ABC, abstractmethod, abstractproperty
 
-class Distribution(ABC):
+class Vectorizer(ABC):
+    """
+    A way to convert action or observation space elements
+    to tensors.
+    """
+    @abstractproperty
+    def out_shape(self):
+        """
+        The shape of vectorized space elements.
+        """
+        pass
+
+    @abstractmethod
+    def to_vecs(self, space_elements):
+        """
+        Convert a list-like object of space elements to a
+        list-like object of tensors.
+        """
+        pass
+
+class Distribution(Vectorizer):
     """
     A parametric probability distribution.
 
     All methods operate on and produce TensorFlow tensors
-    except for sample() and to_vecs(), which operate on
-    native arrays and space-specific objects.
+    except for sample().
     """
     @abstractproperty
-    def param_size(self):
+    def param_shape(self):
         """
-        Get the size of the parameter vectors for this
-        distribution.
+        Get the shape of the distribution parameters.
         """
         pass
 
@@ -25,14 +43,11 @@ class Distribution(ABC):
         """
         Create a list of samples from the distribution
         given the batch of parameter vectors.
-        """
-        pass
 
-    @abstractmethod
-    def to_vecs(self, samples):
-        """
-        Convert the sampled space elements into an array
-        that can be fed into log_probs via feed_dict.
+        The param_batch should be some kind of array-like
+        object.
+        The result is a list-like object of space
+        elements.
         """
         pass
 
@@ -41,6 +56,9 @@ class Distribution(ABC):
         """
         Compute the log probability (or log density) of
         the samples, given the parameters.
+
+        You can obtain vectors for sample_vecs via the
+        to_vecs() method.
         """
         pass
 

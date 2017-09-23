@@ -45,7 +45,7 @@ class FeedforwardAC(TFActorCritic):
 
     def step(self, observations, states):
         feed_dict = {
-            self._obs_placeholder: self.obs_vectorizer.vectorize(observations)
+            self._obs_placeholder: self.obs_vectorizer.to_vecs(observations)
         }
         act, val = self.session.run((self._actor_out, self._critic_out), feed_dict)
         return {
@@ -67,7 +67,7 @@ class FeedforwardAC(TFActorCritic):
                 'rollout_idxs': np.take(rollout_idxs, mini_indices),
                 'timestep_idxs': np.take(timestep_idxs, mini_indices),
                 'feed_dict': {
-                    self._obs_placeholder: self.obs_vectorizer.vectorize(sub_obses)
+                    self._obs_placeholder: self.obs_vectorizer.to_vecs(sub_obses)
                 }
             }
 
@@ -89,11 +89,11 @@ class MLP(FeedforwardAC):
         """
         super(MLP, self).__init__(session, action_dist, obs_vectorizer)
 
-        in_batch_shape = (None,) + obs_vectorizer.shape
+        in_batch_shape = (None,) + obs_vectorizer.out_shape
         self._obs_placeholder = tf.placeholder(tf.float32, shape=in_batch_shape)
 
         # Iteratively generate hidden layers.
-        layer_in_size = product(obs_vectorizer.shape)
+        layer_in_size = product(obs_vectorizer.out_shape)
         vectorized_shape = (tf.shape(self._obs_placeholder)[0], layer_in_size)
         layer_in = tf.reshape(self._obs_placeholder, vectorized_shape)
         for layer_idx, out_size in enumerate(layer_sizes):
@@ -102,9 +102,12 @@ class MLP(FeedforwardAC):
             layer_in_size = out_size
 
         with tf.variable_scope('actor'):
-            self._actor_out = fully_connected(layer_in, action_dist.param_size,
-                                              activation_fn=None,
-                                              weights_initializer=tf.zeros_initializer())
+            out_size = product(action_dist.param_shape)
+            actor_out = fully_connected(layer_in, out_size,
+                                        activation_fn=None,
+                                        weights_initializer=tf.zeros_initializer())
+            batch = tf.shape(actor_out)[0]
+            self._actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
 
         with tf.variable_scope('critic'):
             self._critic_out = fully_connected(layer_in, 1, activation_fn=None)

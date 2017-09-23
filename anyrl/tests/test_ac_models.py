@@ -12,9 +12,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple
 
+from anyrl.models import MLP, RNNCellAC
 from anyrl.rollouts import BasicRoller
-from anyrl.dists import gym_space_distribution
-from anyrl.models import gym_space_vectorizer, MLP, RNNCellAC
+from anyrl.spaces import gym_space_distribution, gym_space_vectorizer
 
 """
 The environment to use for testing rollout consistency.

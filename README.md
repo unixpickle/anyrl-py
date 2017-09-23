@@ -9,7 +9,7 @@ There are several different sub-modules in anyrl:
  * `models`: abstractions and concrete implementations of RL models. This includes actor-critic RNNs, MLPs, CNNs, etc. Takes care of sequence padding, BPTT, etc.
  * `rollouts`: APIs for gathering and manipulating batches of episodes or partial episodes. Many RL algorithms include a "gather trajectories" step, and this sub-module fulfills that role.
  * `algos`: well-known learning algorithms like policy gradients or PPO. Also includes mini-algorithms like Generalized Advantage Estimation.
- * `distributions`: parameterized probability distributions. Makes it easy to implement stochastic policies.
+ * `dists`: parameterized probability distributions. Makes it easy to implement stochastic policies.
 
 # Motivation
 
@@ -38,7 +38,7 @@ Here is the current TODO list, organized by sub-module:
   * Way to not record states in `model_outs` (memory saving)
 * `algos`
   * TRPO
-* `distributions`
+* `dists`
   * Bernoulli
   * MultiBinary
   * Tuple

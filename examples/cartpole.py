@@ -4,7 +4,7 @@ OpenAI Gym.
 """
 
 from anyrl.algos import A2C, PPO
-from anyrl.distributions import gym_space_distribution
+from anyrl.dists import gym_space_distribution
 from anyrl.models import MLP, gym_space_vectorizer
 from anyrl.rollouts import BasicRoller, mean_total_reward
 import gym

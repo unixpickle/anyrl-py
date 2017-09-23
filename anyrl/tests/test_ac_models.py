@@ -13,7 +13,7 @@ import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple
 
 from anyrl.rollouts import BasicRoller
-from anyrl.distributions import gym_space_distribution
+from anyrl.dists import gym_space_distribution
 from anyrl.models import gym_space_vectorizer, MLP, RNNCellAC
 
 """

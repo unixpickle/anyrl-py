@@ -1,9 +1,47 @@
 # anyrl-py
 
-This will be a remake of [anyrl](https://github.com/unixpickle/anyrl) in Python. It will likely support TensorFlow, and perhaps other frameworks as well.
+This is a Python remake (and makeover) of [anyrl](https://github.com/unixpickle/anyrl). It is a general-purpose library for Reinforcement Learning which aims to be as modular as possible.
+
+# APIs
+
+There are several different sub-modules in anyrl:
+
+ * `models`: abstractions and concrete implementations of RL models. This includes actor-critic RNNs, MLPs, CNNs, etc. Takes care of sequence padding, BPTT, etc.
+ * `rollouts`: APIs for gathering and manipulating batches of episodes or partial episodes. Many RL algorithms include a "gather trajectories" step, and this sub-module fulfills that role.
+ * `algos`: well-known learning algorithms like policy gradients or PPO. Also includes mini-algorithms like Generalized Advantage Estimation.
+ * `distributions`: parameterized probability distributions. Makes it easy to implement stochastic policies.
 
 # Motivation
 
-Currently, most RL code out there is very restricted and not properly decoupled. The way things work in anyrl is fairly modular and flexible. The goal is to decouple agents, learning algorithms, trajectories, and things like GAE.
+Currently, most RL code out there is very restricted and not properly decoupled. In contrast, anyrl aims to be extremely modular and flexible. The goal is to decouple agents, learning algorithms, trajectories, and things like GAE.
 
-For example, anyrl decouples rollouts from the learning algorithm when possible. This way, you can gather a batch of rollouts and then pass it to TRPO, PPO, vanilla PG, etc. This makes it possible to gather rollouts in several different ways: with fixed-length trajectories, with full-length episodes, with certain wallclock constraints, etc. Further, and more obviously, it means that you don't have to rewrite rollout code for every RL algorithm. However, algorithms like A3C and Evolution Strategies may have specific ways of performing rollouts.
+For example, anyrl decouples rollouts from the learning algorithm (when possible). This way, you can gather rollouts in several different ways and still feed the results into one learning algorithm. Further, and more obviously, you don't have to rewrite rollout code for every new RL algorithm you implement. However, algorithms like A3C and Evolution Strategies may have specific ways of performing rollouts that can't rely on the rollout API.
+
+# Use of TensorFlow
+
+This project relies on TensorFlow for models and training algorithms. However, anyrl APIs are framework-agnostic when possible. For example, the rollout API can be used with any policy, whether it's a TensorFlow neural network or a native-Python decision forest.
+
+# TODO
+
+Here is the current TODO list, organized by sub-module:
+
+* `models`
+  * CNN models
+  * Unshared actor-critics for TRPO and the like.
+  * Vectorizers:
+    * Tuples
+    * Discrete
+    * MultiBinary
+    * Tests for all vectorizers.
+* `rollouts`
+  * Roller for gathering episodes with a `BatchedEnv`.
+  * Way to not record states in `model_outs` (memory saving)
+  * Way to get total episode rewards for truncated rollers
+* `algos`
+  * TRPO
+* `distributions`
+  * Bernoulli
+  * MultiBinary
+  * Tuple
+  * Gaussian
+  * Tests for all distributions.

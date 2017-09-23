@@ -94,6 +94,9 @@ class ModelTester:
             model_out = rollouts[rollout_idx].model_outs[timestep_idx]
             step_action = np.array(model_out['action_params'][0])
             step_value = model_out['values'][0]
+            self.test_case.assertEqual(step_action.shape, np.array(action).shape)
+            self.test_case.assertEqual(step_action.shape,
+                                       self.model.action_dist.param_shape)
             self.test_case.assertTrue(np.amax(step_action - np.array(action)) < 1e-4)
             self.test_case.assertTrue(abs(value[0] - step_value) < 1e-4)
 

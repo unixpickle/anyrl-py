@@ -60,6 +60,10 @@ class AsyncEnv(ABC):
         Wait for a reset_start() to finish.
 
         Returns an observation.
+
+        The resulting array belongs to the caller.
+        It should not be modified after-the-fact by the
+        environment.
         """
         pass
 
@@ -82,6 +86,10 @@ class AsyncEnv(ABC):
 
         If done is true, then the environment was reset
         and the new observation was taken.
+
+        The resulting arrays belong to the caller.
+        They should not be modified after-the-fact by the
+        environment.
         """
         pass
 
@@ -138,6 +146,10 @@ class BatchedEnv(ABC):
         Wait for a reset_start() to finish.
 
         Returns a list-like object of observations.
+
+        The resulting array belongs to the caller.
+        It should not be modified after-the-fact by the
+        environment.
         """
         pass
 
@@ -163,6 +175,10 @@ class BatchedEnv(ABC):
         If a done value is true, then the environment was
         automatically reset and the new observation was
         returned.
+
+        The resulting arrays belong to the caller.
+        They should not be modified after-the-fact by the
+        environment.
         """
         pass
 

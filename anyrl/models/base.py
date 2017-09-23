@@ -38,10 +38,8 @@ class Model(ABC):
           'actions': batch of actions, one per env
           'states': new states after the step
           'values': (optional) predicted value function
-
-        The returned dict may include an 'action_params'
-        key as well, indicating the parameters that were
-        fed into an action distribution.
+          'action_params': (optional) parameters that were
+            fed into the action distribution.
         """
         pass
 

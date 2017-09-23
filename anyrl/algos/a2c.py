@@ -37,23 +37,17 @@ class A2C:
         self._actions = tf.placeholder(tf.float32,
                                        (None,) + model.action_dist.out_shape)
 
-        actor, critic, mask = model.batch_outputs()
+        self._create_objective(vf_coeff, entropy_reg)
 
-        log_probs = model.action_dist.log_probs(actor, self._actions)
-        entropies = model.action_dist.entropy(actor)
-        critic_error = self._target_vals - critic
-        self.actor_loss = util.masked_mean(mask, log_probs * self._advs)
-        self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
-        self.entropy = util.masked_mean(mask, entropies)
-        self.objective = (self.actor_loss + entropy_reg * self.entropy -
-                          vf_coeff * self.critic_loss)
-
-    def feed_dict(self, rollouts):
+    def feed_dict(self, rollouts, batch=None):
         """
         Generate a TensorFlow feed_dict that feeds the
         rollouts into the objective.
+
+        If no batch is specified, all rollouts are used.
         """
-        batch = next(self.model.batches(rollouts))
+        if batch is None:
+            batch = next(self.model.batches(rollouts))
         advs = self._adv_est.advantages(rollouts)
         targets = self._adv_est.targets(rollouts)
         actions = util.select_model_out_from_batch('actions', rollouts, batch)
@@ -79,6 +73,21 @@ class A2C:
                                             decay=rms_decay,
                                             epsilon=rms_epsilon)
         return trainer.apply_gradients(list(zip(grads, self.variables)))
+
+    def _create_objective(self, vf_coeff, entropy_reg):
+        """
+        Build up the objective graph.
+        """
+        actor, critic, mask = self.model.batch_outputs()
+        dist = self.model.action_dist
+        log_probs = dist.log_probs(actor, self._actions)
+        entropies = dist.entropy(actor)
+        critic_error = self._target_vals - critic
+        self.actor_loss = util.masked_mean(mask, log_probs * self._advs)
+        self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
+        self.entropy = util.masked_mean(mask, entropies)
+        self.objective = (self.actor_loss + entropy_reg * self.entropy -
+                          vf_coeff * self.critic_loss)
 
     # TODO: API that supports schedules and runs the
     # entire training loop for us.

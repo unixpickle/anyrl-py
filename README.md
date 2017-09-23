@@ -31,7 +31,6 @@ Here is the current TODO list, organized by sub-module:
 * `rollouts`
   * Maybe: way to not record states in `model_outs` (memory saving)
 * `algos`
-  * Make PPO a subclass of A2C
   * TRPO
 * `spaces`
   * Bernoulli

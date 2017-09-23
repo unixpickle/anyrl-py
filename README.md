@@ -29,6 +29,7 @@ Here is the current TODO list, organized by sub-module:
   * CNN models
   * Unshared actor-critics for TRPO and the like.
   * Vectorizers:
+    * Actually use vectorizers.
     * Tuples
     * Discrete
     * MultiBinary

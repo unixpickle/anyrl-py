@@ -29,13 +29,9 @@ Here is the current TODO list, organized by sub-module:
   * CNN models
   * Unshared actor-critics for TRPO and the like.
   * Vectorizers:
-    * Tuples
-    * Discrete
-    * MultiBinary
-    * Tests for all vectorizers.
+    * Combine vectorizers with distributions.
 * `rollouts`
-  * Roller for gathering episodes with a `BatchedEnv`.
-  * Way to not record states in `model_outs` (memory saving)
+  * Maybe: way to not record states in `model_outs` (memory saving)
 * `algos`
   * TRPO
 * `dists`

@@ -179,6 +179,68 @@ class TruncatedRoller(Roller):
                     rollout.model_outs.append(model_out)
                     completed.append(rollout)
 
+class EpisodeRoller(TruncatedRoller):
+    """
+    Gather rollouts from a BatchedEnv with step and
+    episode quotas.
+
+    An EpisodeRoller does not have any bias towards
+    shorter episodes.
+    As a result, it must gather at least as many episodes
+    as there are environments in batched_env.
+    """
+    def __init__(self, batched_env, model, min_episodes=1, min_steps=1):
+        self.min_episodes = min_episodes
+        self.min_steps = min_steps
+
+        # A batch of booleans in the shape of the envs.
+        # An environment gets masked out once we have met
+        # all the criteria and aren't looking for another
+        # episode.
+        self._env_mask = None
+
+        super(EpisodeRoller, self).__init__(batched_env, model, 0)
+
+    def reset(self):
+        super(EpisodeRoller, self).reset()
+        inner_dim = self.batched_env.num_envs_per_sub_batch
+        outer_dim = self.batched_env.num_sub_batches
+        self._env_mask = [[True]*inner_dim for _ in range(outer_dim)]
+
+    def rollouts(self):
+        """
+        Gather full-episode rollouts.
+        """
+        self.reset()
+        completed_rollouts = []
+        running_rollouts = self._starting_rollouts()
+        while self._any_envs_running():
+            self._step(completed_rollouts, running_rollouts)
+        return completed_rollouts
+
+    def _complete_rollout(self, completed, running, batch_idx, env_idx):
+        comp_dest = completed
+        if not self._env_mask[batch_idx][env_idx]:
+            comp_dest = []
+        super(EpisodeRoller, self)._complete_rollout(comp_dest, running,
+                                                     batch_idx, env_idx)
+        if self._criteria_met(completed):
+            self._env_mask[batch_idx][env_idx] = False
+
+    def _criteria_met(self, completed):
+        """
+        Check if the stopping criteria are met.
+        """
+        total_steps = sum([r.num_steps for r in completed])
+        total_eps = len(completed)
+        return total_steps >= self.min_steps and total_eps >= self.min_episodes
+
+    def _any_envs_running(self):
+        """
+        Check if any environment is not masked out.
+        """
+        return any([any(masks) for masks in self._env_mask])
+
 def _reduce_states(state_batch, env_idx):
     """
     Reduce a batch of states to a batch of one state.

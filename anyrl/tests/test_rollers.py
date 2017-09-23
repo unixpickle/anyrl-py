@@ -4,7 +4,7 @@ Test various Roller implementations.
 
 import unittest
 
-from anyrl.rollouts import BasicRoller, TruncatedRoller, Rollout
+from anyrl.rollouts import BasicRoller, TruncatedRoller, EpisodeRoller, Rollout
 from anyrl.tests import SimpleEnv, SimpleModel, DummyBatchedEnv
 
 class TruncatedRollerTest(unittest.TestCase):
@@ -109,6 +109,79 @@ class TruncatedRollerTest(unittest.TestCase):
 
         _compare_rollout_batch(self, unbatched_rollouts, batched_rollouts,
                                ordered=False)
+
+class EpisodeRollerTest(unittest.TestCase):
+    """
+    Tests for EpisodeRoller.
+    """
+    def test_basic_equivalence(self):
+        """
+        Test that EpisodeRoller is equivalent to a
+        BasicRoller when run on a single environment.
+        """
+        state_opts = [(False, False), (True, False), (True, True)]
+        kwargs_opts = [{'min_episodes': 5}, {'min_steps': 7}]
+        for state_opt in state_opts:
+            for kwargs_opt in kwargs_opts:
+                self._test_basic_equivalence_case(*state_opt, **kwargs_opt)
+
+    def test_batch_equivalence(self):
+        """
+        Test that EpisodeRoller is equivalent to a
+        BasicRoller when run on a batch of envs.
+        """
+        state_opts = [(False, False), (True, False), (True, True)]
+        kwargs_opts = [{'min_episodes': 5}, {'min_steps': 7}]
+        for state_opt in state_opts:
+            for kwargs_opt in kwargs_opts:
+                self._test_batch_equivalence_case(*state_opt, **kwargs_opt)
+
+    def _test_basic_equivalence_case(self, stateful, state_tuple,
+                                     **roller_kwargs):
+        """
+        Test BasicRoller equivalence for a single env in a
+        specific case.
+        """
+        env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+        env = env_fn()
+        model = SimpleModel(env.action_space.low.shape,
+                            stateful=stateful,
+                            state_tuple=state_tuple)
+        basic_roller = BasicRoller(env, model, **roller_kwargs)
+        expected = basic_roller.rollouts()
+
+        batched_env = DummyBatchedEnv([env_fn], 1)
+        ep_roller = EpisodeRoller(batched_env, model, **roller_kwargs)
+        actual = ep_roller.rollouts()
+        _compare_rollout_batch(self, actual, expected)
+
+    def _test_batch_equivalence_case(self, stateful, state_tuple,
+                                     **roller_kwargs):
+        """
+        Test BasicRoller equivalence when using a batch of
+        environments.
+        """
+        env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+        model = SimpleModel((4, 5),
+                            stateful=stateful,
+                            state_tuple=state_tuple)
+
+        batched_env = DummyBatchedEnv([env_fn]*21, 7)
+        ep_roller = EpisodeRoller(batched_env, model, **roller_kwargs)
+        actual = ep_roller.rollouts()
+
+        total_steps = sum([r.num_steps for r in actual])
+        self.assertTrue(len(actual) >= ep_roller.min_episodes)
+        self.assertTrue(total_steps >= ep_roller.min_steps)
+
+        if 'min_steps' not in roller_kwargs:
+            num_eps = ep_roller.min_episodes + batched_env.num_envs - 1
+            self.assertTrue(len(actual) == num_eps)
+
+        basic_roller = BasicRoller(env_fn(), model, min_episodes=len(actual))
+        expected = basic_roller.rollouts()
+
+        _compare_rollout_batch(self, actual, expected)
 
 def _compare_rollout_batch(test, rs1, rs2, ordered=True):
     """

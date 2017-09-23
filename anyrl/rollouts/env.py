@@ -116,6 +116,13 @@ class BatchedEnv(ABC):
     Thus, it's best to wait for jobs in the same order
     that you started them.
     """
+    @property
+    def num_envs(self):
+        """
+        The total number of environments.
+        """
+        return self.num_sub_batches * self.num_envs_per_sub_batch
+
     @abstractproperty
     def num_sub_batches(self):
         """

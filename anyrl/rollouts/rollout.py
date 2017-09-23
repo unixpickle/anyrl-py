@@ -33,6 +33,10 @@ class Rollout:
     # pylint: disable=R0913
     def __init__(self, observations, model_outs, rewards, start_state,
                  trunc_end=False, prev_steps=0, prev_reward=0):
+        assert len(observations) == len(model_outs)
+        assert len(rewards) <= len(observations)
+        assert len(observations) <= len(rewards)+1
+
         self.observations = observations
         self.model_outs = model_outs
         self.rewards = rewards

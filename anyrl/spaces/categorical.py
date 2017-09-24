@@ -1,5 +1,5 @@
 """
-Parameteric categorical distributions.
+APIs for categorical (discrete) spaces.
 """
 
 import numpy as np

@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from anyrl.spaces import CategoricalSoftmax, BoxGaussian
+from anyrl.spaces import CategoricalSoftmax, BoxGaussian, MultiBernoulli
 
 # Number of times to run sample-based tests.
 NUM_SAMPLE_TRIES = 3
@@ -157,6 +157,18 @@ class TestBoxGaussian(unittest.TestCase):
         """
         dist = BoxGaussian(np.array([[-3, 7, 1], [1, 2, 3]]),
                            np.array([[5, 7.1, 3], [2, 3.1, 4]]))
+        tester = DistributionTester(self, dist)
+        tester.test_all()
+
+class TestMultiBernoulli(unittest.TestCase):
+    """
+    Tests for the MultiBernoulli distribution.
+    """
+    def test_generic(self):
+        """
+        Run generic tests with DistributionTester.
+        """
+        dist = MultiBernoulli(3)
         tester = DistributionTester(self, dist)
         tester.test_all()
 

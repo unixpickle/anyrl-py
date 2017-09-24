@@ -33,6 +33,6 @@ Here is the current TODO list, organized by sub-module:
 * `algos`
   * TRPO
 * `spaces`
-  * Bernoulli
-  * MultiBinary
+  * Use one-hots for categorical (good for observations)
+  * Faster categorical sampling
   * Tuple

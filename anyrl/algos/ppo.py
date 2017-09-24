@@ -18,7 +18,6 @@ class PPO(A2C):
     For more on PPO, see:
     https://arxiv.org/abs/1707.06347
     """
-    # pylint: disable=R0913
     def __init__(self,
                  model,
                  epsilon=0.2,

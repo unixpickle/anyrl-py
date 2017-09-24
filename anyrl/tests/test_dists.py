@@ -51,7 +51,7 @@ class DistributionTester:
             param_placeholder: self._random_params(),
             sample_placeholder: self.dist.to_vecs(samples)
         }
-        log_probs = self.dist.log_probs(param_placeholder, sample_placeholder)
+        log_probs = self.dist.log_prob(param_placeholder, sample_placeholder)
         entropies = self.dist.entropy(param_placeholder)
         kls = self.dist.kl_divergence(param_placeholder, param_placeholder)
         outs = self.session.run([log_probs, entropies, kls], feed_dict=feed_dict)
@@ -65,7 +65,7 @@ class DistributionTester:
         """
         param_placeholder = tf.placeholder(tf.float32, self._param_batch_shape())
         sample_placeholder = tf.placeholder(tf.float32, self._out_batch_shape())
-        log_probs = self.dist.log_probs(param_placeholder, sample_placeholder)
+        log_probs = self.dist.log_prob(param_placeholder, sample_placeholder)
         entropy = tf.reduce_mean(self.dist.entropy(param_placeholder))
         for _ in range(NUM_SAMPLE_TRIES):
             params = self._random_params()
@@ -88,8 +88,8 @@ class DistributionTester:
         param_1_placeholder = tf.placeholder(tf.float32, self._param_batch_shape())
         param_2_placeholder = tf.placeholder(tf.float32, self._param_batch_shape())
         sample_placeholder = tf.placeholder(tf.float32, self._out_batch_shape())
-        log_probs_1 = self.dist.log_probs(param_1_placeholder, sample_placeholder)
-        log_probs_2 = self.dist.log_probs(param_2_placeholder, sample_placeholder)
+        log_probs_1 = self.dist.log_prob(param_1_placeholder, sample_placeholder)
+        log_probs_2 = self.dist.log_prob(param_2_placeholder, sample_placeholder)
         real_kl = tf.reduce_mean(self.dist.kl_divergence(param_1_placeholder,
                                                          param_2_placeholder))
         for _ in range(NUM_SAMPLE_TRIES):
@@ -124,7 +124,7 @@ class TestCategoricalSoftmax(unittest.TestCase):
     """
     Tests for the CategoricalSoftmax distribution.
     """
-    def test_log_probs(self):
+    def test_log_prob(self):
         """
         Test log probabilities on a known case.
         """
@@ -134,7 +134,7 @@ class TestCategoricalSoftmax(unittest.TestCase):
                                      dtype=tf.float32)
                 samples = tf.constant(np.array([[0], [1], [2]]), dtype=tf.float32)
                 dist = CategoricalSoftmax(3)
-                log_probs = np.array(sess.run(dist.log_probs(params, samples)))
+                log_probs = np.array(sess.run(dist.log_prob(params, samples)))
                 expected = np.array([0.090031, 0.244728, 0.665241])
                 diff = np.amax(expected - np.exp(log_probs))
                 self.assertTrue(diff < 1e-4)

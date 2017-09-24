@@ -32,8 +32,8 @@ class PPO(A2C):
         actor, critic, mask = self.model.batch_outputs()
 
         dist = self.model.action_dist
-        new_log_probs = dist.log_probs(actor, self._actions)
-        old_log_probs = dist.log_probs(self._orig_action_params, self._actions)
+        new_log_probs = dist.log_prob(actor, self._actions)
+        old_log_probs = dist.log_prob(self._orig_action_params, self._actions)
         clipped_obj = _clipped_objective(new_log_probs, old_log_probs,
                                          self._advs, self._epsilon)
         critic_error = self._target_vals - critic

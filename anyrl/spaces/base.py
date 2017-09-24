@@ -52,7 +52,7 @@ class Distribution(Vectorizer):
         pass
 
     @abstractmethod
-    def log_probs(self, param_batch, sample_vecs):
+    def log_prob(self, param_batch, sample_vecs):
         """
         Compute the log probability (or log density) of
         the samples, given the parameters.

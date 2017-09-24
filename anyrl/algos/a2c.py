@@ -80,7 +80,7 @@ class A2C:
         """
         actor, critic, mask = self.model.batch_outputs()
         dist = self.model.action_dist
-        log_probs = dist.log_probs(actor, self._actions)
+        log_probs = dist.log_prob(actor, self._actions)
         entropies = dist.entropy(actor)
         critic_error = self._target_vals - critic
         self.actor_loss = util.masked_mean(mask, log_probs * self._advs)

@@ -34,7 +34,7 @@ class CategoricalSoftmax(Distribution):
         probs = unnorm / np.reshape(np.sum(unnorm, axis=-1), col_shape)
         return [np.random.choice(len(p), p=p) for p in probs]
 
-    def log_probs(self, param_batch, sample_vecs):
+    def log_prob(self, param_batch, sample_vecs):
         loss_func = tf.nn.softmax_cross_entropy_with_logits
         indices = tf.to_int32(sample_vecs)
         one_hot = tf.one_hot(indices=indices, depth=self.num_options)

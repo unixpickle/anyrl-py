@@ -3,6 +3,7 @@ Helpers for implementing models.
 """
 
 import numpy as np
+import tensorflow as tf
 
 def mini_batches(size_per_index, batch_size=None):
     """
@@ -34,6 +35,29 @@ def _infinite_random_shuffle(num_elements):
     while True:
         for elem in np.random.permutation(num_elements):
             yield elem
+
+def mix_init_states(is_init, init_states, start_states):
+    """
+    Mix initial variables with start state placeholders.
+    """
+    if isinstance(init_states, tuple):
+        assert isinstance(start_states, tuple)
+        res = []
+        for sub_init, sub_start in zip(init_states, start_states):
+            res.append(mix_init_states(is_init, sub_init, sub_start))
+        return tuple(res)
+    batch_size = tf.shape(start_states)[0]
+    return tf.where(is_init, _batchify(batch_size, init_states), start_states)
+
+def _batchify(batch_size, tensor):
+    """
+    Repeat a tensor the given number of times in the outer
+    dimension.
+    """
+    batchable = tf.reshape(tensor, tf.concat([[1], tf.shape(tensor)], axis=0))
+    ones = tf.ones(tensor.shape.ndims, dtype=tf.int32)
+    repeat_count = tf.concat([[batch_size], ones], axis=0)
+    return tf.tile(batchable, repeat_count)
 
 def product(vals):
     """

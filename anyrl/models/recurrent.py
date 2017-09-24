@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
-from .util import mini_batches, product
+from .util import mini_batches, product, mix_init_states
 
 # pylint: disable=E1129
 
@@ -200,8 +200,9 @@ class RNNCellAC(RecurrentAC):
             cell = make_cell()
         with tf.variable_scope('states'):
             self._create_state_fields(tf.float32, cell.state_size)
-        init_state = _mix_init_states(self._is_init_state, self._init_state_vars,
-                                      self._first_state_placeholders)
+        init_state = mix_init_states(self._is_init_state,
+                                     self._init_state_vars,
+                                     self._first_state_placeholders)
         with tf.variable_scope('base'):
             state_tuple = make_state_tuple(init_state)
             base, states = tf.nn.dynamic_rnn(cell, flattened_seq,
@@ -225,29 +226,6 @@ def _pad(unpadded, length, value=0):
     Pad the list with the given value.
     """
     return unpadded + [value] * (length - len(unpadded))
-
-def _mix_init_states(is_init, init_states, start_states):
-    """
-    Mix initial variables with start state placeholders.
-    """
-    if isinstance(init_states, tuple):
-        assert isinstance(start_states, tuple)
-        res = []
-        for sub_init, sub_start in zip(init_states, start_states):
-            res.append(_mix_init_states(is_init, sub_init, sub_start))
-        return tuple(res)
-    batch_size = tf.shape(start_states)[0]
-    return tf.where(is_init, _batchify(batch_size, init_states), start_states)
-
-def _batchify(batch_size, tensor):
-    """
-    Repeat a tensor the given number of times in the outer
-    dimension.
-    """
-    batchable = tf.reshape(tensor, tf.concat([[1], tf.shape(tensor)], axis=0))
-    ones = tf.ones(tensor.shape.ndims, dtype=tf.int32)
-    repeat_count = tf.concat([[batch_size], ones], axis=0)
-    return tf.tile(batchable, repeat_count)
 
 def _add_outer_none(shape):
     """

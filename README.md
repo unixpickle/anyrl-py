@@ -34,4 +34,5 @@ Here is the current TODO list, organized by sub-module:
   * TRPO
   * Schedules for learning rates & other hyper-parameters
 * `spaces`
-  * Tuple
+  * Dict
+  * MultiDiscrete

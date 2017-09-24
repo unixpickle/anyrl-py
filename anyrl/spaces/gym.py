@@ -4,6 +4,8 @@ Conversions to and from Gym spaces.
 
 import gym.spaces as spaces
 
+from .aggregate import TupleDistribution
+from .binary import MultiBernoulli
 from .categorical import CategoricalSoftmax
 from .continuous import BoxGaussian
 
@@ -28,6 +30,11 @@ def gym_space_distribution(space):
         return CategoricalSoftmax(space.n)
     elif isinstance(space, spaces.Box):
         return BoxGaussian(space.low, space.high)
+    elif isinstance(space, spaces.MultiBinary):
+        return MultiBernoulli(space.n)
+    elif isinstance(space, spaces.Tuple):
+        sub_dists = tuple(gym_space_distribution(s) for s in space.spaces)
+        return TupleDistribution(sub_dists)
     raise UnsupportedGymSpace(space)
 
 def gym_space_vectorizer(space):

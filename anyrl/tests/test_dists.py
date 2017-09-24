@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from anyrl.spaces import CategoricalSoftmax, BoxGaussian, MultiBernoulli
+from anyrl.spaces import CategoricalSoftmax, BoxGaussian, MultiBernoulli, TupleDistribution
 
 # Number of times to run sample-based tests.
 NUM_SAMPLE_TRIES = 3
@@ -173,6 +173,35 @@ class TestMultiBernoulli(unittest.TestCase):
         Run generic tests with DistributionTester.
         """
         dist = MultiBernoulli(3)
+        tester = DistributionTester(self, dist)
+        tester.test_all()
+
+class TestTuple(unittest.TestCase):
+    """
+    Tests for tuples of distributions.
+    """
+    def test_unpack_shape(self):
+        """
+        Make sure that unpack_outs gives the correct
+        shape.
+        """
+        box_dist = BoxGaussian(np.array([[-3, 7, 1], [1, 2, 3.7]]),
+                               np.array([[5, 7.1, 1.5], [2, 2.5, 4]]))
+        dist = TupleDistribution((MultiBernoulli(3), box_dist))
+        vec = np.array([[0, 1, 0, 1, 2, 3, 4, 5, 6],
+                        [1, 0, 1, 6, 5, 4, 3, 2, 1]])
+        unpacked = dist.unpack_outs(vec)
+        self.assertEqual(len(unpacked), 2)
+        self.assertEqual(np.array(unpacked[0]).shape, (2, 3))
+        self.assertEqual(np.array(unpacked[1]).shape, (2, 2, 3))
+
+    def test_generic(self):
+        """
+        Run generic tests with DistributionTester.
+        """
+        box_dist = BoxGaussian(np.array([[-3, 7, 1], [1, 2, 3.7]]),
+                               np.array([[5, 7.1, 1.5], [2, 2.5, 4]]))
+        dist = TupleDistribution((MultiBernoulli(3), box_dist))
         tester = DistributionTester(self, dist)
         tester.test_all()
 

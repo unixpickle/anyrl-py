@@ -15,19 +15,19 @@ class BoxGaussian(Distribution):
     parameterized as a diagonal gaussian.
     """
     def __init__(self, low, high):
-        self._low = low
-        self._high = high
+        self.low = low
+        self.high = high
 
     @property
     def out_shape(self):
-        return self._low.shape
+        return self.low.shape
 
     def to_vecs(self, space_elements):
         return np.array(space_elements)
 
     @property
     def param_shape(self):
-        return self._low.shape + (2,)
+        return self.low.shape + (2,)
 
     def sample(self, param_batch):
         params = np.array(param_batch)
@@ -63,8 +63,8 @@ class BoxGaussian(Distribution):
         """
         means = param_batch[..., 0]
         log_stddevs = param_batch[..., 1]
-        bias = (self._high + self._low) / 2
-        scale = (self._high - self._low) / 2
+        bias = (self.high + self.low) / 2
+        scale = (self.high - self.low) / 2
         return means + bias, log_stddevs + np.log(scale)
 
 def _reduce_sums(batch):

@@ -33,8 +33,8 @@ Here is the current TODO list, organized by sub-module:
 * `algos`
   * TRPO
 * `spaces`
+  * Rename `log_probs` to `log_prob` for consistency.
   * Bernoulli
   * MultiBinary
   * Tuple
   * Gaussian
-  * Tests for all distributions (including shapes).

@@ -28,9 +28,10 @@ class CategoricalSoftmax(Distribution):
 
     def sample(self, param_batch):
         param_batch = np.array(param_batch)
-        max_vals = param_batch.max(axis=-1)
+        col_shape = (len(param_batch), 1)
+        max_vals = np.reshape(param_batch.max(axis=-1), col_shape)
         unnorm = np.exp(param_batch - max_vals)
-        probs = unnorm / np.sum(unnorm, axis=-1)
+        probs = unnorm / np.reshape(np.sum(unnorm, axis=-1), col_shape)
         return [np.random.choice(len(p), p=p) for p in probs]
 
     def log_probs(self, param_batch, sample_vecs):
@@ -48,4 +49,4 @@ class CategoricalSoftmax(Distribution):
         log_probs_1 = tf.nn.log_softmax(param_batch_1)
         log_probs_2 = tf.nn.log_softmax(param_batch_2)
         probs = tf.exp(log_probs_1)
-        return tf.reduce_sum(probs * (log_probs_1 - log_probs_2))
+        return tf.reduce_sum(probs * (log_probs_1 - log_probs_2), axis=-1)

@@ -2,6 +2,14 @@
 
 This is a Python remake (and makeover) of [anyrl](https://github.com/unixpickle/anyrl). It is a general-purpose library for Reinforcement Learning which aims to be as modular as possible.
 
+# Installation
+
+You can install anyrl with pip:
+
+```
+pip install anyrl
+```
+
 # APIs
 
 There are several different sub-modules in anyrl:

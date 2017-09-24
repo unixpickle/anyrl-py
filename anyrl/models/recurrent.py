@@ -205,20 +205,11 @@ class RNNCellAC(RecurrentAC):
             base, states = tf.nn.dynamic_rnn(cell, cell_input,
                                              sequence_length=self._seq_lens,
                                              initial_state=state_tuple)
-        with tf.variable_scope('actor'):
-            zeros = tf.zeros_initializer()
-            out_size = product(action_dist.param_shape)
-            actor_out_seq = fully_connected(base, out_size,
-                                            activation_fn=None,
-                                            weights_initializer=zeros)
-            batch_size = tf.shape(self._obs_seq_placeholder)[0]
-            seq_len = tf.shape(self._obs_seq_placeholder)[1]
-            self._actor_out_seq = tf.reshape(actor_out_seq,
-                                             ((batch_size, seq_len) +
-                                              action_dist.param_shape))
-        with tf.variable_scope('critic'):
-            self._critic_out_seq = fully_connected(base, 1, activation_fn=None)
         self._states_out = states
+        with tf.variable_scope('actor'):
+            self._actor_out_seq = self._actor(base)
+        with tf.variable_scope('critic'):
+            self._critic_out_seq = self._critic(base)
 
     def _cell_input_sequences(self):
         """
@@ -233,6 +224,32 @@ class RNNCellAC(RecurrentAC):
         obs_size = product(self.obs_vectorizer.out_shape)
         flat_shape = (batch_size, seq_len, obs_size)
         return tf.reshape(self._obs_seq_placeholder, flat_shape)
+
+    def _actor(self, cell_outputs):
+        """
+        Transform the cell outputs into action parameters.
+
+        The default behavior is to use a zero
+        fully-connected layer with no activation.
+        """
+        zeros = tf.zeros_initializer()
+        out_size = product(self.action_dist.param_shape)
+        actor_out_seq = fully_connected(cell_outputs, out_size,
+                                        activation_fn=None,
+                                        weights_initializer=zeros)
+        seq_shape = tf.shape(actor_out_seq)
+        new_shape = ((seq_shape[0], seq_shape[1]) +
+                     self.action_dist.param_shape)
+        return tf.reshape(actor_out_seq, new_shape)
+
+    def _critic(self, cell_outputs):
+        """
+        Set self._critic_out_seq.
+
+        The default behavior is to use a fully-connected
+        layer with no activation.
+        """
+        return fully_connected(cell_outputs, 1, activation_fn=None)
 
 def _pad(unpadded, length, value=0):
     """

@@ -34,5 +34,4 @@ Here is the current TODO list, organized by sub-module:
   * TRPO
 * `spaces`
   * Use one-hots for categorical (good for observations)
-  * Faster categorical sampling
   * Tuple

@@ -27,12 +27,11 @@ class CategoricalSoftmax(Distribution):
         return (self.num_options,)
 
     def sample(self, param_batch):
-        param_batch = np.array(param_batch)
-        col_shape = (len(param_batch), 1)
-        max_vals = np.reshape(param_batch.max(axis=-1), col_shape)
-        unnorm = np.exp(param_batch - max_vals)
-        probs = unnorm / np.reshape(np.sum(unnorm, axis=-1), col_shape)
-        return [np.random.choice(len(p), p=p) for p in probs]
+        dist = softmax(np.array(param_batch))
+        cumulative_dist = np.cumsum(dist, axis=-1)
+        sampled = np.random.rand(len(param_batch), 1)
+        large_enoughs = cumulative_dist > sampled
+        return np.argmax(large_enoughs, axis=-1)
 
     def log_prob(self, param_batch, sample_vecs):
         loss_func = tf.nn.softmax_cross_entropy_with_logits
@@ -50,3 +49,12 @@ class CategoricalSoftmax(Distribution):
         log_probs_2 = tf.nn.log_softmax(param_batch_2)
         probs = tf.exp(log_probs_1)
         return tf.reduce_sum(probs * (log_probs_1 - log_probs_2), axis=-1)
+
+def softmax(param_batch):
+    """
+    Compute a batched softmax on the minor dimension.
+    """
+    col_shape = (len(param_batch), 1)
+    max_vals = np.reshape(param_batch.max(axis=-1), col_shape)
+    unnorm = np.exp(param_batch - max_vals)
+    return unnorm / np.reshape(np.sum(unnorm, axis=-1), col_shape)

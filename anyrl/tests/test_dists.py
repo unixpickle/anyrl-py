@@ -29,6 +29,7 @@ class DistributionTester:
         """
         Run all generic tests.
         """
+        np.random.seed(1337)
         with tf.Graph().as_default():
             self.session = tf.Session()
             with self.session:

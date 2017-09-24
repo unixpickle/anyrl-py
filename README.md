@@ -33,5 +33,4 @@ Here is the current TODO list, organized by sub-module:
 * `algos`
   * TRPO
 * `spaces`
-  * Use one-hots for categorical (good for observations)
   * Tuple

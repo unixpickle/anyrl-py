@@ -17,10 +17,12 @@ class CategoricalSoftmax(Distribution):
 
     @property
     def out_shape(self):
-        return (1,)
+        return (self.num_options,)
 
     def to_vecs(self, space_elements):
-        return np.reshape(np.array(space_elements), (-1, 1))
+        res = np.zeros((len(space_elements), self.num_options))
+        res[np.arange(len(space_elements)), space_elements] = 1
+        return res
 
     @property
     def param_shape(self):
@@ -35,9 +37,7 @@ class CategoricalSoftmax(Distribution):
 
     def log_prob(self, param_batch, sample_vecs):
         loss_func = tf.nn.softmax_cross_entropy_with_logits
-        indices = tf.to_int32(sample_vecs)
-        one_hot = tf.one_hot(indices=indices, depth=self.num_options)
-        return tf.negative(loss_func(labels=one_hot, logits=param_batch))
+        return tf.negative(loss_func(labels=sample_vecs, logits=param_batch))
 
     def entropy(self, param_batch):
         log_probs = tf.nn.log_softmax(param_batch)

@@ -132,10 +132,13 @@ class TestCategoricalSoftmax(unittest.TestCase):
             with tf.Session() as sess:
                 params = tf.constant(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
                                      dtype=tf.float32)
-                samples = tf.constant(np.array([[0], [1], [2]]), dtype=tf.float32)
+                samples = tf.constant(np.array([[0, 0, 1],
+                                                [1, 0, 0],
+                                                [0, 1, 0]]),
+                                      dtype=tf.float32)
                 dist = CategoricalSoftmax(3)
                 log_probs = np.array(sess.run(dist.log_prob(params, samples)))
-                expected = np.array([0.090031, 0.244728, 0.665241])
+                expected = np.array([0.665241, 0.090031, 0.244728])
                 diff = np.amax(expected - np.exp(log_probs))
                 self.assertTrue(diff < 1e-4)
 

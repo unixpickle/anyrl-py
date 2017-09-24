@@ -32,5 +32,6 @@ Here is the current TODO list, organized by sub-module:
   * Maybe: way to not record states in `model_outs` (memory saving)
 * `algos`
   * TRPO
+  * Schedules for learning rates & other hyper-parameters
 * `spaces`
   * Tuple

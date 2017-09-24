@@ -14,6 +14,11 @@ from .util import mini_batches, product
 class FeedforwardAC(TFActorCritic):
     """
     A base class for any feed-forward actor-critic model.
+
+    Subclasses should set several attributes on init:
+      obs_ph: placeholder for observation batch
+      actor_out: actor output batch
+      critic_out: critic output batch
     """
     def __init__(self, session, action_dist, obs_vectorizer):
         """
@@ -22,9 +27,9 @@ class FeedforwardAC(TFActorCritic):
         super(FeedforwardAC, self).__init__(session, action_dist, obs_vectorizer)
 
         # Set these in your constructor.
-        self._obs_placeholder = None
-        self._actor_out = None
-        self._critic_out = None
+        self.obs_ph = None
+        self.actor_out = None
+        self.critic_out = None
 
     def scale_outputs(self, scale):
         """
@@ -33,8 +38,8 @@ class FeedforwardAC(TFActorCritic):
         This may be called right after initializing the
         model to help deal with different reward scales.
         """
-        self._critic_out *= scale
-        self._actor_out *= scale
+        self.critic_out *= scale
+        self.actor_out *= scale
 
     @property
     def stateful(self):
@@ -45,9 +50,9 @@ class FeedforwardAC(TFActorCritic):
 
     def step(self, observations, states):
         feed_dict = {
-            self._obs_placeholder: self.obs_vectorizer.to_vecs(observations)
+            self.obs_ph: self.obs_vectorizer.to_vecs(observations)
         }
-        act, val = self.session.run((self._actor_out, self._critic_out), feed_dict)
+        act, val = self.session.run((self.actor_out, self.critic_out), feed_dict)
         return {
             'action_params': act,
             'actions': self.action_dist.sample(act),
@@ -56,8 +61,8 @@ class FeedforwardAC(TFActorCritic):
         }
 
     def batch_outputs(self):
-        mask = tf.ones(tf.shape(self._critic_out))
-        return self._actor_out, self._critic_out, mask
+        mask = tf.ones(tf.shape(self.critic_out))
+        return self.actor_out, self.critic_out, mask
 
     def batches(self, rollouts, batch_size=None):
         obses, rollout_idxs, timestep_idxs = _frames_from_rollouts(rollouts)
@@ -67,7 +72,7 @@ class FeedforwardAC(TFActorCritic):
                 'rollout_idxs': np.take(rollout_idxs, mini_indices),
                 'timestep_idxs': np.take(timestep_idxs, mini_indices),
                 'feed_dict': {
-                    self._obs_placeholder: self.obs_vectorizer.to_vecs(sub_obses)
+                    self.obs_ph: self.obs_vectorizer.to_vecs(sub_obses)
                 }
             }
 
@@ -90,12 +95,12 @@ class MLP(FeedforwardAC):
         super(MLP, self).__init__(session, action_dist, obs_vectorizer)
 
         in_batch_shape = (None,) + obs_vectorizer.out_shape
-        self._obs_placeholder = tf.placeholder(tf.float32, shape=in_batch_shape)
+        self.obs_ph = tf.placeholder(tf.float32, shape=in_batch_shape)
 
         # Iteratively generate hidden layers.
         layer_in_size = product(obs_vectorizer.out_shape)
-        vectorized_shape = (tf.shape(self._obs_placeholder)[0], layer_in_size)
-        layer_in = tf.reshape(self._obs_placeholder, vectorized_shape)
+        vectorized_shape = (tf.shape(self.obs_ph)[0], layer_in_size)
+        layer_in = tf.reshape(self.obs_ph, vectorized_shape)
         for layer_idx, out_size in enumerate(layer_sizes):
             with tf.variable_scope('layer_' + str(layer_idx)):
                 layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
@@ -107,10 +112,10 @@ class MLP(FeedforwardAC):
                                         activation_fn=None,
                                         weights_initializer=tf.zeros_initializer())
             batch = tf.shape(actor_out)[0]
-            self._actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
+            self.actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
 
         with tf.variable_scope('critic'):
-            self._critic_out = fully_connected(layer_in, 1, activation_fn=None)
+            self.critic_out = fully_connected(layer_in, 1, activation_fn=None)
 
 def _frames_from_rollouts(rollouts):
     """

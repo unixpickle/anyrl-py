@@ -36,6 +36,7 @@ Here is the current TODO list, organized by sub-module:
 * `models`
   * CNN models
   * Unshared actor-critics for TRPO and the like.
+  * Test with tuple spaces to catch obscure bugs.
 * `rollouts`
   * Maybe: way to not record states in `model_outs` (memory saving)
 * `algos`

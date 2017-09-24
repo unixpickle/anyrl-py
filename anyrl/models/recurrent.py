@@ -143,16 +143,15 @@ class RecurrentAC(TFActorCritic):
             rollout_idxs = []
             timestep_idxs = []
             for rollout_idx, rollout in zip(rollout_indices, batch):
-                obs_seq = rollout.step_observations
+                obs_seq = list(self.obs_vectorizer.to_vecs(rollout.step_observations))
                 empty_obs = np.zeros(np.array(obs_seq[0]).shape)
                 obs_seqs.append(_pad(obs_seq, max_len, value=empty_obs))
                 is_inits.append(not rollout.trunc_start)
                 masks.append(_pad([[1]]*rollout.num_steps, max_len, value=[0]))
                 rollout_idxs.extend(_pad([rollout_idx]*rollout.num_steps, max_len))
                 timestep_idxs.extend(_pad(list(range(rollout.num_steps)), max_len))
-            vec_obses = [self.obs_vectorizer.to_vecs(s) for s in obs_seqs]
             feed_dict = {
-                self.obs_ph: vec_obses,
+                self.obs_ph: obs_seqs,
                 self.is_init_state_ph: is_inits,
                 self.mask_ph: masks,
                 self.seq_lens_ph: [r.num_steps for r in batch]

@@ -114,11 +114,12 @@ class RecurrentAC(TFActorCritic):
                                                self.critic_out,
                                                self.states_out),
                                               feed_dict)
+        action_params = [a[0] for a in acts]
         return {
-            'action_params': acts[0],
-            'actions': self.action_dist.sample(acts[0]),
+            'action_params': action_params,
+            'actions': self.action_dist.sample(action_params),
             'states': states,
-            'values': np.array(vals[0]).flatten()
+            'values': np.array(vals).flatten()
         }
 
     def batch_outputs(self):

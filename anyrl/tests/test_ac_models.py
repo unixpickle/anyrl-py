@@ -72,11 +72,11 @@ class ModelTester:
             in_states = self.model.start_state(batch_size)
             outs = self.model.step(in_obses, in_states)
             self.test_case.assertEqual(len(outs['actions']), batch_size)
-            self.test_case.assertEqual(_state_shape(outs['states']),
-                                       _state_shape(in_states))
+            self.test_case.assertEqual(_state_shape_uid(outs['states']),
+                                       _state_shape_uid(in_states))
             if 'action_params' in outs:
                 param_shape = self.model.action_dist.param_shape
-                self.test_case.assertEqual(np.array(outs['action_params']),
+                self.test_case.assertEqual(np.array(outs['action_params']).shape,
                                            (batch_size,)+param_shape)
             if 'values' in outs:
                 self.test_case.assertEqual(np.array(outs['values']).shape,
@@ -147,7 +147,7 @@ class ModelTester:
             rollout.infos = rollout.infos[1:]
         return rollouts
 
-def _state_shape(states):
+def _state_shape_uid(states):
     """
     Get an object that uniquely identifies the shape of
     the model state batch.
@@ -155,7 +155,7 @@ def _state_shape(states):
     if states is None:
         return 'None'
     elif isinstance(states, tuple):
-        return [_state_shape(s) for s in states]
+        return [_state_shape_uid(s) for s in states]
     return np.array(states).shape
 
 class ACTest(unittest.TestCase):

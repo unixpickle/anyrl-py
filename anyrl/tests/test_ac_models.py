@@ -44,6 +44,7 @@ class ModelTester:
         """
         with self.session:
             self.test_batches()
+            self.test_batched_step()
 
     def test_batches(self):
         """
@@ -54,6 +55,32 @@ class ModelTester:
             for batch_size in [None, 10]:
                 for trunc_start in [False, True]:
                     self._test_batches_consistency(batch_size, trunc_start)
+
+    def test_batched_step(self):
+        """
+        Make sure that the outputs of batched steps are
+        the correct shape.
+        """
+        with self.graph.as_default():
+            env = gym.make(TEST_ENV)
+            try:
+                obs_space = env.observation_space
+            finally:
+                env.close()
+            batch_size = 7
+            in_obses = [obs_space.sample() for _ in range(batch_size)]
+            in_states = self.model.start_state(batch_size)
+            outs = self.model.step(in_obses, in_states)
+            self.test_case.assertEqual(len(outs['actions']), batch_size)
+            self.test_case.assertEqual(_state_shape(outs['states']),
+                                       _state_shape(in_states))
+            if 'action_params' in outs:
+                param_shape = self.model.action_dist.param_shape
+                self.test_case.assertEqual(np.array(outs['action_params']),
+                                           (batch_size,)+param_shape)
+            if 'values' in outs:
+                self.test_case.assertEqual(np.array(outs['values']).shape,
+                                           (batch_size,))
 
     def _test_batches_consistency(self, batch_size, trunc_start):
         """
@@ -119,6 +146,17 @@ class ModelTester:
             rollout.observations = rollout.observations[1:]
             rollout.infos = rollout.infos[1:]
         return rollouts
+
+def _state_shape(states):
+    """
+    Get an object that uniquely identifies the shape of
+    the model state batch.
+    """
+    if states is None:
+        return 'None'
+    elif isinstance(states, tuple):
+        return [_state_shape(s) for s in states]
+    return np.array(states).shape
 
 class ACTest(unittest.TestCase):
     """

@@ -112,6 +112,7 @@ class DummyBatchedEnv(BatchedEnv):
         return [env.reset() for env in self._envs[sub_batch]]
 
     def step_start(self, actions, sub_batch=0):
+        assert len(actions) == self.num_envs_per_sub_batch
         self._step_actions[sub_batch] = actions
 
     def step_wait(self, sub_batch=0):

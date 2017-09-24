@@ -5,5 +5,5 @@ in Reinforcement Learning.
 
 from .base import Vectorizer, Distribution
 from .categorical import CategoricalSoftmax
-from .continuous import BoxVectorizer
+from .continuous import BoxGaussian
 from .gym import gym_space_distribution, gym_space_vectorizer

@@ -36,4 +36,3 @@ Here is the current TODO list, organized by sub-module:
   * Bernoulli
   * MultiBinary
   * Tuple
-  * Gaussian

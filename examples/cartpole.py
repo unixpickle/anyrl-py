@@ -55,7 +55,7 @@ def algorithm_inner_loop(name, model):
     elif name == 'ppo':
         ppo = PPO(model)
         optimizer = ppo.optimize(learning_rate=1e-3)
-        return lambda rollouts: ppo.run_optimize(optimizer, rollouts)
+        return lambda rollouts: ppo.run_optimize(optimizer, rollouts, log_fn=print)
 
 if __name__ == '__main__':
     main()

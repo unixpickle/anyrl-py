@@ -66,8 +66,7 @@ class TFActorCritic(Model):
         The mask is a Tensor of 0's and 1's, where 1
         indicates that the sample is valid.
 
-        Both mask and critic_outs should be of shape
-        (batch_size, 1).
+        Both mask and critic_outs should be 1-D.
         The actor_outs shape depends on the shape of
         action distribution parameters.
 

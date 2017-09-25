@@ -18,7 +18,8 @@ class FeedforwardAC(TFActorCritic):
     Subclasses should set several attributes on init:
       obs_ph: placeholder for observation batch
       actor_out: actor output batch
-      critic_out: critic output batch
+      critic_out: critic output batch. Should be of shape
+        (None,).
     """
     def __init__(self, session, action_dist, obs_vectorizer):
         """
@@ -57,7 +58,7 @@ class FeedforwardAC(TFActorCritic):
             'action_params': act,
             'actions': self.action_dist.sample(act),
             'states': None,
-            'values': np.array(val).flatten()
+            'values': val
         }
 
     def batch_outputs(self):
@@ -115,7 +116,8 @@ class MLP(FeedforwardAC):
             self.actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
 
         with tf.variable_scope('critic'):
-            self.critic_out = fully_connected(layer_in, 1, activation_fn=None)
+            critic_out = fully_connected(layer_in, 1, activation_fn=None)
+            self.critic_out = tf.reshape(critic_out, (tf.shape(critic_out)[0],))
 
 def _frames_from_rollouts(rollouts):
     """

@@ -29,9 +29,11 @@ class RecurrentAC(TFActorCritic):
       obs_ph: placeholder for input sequences
       first_state_ph: placeholder or tuple of placeholders
         for the states at the beginning of the sequences.
-      mask_ph: placeholder for timestep mask
+      mask_ph: placeholder for timestep mask. Should be of
+        shape (None, None).
       actor_out: actor output sequences
-      critic_out: critic output sequences
+      critic_out: critic output sequences. Should be of
+        shape (None, None).
       states_out: resulting RNN states
     """
     def __init__(self, session, action_dist, obs_vectorizer):
@@ -100,7 +102,7 @@ class RecurrentAC(TFActorCritic):
             self.seq_lens_ph: [1] * len(observations),
             self.is_init_state_ph: [False] * len(observations),
             self.obs_ph: [[x] for x in vec_obs],
-            self.mask_ph: [[[1]]] * len(observations)
+            self.mask_ph: [[1]] * len(observations)
         }
 
         if isinstance(self.first_state_ph, tuple):
@@ -125,8 +127,8 @@ class RecurrentAC(TFActorCritic):
     def batch_outputs(self):
         seq_shape = tf.shape(self.actor_out)
         out_count = seq_shape[0] * seq_shape[1]
-        actor_shape = tf.concat([[out_count], tf.shape(self.actor_out)[2:]], axis=0)
-        critic_shape = tf.concat([[out_count], tf.shape(self.critic_out)[2:]], axis=0)
+        actor_shape = (out_count,) + self.action_dist.param_shape
+        critic_shape = (out_count,)
         return (tf.reshape(self.actor_out, actor_shape),
                 tf.reshape(self.critic_out, critic_shape),
                 tf.reshape(self.mask_ph, critic_shape))
@@ -147,7 +149,7 @@ class RecurrentAC(TFActorCritic):
                 empty_obs = np.zeros(np.array(obs_seq[0]).shape)
                 obs_seqs.append(_pad(obs_seq, max_len, value=empty_obs))
                 is_inits.append(not rollout.trunc_start)
-                masks.append(_pad([[1]]*rollout.num_steps, max_len, value=[0]))
+                masks.append(_pad([1]*rollout.num_steps, max_len))
                 rollout_idxs.extend(_pad([rollout_idx]*rollout.num_steps, max_len))
                 timestep_idxs.extend(_pad(list(range(rollout.num_steps)), max_len))
             feed_dict = {
@@ -209,7 +211,7 @@ class RNNCellAC(RecurrentAC):
         super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
         obs_seq_shape = (None, None) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(tf.float32, obs_seq_shape)
-        self.mask_ph = tf.placeholder(tf.float32, (None, None, 1))
+        self.mask_ph = tf.placeholder(tf.float32, (None, None))
 
         with tf.variable_scope('cell_input'):
             cell_input = self.cell_input_sequences()
@@ -271,7 +273,9 @@ class RNNCellAC(RecurrentAC):
         The default behavior is to use a fully-connected
         layer with no activation.
         """
-        return fully_connected(cell_outputs, 1, activation_fn=None)
+        raw = fully_connected(cell_outputs, 1, activation_fn=None)
+        shape = tf.shape(raw)
+        return tf.reshape(raw, (shape[0], shape[1]))
 
 def _pad(unpadded, length, value=0):
     """

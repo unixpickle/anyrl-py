@@ -113,6 +113,7 @@ class ModelTester:
         for i, (action, value) in enumerate(zip(actor_outs, critic_outs)):
             rollout_idx = batch['rollout_idxs'][i]
             timestep_idx = batch['timestep_idxs'][i]
+            self.test_case.assertTrue(mask[i] == 0 or mask[i] == 1)
             if mask[i] == 0:
                 self.test_case.assertEqual(rollout_idx, 0)
                 self.test_case.assertEqual(timestep_idx, 0)
@@ -125,7 +126,7 @@ class ModelTester:
             self.test_case.assertEqual(step_action.shape,
                                        self.model.action_dist.param_shape)
             self.test_case.assertTrue(np.amax(step_action - np.array(action)) < 1e-4)
-            self.test_case.assertTrue(abs(value[0] - step_value) < 1e-4)
+            self.test_case.assertTrue(abs(value - step_value) < 1e-4)
 
     def _truncate_first(self, rollouts):
         """

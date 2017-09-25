@@ -55,16 +55,26 @@ class PPO(A2C):
         trainer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         return trainer.minimize(-self.objective)
 
-    def run_optimize(self, optimize_op, rollouts, batch_size=None, num_iter=12):
+    # pylint: disable=R0913
+    def run_optimize(self, optimize_op, rollouts, batch_size=None, num_iter=12,
+                     log_fn=None):
         """
         Run several steps of training with mini-batches.
+
+        If log_fn is set, intermediate progress is logged
+        by calling log_fn with string log messages.
         """
-        remaining_iter = num_iter
+        batch_idx = 0
         batches = self.model.batches(rollouts, batch_size=batch_size)
         for batch in batches:
-            self.model.session.run(optimize_op, self.feed_dict(rollouts, batch))
-            remaining_iter -= 1
-            if remaining_iter == 0:
+            terms = (self.actor_loss, self.critic_loss, self.entropy, optimize_op)
+            feed_dict = self.feed_dict(rollouts, batch)
+            terms = self.model.session.run(terms, feed_dict)
+            if log_fn is not None:
+                log_fn('batch %d: actor=%f critic=%f entropy=%f' %
+                       (batch_idx, terms[0], terms[1], terms[2]))
+            batch_idx += 1
+            if batch_idx == num_iter:
                 break
 
     # TODO: API that supports schedules and runs the

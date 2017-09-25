@@ -71,8 +71,6 @@ class TruncatedRoller(Roller):
         self._prev_steps = None
         self._prev_reward = None
 
-        self.reset()
-
     def reset(self):
         """
         Reset the environments, model states, and partial
@@ -96,6 +94,8 @@ class TruncatedRoller(Roller):
         """
         Gather (possibly truncated) rollouts.
         """
+        if self._last_states is None:
+            self.reset()
         completed_rollouts = []
         running_rollouts = self._starting_rollouts()
         for _ in range(self.num_timesteps):

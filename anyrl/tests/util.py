@@ -5,7 +5,6 @@ Utilities for RL-related tests.
 import gym
 import numpy as np
 
-from anyrl.rollouts import BatchedEnv
 from anyrl.models import Model
 
 class SimpleEnv(gym.Env):
@@ -84,50 +83,3 @@ class SimpleModel(Model):
             'values': values,
             'states': new_states
         }
-
-class DummyBatchedEnv(BatchedEnv):
-    """
-    The simplest possible batched environment.
-    """
-    def __init__(self, env_fns, num_sub_batches):
-        env_fn_batches = []
-        batch = len(env_fns) // num_sub_batches
-        for i in range(num_sub_batches):
-            env_fn_batches.append(env_fns[i*batch : (i+1)*batch])
-        self._envs = [[f() for f in fs] for fs in env_fn_batches]
-        self._step_actions = [None] * len(self._envs)
-
-    @property
-    def num_sub_batches(self):
-        return len(self._envs)
-
-    @property
-    def num_envs_per_sub_batch(self):
-        return len(self._envs[0])
-
-    def reset_start(self, sub_batch=0):
-        pass
-
-    def reset_wait(self, sub_batch=0):
-        return [env.reset() for env in self._envs[sub_batch]]
-
-    def step_start(self, actions, sub_batch=0):
-        assert len(actions) == self.num_envs_per_sub_batch
-        self._step_actions[sub_batch] = actions
-
-    def step_wait(self, sub_batch=0):
-        obses, rews, dones, infos = ([], [], [], [])
-        for env, action in zip(self._envs[sub_batch], self._step_actions[sub_batch]):
-            obs, rew, done, info = env.step(action)
-            if done:
-                obs = env.reset()
-            obses.append(obs)
-            rews.append(rew)
-            dones.append(done)
-            infos.append(info)
-        return obses, rews, dones, infos
-
-    def close(self):
-        for batch in self._envs:
-            for env in batch:
-                env.close()

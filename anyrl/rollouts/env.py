@@ -9,7 +9,7 @@ import cloudpickle
 import gym.spaces
 import numpy as np
 
-def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1):
+def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1, sync=False):
     """
     Create a BatchedEnv that controls a set of Gym
     environments.
@@ -26,7 +26,7 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1):
     has action_space and observation_space attributes.
     """
     assert len(env_fns) % num_sub_batches == 0
-    if observation_space is None:
+    if not sync and observation_space is None:
         env = env_fns[0]()
         try:
             observation_space = env.observation_space
@@ -36,8 +36,13 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1):
     batch_size = len(env_fns) // num_sub_batches
     for i in range(num_sub_batches):
         batch_fns = env_fns[i*batch_size : (i+1)*batch_size]
-        envs = [AsyncGymEnv(fn, observation_space) for fn in batch_fns]
+        if sync:
+            envs = [fn() for fn in batch_fns]
+        else:
+            envs = [AsyncGymEnv(fn, observation_space) for fn in batch_fns]
         sub_batches.append(envs)
+    if sync:
+        return BatchedGymEnv(sub_batches)
     return BatchedAsyncEnv(sub_batches)
 
 class AsyncEnv(ABC):
@@ -371,6 +376,54 @@ class BatchedAsyncEnv(BatchedEnv):
 
     def close(self):
         for batch in self._sub_batches:
+            for env in batch:
+                env.close()
+
+class BatchedGymEnv(BatchedEnv):
+    """
+    A BatchedEnv that wraps a bunch of existing Gym
+    environments and runs them synchronously.
+    """
+    def __init__(self, envs):
+        self.action_space = envs[0][0].action_space
+        self.observation_space = envs[0][0].observation_space
+        self.envs = envs
+        self._step_actions = [None] * len(self.envs)
+
+    @property
+    def num_sub_batches(self):
+        return len(self.envs)
+
+    @property
+    def num_envs_per_sub_batch(self):
+        return len(self.envs[0])
+
+    def reset_start(self, sub_batch=0):
+        pass
+
+    def reset_wait(self, sub_batch=0):
+        return [env.reset() for env in self.envs[sub_batch]]
+
+    def step_start(self, actions, sub_batch=0):
+        assert len(actions) == self.num_envs_per_sub_batch
+        self._step_actions[sub_batch] = actions
+
+    def step_wait(self, sub_batch=0):
+        assert self._step_actions[sub_batch] is not None
+        obses, rews, dones, infos = ([], [], [], [])
+        for env, action in zip(self.envs[sub_batch], self._step_actions[sub_batch]):
+            obs, rew, done, info = env.step(action)
+            if done:
+                obs = env.reset()
+            obses.append(obs)
+            rews.append(rew)
+            dones.append(done)
+            infos.append(info)
+        self._step_actions[sub_batch] = None
+        return obses, rews, dones, infos
+
+    def close(self):
+        for batch in self.envs:
             for env in batch:
                 env.close()
 

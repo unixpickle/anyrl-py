@@ -4,8 +4,9 @@ Test various Roller implementations.
 
 import unittest
 
-from anyrl.rollouts import BasicRoller, TruncatedRoller, EpisodeRoller, Rollout
-from anyrl.tests import SimpleEnv, SimpleModel, DummyBatchedEnv
+from anyrl.rollouts import (batched_gym_env, BasicRoller, TruncatedRoller,
+                            EpisodeRoller, Rollout)
+from anyrl.tests import SimpleEnv, SimpleModel
 
 class TruncatedRollerTest(unittest.TestCase):
     """
@@ -52,7 +53,7 @@ class TruncatedRollerTest(unittest.TestCase):
         expected = basic_roller.rollouts()
         total_timesteps = sum([x.num_steps for x in expected])
 
-        batched_env = DummyBatchedEnv([env_fn], 1)
+        batched_env = batched_gym_env([env_fn], sync=True)
         trunc_roller = TruncatedRoller(batched_env, model, total_timesteps)
         actual = trunc_roller.rollouts()
         _compare_rollout_batch(self, actual, expected)
@@ -71,7 +72,7 @@ class TruncatedRollerTest(unittest.TestCase):
         expected = basic_roller.rollouts()
         total_timesteps = sum([x.num_steps for x in expected])
 
-        batched_env = DummyBatchedEnv([env_fn], 1)
+        batched_env = batched_gym_env([env_fn], sync=True)
         trunc_roller = TruncatedRoller(batched_env, model, total_timesteps//2 + 1)
         actual1 = trunc_roller.rollouts()
         self.assertTrue(actual1[-1].trunc_end)
@@ -96,13 +97,13 @@ class TruncatedRollerTest(unittest.TestCase):
 
         unbatched_rollouts = []
         for env_fn in env_fns:
-            batched_env = DummyBatchedEnv([env_fn], 1)
+            batched_env = batched_gym_env([env_fn], sync=True)
             trunc_roller = TruncatedRoller(batched_env, model, 17)
             for _ in range(3):
                 unbatched_rollouts.extend(trunc_roller.rollouts())
 
         batched_rollouts = []
-        batched_env = DummyBatchedEnv(env_fns, 3)
+        batched_env = batched_gym_env(env_fns, num_sub_batches=3, sync=True)
         trunc_roller = TruncatedRoller(batched_env, model, 17)
         for _ in range(3):
             batched_rollouts.extend(trunc_roller.rollouts())
@@ -150,7 +151,7 @@ class EpisodeRollerTest(unittest.TestCase):
         basic_roller = BasicRoller(env, model, **roller_kwargs)
         expected = basic_roller.rollouts()
 
-        batched_env = DummyBatchedEnv([env_fn], 1)
+        batched_env = batched_gym_env([env_fn], sync=True)
         ep_roller = EpisodeRoller(batched_env, model, **roller_kwargs)
         actual = ep_roller.rollouts()
         _compare_rollout_batch(self, actual, expected)
@@ -166,7 +167,7 @@ class EpisodeRollerTest(unittest.TestCase):
                             stateful=stateful,
                             state_tuple=state_tuple)
 
-        batched_env = DummyBatchedEnv([env_fn]*21, 7)
+        batched_env = batched_gym_env([env_fn]*21, num_sub_batches=7, sync=True)
         ep_roller = EpisodeRoller(batched_env, model, **roller_kwargs)
         actual = ep_roller.rollouts()
 

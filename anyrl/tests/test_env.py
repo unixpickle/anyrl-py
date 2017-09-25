@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 
 from anyrl.rollouts import batched_gym_env
-from anyrl.tests import SimpleEnv, DummyBatchedEnv
+from anyrl.tests import SimpleEnv
 
 SUB_BATCH_SIZE = 4
 NUM_SUB_BATCHES = 3
@@ -35,7 +35,7 @@ class BatchedGymEnvTest(unittest.TestCase):
     def _test_dummy_equiv_dtype(self, dtype):
         """
         Test that batched_gym_env() gives something
-        equivalent to _DummyBatchedEnv.
+        equivalent to a synchronous environment.
         """
         def make_fn(seed):
             """
@@ -44,7 +44,7 @@ class BatchedGymEnvTest(unittest.TestCase):
             return lambda: SimpleEnv(seed, SHAPE, dtype)
         fns = [make_fn(i) for i in range(SUB_BATCH_SIZE * NUM_SUB_BATCHES)]
         real = batched_gym_env(fns, num_sub_batches=NUM_SUB_BATCHES)
-        dummy = DummyBatchedEnv(fns, NUM_SUB_BATCHES)
+        dummy = batched_gym_env(fns, num_sub_batches=NUM_SUB_BATCHES, sync=True)
         try:
             self._assert_resets_equal(dummy, real)
             np.random.seed(1337)

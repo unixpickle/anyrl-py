@@ -116,7 +116,9 @@ class MLP(FeedforwardAC):
             self.actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
 
         with tf.variable_scope('critic'):
-            critic_out = fully_connected(layer_in, 1, activation_fn=None)
+            critic_out = fully_connected(layer_in, 1,
+                                         activation_fn=None,
+                                         weights_initializer=tf.zeros_initializer())
             self.critic_out = tf.reshape(critic_out, (tf.shape(critic_out)[0],))
 
 def _frames_from_rollouts(rollouts):

@@ -273,7 +273,10 @@ class RNNCellAC(RecurrentAC):
         The default behavior is to use a fully-connected
         layer with no activation.
         """
-        raw = fully_connected(cell_outputs, 1, activation_fn=None)
+        zeros = tf.zeros_initializer()
+        raw = fully_connected(cell_outputs, 1,
+                              activation_fn=None,
+                              weights_initializer=zeros)
         shape = tf.shape(raw)
         return tf.reshape(raw, (shape[0], shape[1]))
 

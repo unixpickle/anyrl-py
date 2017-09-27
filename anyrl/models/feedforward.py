@@ -121,6 +121,82 @@ class MLP(FeedforwardAC):
                                          weights_initializer=tf.zeros_initializer())
             self.critic_out = tf.reshape(critic_out, (tf.shape(critic_out)[0],))
 
+class CNN(FeedforwardAC):
+    """
+    A convolutional actor-critic model.
+
+    Based on:
+    https://github.com/openai/baselines/blob/699919f1cf2527b184f4445a3758a773f333a1ba/baselines/a2c/policies.py#L91
+    """
+    # pylint: disable=R0913
+    def __init__(self, session, action_dist, obs_vectorizer,
+                 input_scale=1/0xff, input_dtype=tf.uint8):
+        """
+        Create an CNN model.
+
+        Args:
+          session: TF session.
+          action_dist: an action Distribution.
+          obs_vectorizer: an observation SpaceVectorizer.
+          input_scale: factor to make inputs well-scaled.
+          input_dtype: data-type for input placeholder.
+        """
+        super(CNN, self).__init__(session, action_dist, obs_vectorizer)
+
+        assert len(obs_vectorizer.out_shape) == 3
+
+        in_batch_shape = (None,) + obs_vectorizer.out_shape
+        self.obs_ph = tf.placeholder(input_dtype, shape=in_batch_shape)
+        obs_batch = tf.cast(self.obs_ph, tf.float32) * input_scale
+
+        with tf.variable_scope('base'):
+            base = self.base(obs_batch)
+        with tf.variable_scope('actor'):
+            self.actor_out = self.actor(base)
+        with tf.variable_scope('critic'):
+            self.critic_out = self.critic(base)
+
+    # pylint: disable=R0201
+    def base(self, obs_batch):
+        """
+        Apply the shared part of the model.
+        Return a batch that is fed into actor() and
+        critic().
+        """
+        conv_kwargs = {
+            'activation': tf.nn.relu,
+            'kernel_initializer': tf.orthogonal_initializer
+        }
+        with tf.variable_scope('layer_1'):
+            cnn_1 = tf.layers.conv2d(obs_batch, 32, 8, 4, **conv_kwargs)
+        with tf.variable_scope('layer_2'):
+            cnn_2 = tf.layers.conv2d(cnn_1, 64, 4, 2, **conv_kwargs)
+        with tf.variable_scope('layer_3'):
+            cnn_3 = tf.layers.conv2d(cnn_2, 64, 3, 1, **conv_kwargs)
+        flat_size = np.prod(cnn_3.get_shape()[1:])
+        flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
+        return tf.layers.dense(flat_in, 512, **conv_kwargs)
+
+    def actor(self, base):
+        """
+        Turn the output from base() into action params.
+        """
+        out_size = product(self.action_dist.param_shape)
+        actor_out = fully_connected(base, out_size,
+                                    activation_fn=None,
+                                    weights_initializer=tf.zeros_initializer())
+        batch = tf.shape(actor_out)[0]
+        return tf.reshape(actor_out, (batch,) + self.action_dist.param_shape)
+
+    def critic(self, base):
+        """
+        Turn the output from base() into values.
+        """
+        critic_out = fully_connected(base, 1,
+                                     activation_fn=None,
+                                     weights_initializer=tf.zeros_initializer())
+        return tf.reshape(critic_out, (tf.shape(critic_out)[0],))
+
 def _frames_from_rollouts(rollouts):
     """
     Flatten out the rollouts and produce a list of

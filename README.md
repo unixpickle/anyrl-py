@@ -34,7 +34,7 @@ This project relies on TensorFlow for models and training algorithms. However, a
 Here is the current TODO list, organized by sub-module:
 
 * `models`
-  * CNN models
+  * Unify CNN and MLP models with a single base class.
   * Unshared actor-critics for TRPO and the like.
   * Test with tuple spaces to catch obscure bugs.
 * `rollouts`

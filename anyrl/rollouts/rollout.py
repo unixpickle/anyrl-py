@@ -29,10 +29,13 @@ class Rollout:
     the episode before this Rollout.
     When trunc_end is true, there is an extra observation
     and model_outs entry.
+
+    Rollouts may also have an end_time, which is a UNIX
+    timestamp of when the rollout was done being made.
     """
     # pylint: disable=R0913
     def __init__(self, observations, model_outs, rewards, start_state,
-                 prev_steps=0, prev_reward=0, infos=None):
+                 prev_steps=0, prev_reward=0, infos=None, end_time=0):
         assert len(observations) == len(model_outs)
         assert len(rewards) <= len(observations)
         assert len(observations) <= len(rewards)+1
@@ -46,6 +49,7 @@ class Rollout:
         self.prev_steps = prev_steps
         self.prev_reward = prev_reward
         self.infos = infos
+        self.end_time = end_time
 
     @property
     def trunc_end(self):

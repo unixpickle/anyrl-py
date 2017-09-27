@@ -3,6 +3,7 @@ Ways of gathering rollouts.
 """
 
 from abc import ABC, abstractmethod
+import time
 
 from .rollout import empty_rollout
 
@@ -50,6 +51,7 @@ class BasicRoller(Roller):
                 if done:
                     break
             num_steps += rollout.num_steps
+            rollout.end_time = time.time()
             episodes.append(rollout)
         return episodes
 
@@ -155,6 +157,7 @@ class TruncatedRoller(Roller):
         """
         Finalize a rollout and start a new rollout.
         """
+        running[batch_idx][env_idx].end_time = time.time()
         completed.append(running[batch_idx][env_idx])
         for prev in [self._prev_steps, self._prev_reward]:
             prev[batch_idx][env_idx] = 0
@@ -177,6 +180,7 @@ class TruncatedRoller(Roller):
                     model_out = self.model.step([last_obs], reduced_state)
                     rollout.observations.append(last_obs)
                     rollout.model_outs.append(model_out)
+                    rollout.end_time = time.time()
                     completed.append(rollout)
 
 class EpisodeRoller(TruncatedRoller):

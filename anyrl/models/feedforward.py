@@ -2,6 +2,8 @@
 Stateless neural network models.
 """
 
+import math
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
@@ -165,7 +167,7 @@ class CNN(FeedforwardAC):
         """
         conv_kwargs = {
             'activation': tf.nn.relu,
-            'kernel_initializer': tf.orthogonal_initializer
+            'kernel_initializer': tf.orthogonal_initializer(gain=math.sqrt(2))
         }
         with tf.variable_scope('layer_1'):
             cnn_1 = tf.layers.conv2d(obs_batch, 32, 8, 4, **conv_kwargs)

@@ -39,6 +39,7 @@ Here is the current TODO list, organized by sub-module:
   * Test with tuple spaces to catch obscure bugs.
 * `rollouts`
   * Maybe: way to not record states in `model_outs` (memory saving)
+  * Reward normalization schemes
 * `algos`
   * TRPO
   * Schedules for learning rates & other hyper-parameters

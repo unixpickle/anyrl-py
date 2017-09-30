@@ -17,7 +17,7 @@ class TupleDistribution(Distribution):
 
     @property
     def out_shape(self):
-        return (sum([np.prod(d.out_shape) for d in self.tuple]),)
+        return (int(sum([np.prod(d.out_shape) for d in self.tuple])),)
 
     def to_vecs(self, space_elements):
         per_dist = zip(*space_elements)
@@ -28,10 +28,10 @@ class TupleDistribution(Distribution):
 
     @property
     def param_shape(self):
-        return (sum([np.prod(d.param_shape) for d in self.tuple]),)
+        return (int(sum([np.prod(d.param_shape) for d in self.tuple])),)
 
     def sample(self, param_batch):
-        per_dist = self.unpack_params(param_batch)
+        per_dist = self.unpack_params(np.array(param_batch))
         samples = [d.sample(p) for d, p in zip(self.tuple, per_dist)]
         return list(zip(*samples))
 
@@ -79,7 +79,7 @@ def _unpack(vecs, shapes):
     offset = 0
     res = ()
     for shape in shapes:
-        size = np.prod(shape)
+        size = int(np.prod(shape))
         sub_slice = vecs[:, offset:offset+size]
         offset += size
         if isinstance(vecs, np.ndarray):

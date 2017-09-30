@@ -7,7 +7,6 @@ Tests for TensorFlow actor-critic models.
 
 import unittest
 
-import gym
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple
@@ -15,11 +14,7 @@ from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple
 from anyrl.models import MLP, RNNCellAC
 from anyrl.rollouts import BasicRoller
 from anyrl.spaces import gym_space_distribution, gym_space_vectorizer
-
-"""
-The environment to use for testing rollout consistency.
-"""
-TEST_ENV = 'CartPole-v0'
+from anyrl.tests import TupleCartPole
 
 class ModelTester:
     """
@@ -62,7 +57,7 @@ class ModelTester:
         the correct shape.
         """
         with self.graph.as_default():
-            env = gym.make(TEST_ENV)
+            env = TupleCartPole()
             try:
                 obs_space = env.observation_space
             finally:
@@ -87,7 +82,7 @@ class ModelTester:
         Make sure that batches() produces the same outputs
         that we got with step().
         """
-        env = gym.make(TEST_ENV)
+        env = TupleCartPole()
         try:
             roller = BasicRoller(env, self.model, min_episodes=7)
             rollouts = roller.rollouts()
@@ -166,7 +161,7 @@ class ACTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(ACTest, self).__init__(*args, **kwargs)
         self.session = tf.Session()
-        env = gym.make(TEST_ENV)
+        env = TupleCartPole()
         try:
             action_space = env.action_space
             observation_space = env.observation_space

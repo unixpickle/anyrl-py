@@ -3,6 +3,7 @@ Utilities for RL-related tests.
 """
 
 import gym
+import gym.spaces as spaces
 import numpy as np
 
 from anyrl.models import Model
@@ -83,3 +84,31 @@ class SimpleModel(Model):
             'values': values,
             'states': new_states
         }
+
+class TupleCartPole(gym.Env):
+    """
+    A version of Gym's CartPole-v0 with tuple spaces.
+
+    Intended to stress test models against weird kinds of
+    spaces.
+    """
+    def __init__(self):
+        self._inner_env = gym.make('CartPole-v0')
+        self.action_space = spaces.Tuple([spaces.Discrete(2), spaces.Discrete(3)])
+        obs_space = self._inner_env.observation_space
+        self.observation_space = spaces.Tuple([
+            spaces.Box(obs_space.low[:3], obs_space.high[:3]),
+            spaces.Box(obs_space.low[3:], obs_space.high[3:])
+        ])
+
+    def _reset(self):
+        return self._split_obs(self._inner_env.reset())
+
+    def _step(self, action):
+        obs, rew, done, info = self._inner_env.step(action[0])
+        return self._split_obs(obs), rew, done, info
+
+    # pylint: disable=R0201
+    def _split_obs(self, obs):
+        obs = np.array(obs)
+        return (obs[:3], obs[3:])

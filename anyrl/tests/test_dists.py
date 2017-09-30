@@ -68,8 +68,8 @@ class DistributionTester:
         sample_placeholder = tf.placeholder(tf.float32, self._out_batch_shape())
         log_probs = self.dist.log_prob(param_placeholder, sample_placeholder)
         entropy = tf.reduce_mean(self.dist.entropy(param_placeholder))
-        for _ in range(NUM_SAMPLE_TRIES):
-            params = self._random_params()
+        for i in range(NUM_SAMPLE_TRIES):
+            params = self._random_params(use_numpy=(i%2 == 0))
             samples = self.dist.sample(params)
             feed_dict = {
                 param_placeholder: params,
@@ -93,8 +93,8 @@ class DistributionTester:
         log_probs_2 = self.dist.log_prob(param_2_placeholder, sample_placeholder)
         real_kl = tf.reduce_mean(self.dist.kl_divergence(param_1_placeholder,
                                                          param_2_placeholder))
-        for _ in range(NUM_SAMPLE_TRIES):
-            params = self._random_params()
+        for i in range(NUM_SAMPLE_TRIES):
+            params = self._random_params(use_numpy=(i%2 == 0))
             samples = self.dist.sample(params)
             feed_dict = {
                 param_1_placeholder: params,
@@ -111,9 +111,12 @@ class DistributionTester:
             est_kl = np.mean(log_probs_out_1 - log_probs_out_2)
             self.test.assertTrue(abs(1 - kl_out/est_kl) < self.prec)
 
-    def _random_params(self):
+    def _random_params(self, use_numpy=False):
         params = np.random.normal(size=self.dist.param_shape)
-        return np.array([params] * self.batch_size)
+        batch = [params] * self.batch_size
+        if use_numpy:
+            batch = np.array(batch)
+        return batch
 
     def _param_batch_shape(self):
         return (self.batch_size,) + self.dist.param_shape

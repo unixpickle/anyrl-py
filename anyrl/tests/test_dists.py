@@ -41,6 +41,11 @@ class DistributionTester:
         """
         Test the reported shapes.
         """
+        for elem in self.dist.out_shape:
+            self.test.assertTrue(isinstance(elem, int))
+        for elem in self.dist.param_shape:
+            self.test.assertTrue(isinstance(elem, int))
+
         samples = self.dist.sample(self._random_params())
         self.test.assertEqual(len(samples), self.batch_size)
         sample_shape = np.array(self.dist.to_vecs(samples)).shape

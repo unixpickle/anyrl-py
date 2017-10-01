@@ -1,7 +1,5 @@
 """
-Wrappers for RL^2.
-
-See: https://arxiv.org/abs/1611.02779.
+Wrappers for meta-learning.
 """
 
 import gym
@@ -15,6 +13,8 @@ class RL2Env(gym.Wrapper):
 
     Creates a tuple observation space:
       (observation, action, reward, done).
+
+    See: https://arxiv.org/abs/1611.02779.
     """
     def __init__(self, env, first_action, num_eps=1, warmup_eps=0):
         """
@@ -41,9 +41,10 @@ class RL2Env(gym.Wrapper):
         self.warmup_eps = warmup_eps
         self._done_eps = 0
 
-    def _reset(self):
+    # pylint: disable=W0221
+    def _reset(self, **kwargs):
         self._done_eps = 0
-        obs = self.env.reset()
+        obs = self.env.reset(**kwargs)
         return (obs, self.first_action, np.array([0.0]), np.array([0]))
 
     def _step(self, action):
@@ -57,3 +58,38 @@ class RL2Env(gym.Wrapper):
                 done = False
                 aug_obs = (self.env.reset(),) + aug_obs[1:]
         return aug_obs, rew, done, info
+
+class SwitchableEnv(gym.Env):
+    """
+    An environment that proxies calls to another
+    environment that can be swapped out at any time.
+
+    This is useful in conjunction with RL2Env to swap out
+    the environment after every meta-episode.
+    """
+    def __init__(self, first_env):
+        self.env = first_env
+        self.action_space = first_env.action_space()
+        self.observation_space = first_env.observation_space()
+
+    def switch_env(self, new_env):
+        """
+        Switch to a new environment.
+
+        The new environment must have the same spaces as
+        the old one.
+        """
+        self.env = new_env
+
+    # pylint: disable=W0221
+    def _reset(self, **kwargs):
+        return self.env.reset(**kwargs)
+
+    def _step(self, action):
+        return self.env.step(action)
+
+    def _render(self, mode='human', close=False):
+        return self.env.render(mode=mode, close=close)
+
+    def _seed(self, seed=None):
+        return self.env.seed(seed=seed)

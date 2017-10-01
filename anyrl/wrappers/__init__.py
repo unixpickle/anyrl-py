@@ -2,4 +2,4 @@
 Helpful wrappers for Reinforcement Learning.
 """
 
-from .rl2 import RL2Env
+from .meta import RL2Env, SwitchableEnv

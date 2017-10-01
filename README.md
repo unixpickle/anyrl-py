@@ -18,6 +18,7 @@ There are several different sub-modules in anyrl:
  * `rollouts`: APIs for gathering and manipulating batches of episodes or partial episodes. Many RL algorithms include a "gather trajectories" step, and this sub-module fulfills that role.
  * `algos`: well-known learning algorithms like policy gradients or PPO. Also includes mini-algorithms like Generalized Advantage Estimation.
  * `spaces`: tools for using action and observation spaces. Includes parameterized probability distributions for implementing stochastic policies.
+ * `wrappers`: convenient and reusable environment wrappers.
 
 # Motivation
 

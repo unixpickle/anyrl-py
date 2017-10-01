@@ -102,6 +102,7 @@ class TruncatedRoller(Roller):
         running_rollouts = self._starting_rollouts()
         for _ in range(self.num_timesteps):
             self._step(completed_rollouts, running_rollouts)
+        self._step(completed_rollouts, running_rollouts, final_step=True)
         self._add_truncated(completed_rollouts, running_rollouts)
         return completed_rollouts
 
@@ -125,33 +126,43 @@ class TruncatedRoller(Roller):
         return rollouts
 
     # pylint: disable=R0914
-    def _step(self, completed, running):
+    def _step(self, completed, running, final_step=False):
         """
-        Take a batched step and add completed rollouts to
-        the list.
-        Update the running rollouts to reflect new steps
+        Wait for the previous batched step to complete (or
+        use self._last_obs) and start a new step.
+
+        Updates the running rollouts to reflect new steps
         and episodes.
+
+        Returns the newest batch of model outputs.
         """
-        for batch_idx, states in enumerate(self._last_states):
+        for batch_idx, obses in enumerate(self._last_obs):
             obses = self._last_obs[batch_idx]
+            if obses is None:
+                step_out = self.batched_env.step_wait(sub_batch=batch_idx)
+                obses, rews, dones, infos = step_out
+                for env_idx, (rew, done, info) in enumerate(zip(rews, dones, infos)):
+                    running[batch_idx][env_idx].rewards.append(rew)
+                    running[batch_idx][env_idx].infos.append(info)
+                    if done:
+                        self._complete_rollout(completed, running, batch_idx, env_idx)
+                    else:
+                        self._prev_steps[batch_idx][env_idx] += 1
+                        self._prev_reward[batch_idx][env_idx] += rew
+
+            states = self._last_states[batch_idx]
             model_outs = self.model.step(obses, states)
             for env_idx, (obs, rollout) in enumerate(zip(obses, running[batch_idx])):
                 reduced_out = _reduce_model_outs(model_outs, env_idx)
                 rollout.observations.append(obs)
                 rollout.model_outs.append(reduced_out)
-            self._last_states[batch_idx] = model_outs['states']
-            self.batched_env.step_start(model_outs['actions'], sub_batch=batch_idx)
-        for batch_idx in range(self.batched_env.num_sub_batches):
-            step_out = self.batched_env.step_wait(sub_batch=batch_idx)
-            self._last_obs[batch_idx], rews, dones, infos = step_out
-            for env_idx, (rew, done, info) in enumerate(zip(rews, dones, infos)):
-                running[batch_idx][env_idx].rewards.append(rew)
-                running[batch_idx][env_idx].infos.append(info)
-                if done:
-                    self._complete_rollout(completed, running, batch_idx, env_idx)
-                else:
-                    self._prev_steps[batch_idx][env_idx] += 1
-                    self._prev_reward[batch_idx][env_idx] += rew
+
+            if final_step:
+                self._last_obs[batch_idx] = obses
+            else:
+                self._last_states[batch_idx] = model_outs['states']
+                self._last_obs[batch_idx] = None
+                self.batched_env.step_start(model_outs['actions'], sub_batch=batch_idx)
 
     def _complete_rollout(self, completed, running, batch_idx, env_idx):
         """
@@ -167,19 +178,14 @@ class TruncatedRoller(Roller):
         rollout = empty_rollout(start_state)
         running[batch_idx][env_idx] = rollout
 
+    # pylint: disable=R0201
     def _add_truncated(self, completed, running):
         """
         Add partial but non-empty rollouts to completed.
         """
-        for batch_idx, sub_running in enumerate(running):
-            states = self._last_states[batch_idx]
-            for env_idx, rollout in enumerate(sub_running):
+        for sub_running in running:
+            for rollout in sub_running:
                 if rollout.num_steps > 0:
-                    last_obs = self._last_obs[batch_idx][env_idx]
-                    reduced_state = _reduce_states(states, env_idx)
-                    model_out = self.model.step([last_obs], reduced_state)
-                    rollout.observations.append(last_obs)
-                    rollout.model_outs.append(model_out)
                     rollout.end_time = time.time()
                     completed.append(rollout)
 

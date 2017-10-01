@@ -69,8 +69,8 @@ class SwitchableEnv(gym.Env):
     """
     def __init__(self, first_env):
         self.env = first_env
-        self.action_space = first_env.action_space()
-        self.observation_space = first_env.observation_space()
+        self.action_space = first_env.action_space
+        self.observation_space = first_env.observation_space
 
     def switch_env(self, new_env):
         """

@@ -7,6 +7,7 @@ import unittest
 from anyrl.rollouts import (batched_gym_env, BasicRoller, TruncatedRoller,
                             EpisodeRoller, Rollout)
 from anyrl.tests import SimpleEnv, SimpleModel
+import numpy as np
 
 class TruncatedRollerTest(unittest.TestCase):
     """
@@ -203,6 +204,9 @@ def _rollout_hash(rollout):
     """
     Generate a string that uniquely identifies a rollout.
     """
+    # Prevent ellipsis.
+    np.set_printoptions(threshold=1e6)
+
     res = ''
     res += str(rollout.trunc_start)
     res += str(rollout.trunc_end)

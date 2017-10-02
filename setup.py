@@ -76,7 +76,8 @@ setup(
     install_requires=[
         'numpy>=1.0.0,<2.0.0',
         'cloudpickle>=0.4.0,<0.5.0',
-        'gym>=0.9.2,<0.10.0'
+        'gym>=0.9.2,<0.10.0',
+        'mpi4py>=2.0.0,<3.0.0'
     ],
 
     extras_require={

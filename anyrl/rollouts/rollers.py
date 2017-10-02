@@ -137,7 +137,6 @@ class TruncatedRoller(Roller):
         Returns the newest batch of model outputs.
         """
         for batch_idx, obses in enumerate(self._last_obs):
-            obses = self._last_obs[batch_idx]
             if obses is None:
                 step_out = self.batched_env.step_wait(sub_batch=batch_idx)
                 obses, rews, dones, infos = step_out

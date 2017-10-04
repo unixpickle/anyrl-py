@@ -33,8 +33,8 @@ class PPO(A2C):
         dist = self.model.action_dist
         new_log_probs = dist.log_prob(actor, self._actions)
         old_log_probs = dist.log_prob(self._orig_action_params, self._actions)
-        clipped_obj = _clipped_objective(new_log_probs, old_log_probs,
-                                         self._advs, self._epsilon)
+        clipped_obj = clipped_objective(new_log_probs, old_log_probs,
+                                        self._advs, self._epsilon)
         critic_error = self._target_vals - critic
         self.actor_loss = util.masked_mean(mask, clipped_obj)
         self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
@@ -80,7 +80,7 @@ class PPO(A2C):
     # TODO: API that supports schedules and runs the
     # entire training loop for us.
 
-def _clipped_objective(new_log_probs, old_log_probs, advs, epsilon):
+def clipped_objective(new_log_probs, old_log_probs, advs, epsilon):
     """
     Compute the component-wise clipped PPO objective.
     """

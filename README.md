@@ -46,3 +46,6 @@ Here is the current TODO list, organized by sub-module:
 * `spaces`
   * Dict
   * MultiDiscrete
+* `tests`
+  * Benchmarks for rollouts
+  * Benchmarks for training

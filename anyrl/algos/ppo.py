@@ -42,10 +42,13 @@ class PPO(A2C):
         self.objective = (self.actor_loss + entropy_reg * self.entropy -
                           vf_coeff * self.critic_loss)
 
-    def feed_dict(self, rollouts, batch=None):
+    def feed_dict(self, rollouts, batch=None, advantages=None, targets=None):
         if batch is None:
             batch = next(self.model.batches(rollouts))
-        feed_dict = super(PPO, self).feed_dict(rollouts, batch)
+        feed_dict = super(PPO, self).feed_dict(rollouts,
+                                               batch=batch,
+                                               advantages=advantages,
+                                               targets=targets)
         orig_outs = util.select_model_out_from_batch('action_params', rollouts, batch)
         feed_dict[self._orig_action_params] = orig_outs
         return feed_dict
@@ -66,9 +69,13 @@ class PPO(A2C):
         """
         batch_idx = 0
         batches = self.model.batches(rollouts, batch_size=batch_size)
+        advantages = self._adv_est.advantages(rollouts)
+        targets = self._adv_est.targets(rollouts)
         for batch in batches:
             terms = (self.actor_loss, self.critic_loss, self.entropy, optimize_op)
-            feed_dict = self.feed_dict(rollouts, batch)
+            feed_dict = self.feed_dict(rollouts, batch,
+                                       advantages=advantages,
+                                       targets=targets)
             terms = self.model.session.run(terms, feed_dict)
             if log_fn is not None:
                 log_fn('batch %d: actor=%f critic=%f entropy=%f' %

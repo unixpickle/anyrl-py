@@ -39,20 +39,23 @@ class A2C:
 
         self._create_objective(vf_coeff, entropy_reg)
 
-    def feed_dict(self, rollouts, batch=None):
+    def feed_dict(self, rollouts, batch=None, advantages=None, targets=None):
         """
         Generate a TensorFlow feed_dict that feeds the
         rollouts into the objective.
 
         If no batch is specified, all rollouts are used.
+
+        If advantages or targets are specified, then they
+        are used instead of using the advantage estimator.
         """
         if batch is None:
             batch = next(self.model.batches(rollouts))
-        advs = self._adv_est.advantages(rollouts)
-        targets = self._adv_est.targets(rollouts)
+        advantages = advantages or self._adv_est.advantages(rollouts)
+        targets = targets or self._adv_est.targets(rollouts)
         actions = util.select_model_out_from_batch('actions', rollouts, batch)
         feed_dict = batch['feed_dict']
-        feed_dict[self._advs] = util.select_from_batch(advs, batch)
+        feed_dict[self._advs] = util.select_from_batch(advantages, batch)
         feed_dict[self._target_vals] = util.select_from_batch(targets, batch)
         feed_dict[self._actions] = self.model.action_dist.to_vecs(actions)
         return feed_dict

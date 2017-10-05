@@ -43,7 +43,6 @@ Here is the current TODO list, organized by sub-module:
 * `algos`
   * TRPO
   * Schedules for learning rates & other hyper-parameters
-  * Different GAE lambda for targets & advantages
 * `spaces`
   * Dict
   * MultiDiscrete

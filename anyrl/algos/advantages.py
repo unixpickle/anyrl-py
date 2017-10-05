@@ -35,14 +35,12 @@ class GAE(AdvantageEstimator):
     """
     An implementation of Generalized Advantage Estimation.
     """
-    def __init__(self, lam, discount):
+    def __init__(self, lam, discount, target_lam=None):
         self.lam = lam
         self.discount = discount
+        self.target_lam = target_lam
 
     def advantages(self, rollouts):
-        """
-        Compute the generalized advantages.
-        """
         res = []
         for rollout in rollouts:
             adv = 0
@@ -56,3 +54,9 @@ class GAE(AdvantageEstimator):
                 advs.append(adv)
             res.append(advs[::-1])
         return res
+
+    def targets(self, rollouts):
+        if self.target_lam is None:
+            return super(GAE, self).targets(rollouts)
+        proxy = GAE(lam=self.target_lam, discount=self.discount)
+        return proxy.targets(rollouts)

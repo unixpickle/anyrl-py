@@ -4,8 +4,8 @@ Test various Roller implementations.
 
 import unittest
 
-from anyrl.rollouts import (batched_gym_env, BasicRoller, TruncatedRoller,
-                            EpisodeRoller, Rollout)
+from anyrl.rollouts import (batched_gym_env, AsyncGymEnv, BasicRoller, TruncatedRoller,
+                            EpisodeRoller, ThreadedRoller, Rollout)
 from anyrl.tests import SimpleEnv, SimpleModel
 import numpy as np
 
@@ -184,6 +184,35 @@ class EpisodeRollerTest(unittest.TestCase):
         expected = basic_roller.rollouts()
 
         _compare_rollout_batch(self, actual, expected)
+
+class TestThreadedRoller(unittest.TestCase):
+    """
+    Tests for ThreadedRoller.
+    """
+    def test_truncated_equivalence(self):
+        """
+        Test that ThreadedRoller produces the same set of
+        rollouts as TruncatedRoller.
+        """
+        env_fns = [lambda seed=x: SimpleEnv(seed, (5, 3), 'uint8') for x in range(15)]
+        model = SimpleModel((5, 3), stateful=True, state_tuple=True)
+
+        batched_env = batched_gym_env(env_fns, num_sub_batches=3, sync=True)
+        trunc_roller = TruncatedRoller(batched_env, model, 17)
+
+        obs_space = env_fns[0]().observation_space
+        async_envs = [AsyncGymEnv(fn, obs_space) for fn in env_fns]
+        thread_roller = ThreadedRoller(async_envs, model, 17)
+
+        try:
+            for _ in range(3):
+                actual = thread_roller.rollouts()
+                expected = trunc_roller.rollouts()
+                _compare_rollout_batch(self, actual, expected, ordered=False)
+        finally:
+            for env in async_envs:
+                env.close()
+            thread_roller.close()
 
 def _compare_rollout_batch(test, rs1, rs2, ordered=True):
     """

@@ -229,7 +229,7 @@ class AsyncGymEnv(AsyncEnv):
         self._proc.start()
         self._running_cmd = None
         self._req_queue.put(('action_space', None))
-        self.action_space = self._resp_queue.get()
+        self.action_space = self._get_response()
 
     def reset_start(self):
         assert self._running_cmd is None
@@ -238,7 +238,7 @@ class AsyncGymEnv(AsyncEnv):
 
     def reset_wait(self):
         assert self._running_cmd == 'reset'
-        res = self._decode_observation(self._resp_queue.get())
+        res = self._decode_observation(self._get_response())
         self._running_cmd = None
         return res
 
@@ -249,7 +249,7 @@ class AsyncGymEnv(AsyncEnv):
 
     def step_wait(self):
         assert self._running_cmd == 'step'
-        obs, rew, done, info = self._resp_queue.get()
+        obs, rew, done, info = self._get_response()
         obs = self._decode_observation(obs)
         self._running_cmd = None
         return obs, rew, done, info
@@ -263,6 +263,16 @@ class AsyncGymEnv(AsyncEnv):
         self._running_cmd = 'close'
         self._req_queue.put(('close', None))
         self._proc.join()
+
+    def _get_response(self):
+        """
+        Read a value from the response queue and make sure
+        it is not an exception.
+        """
+        resp_obj = self._resp_queue.get()
+        if isinstance(resp_obj, BaseException):
+            raise RuntimeError('exception on worker') from resp_obj
+        return resp_obj
 
     def _decode_observation(self, obs):
         """
@@ -297,6 +307,8 @@ def _async_gym_worker(req_queue, resp_queue, obs_buf, make_env):
                 return
             else:
                 raise ValueError('unknown command: ' + cmd)
+    except BaseException as exc:
+        resp_queue.put(exc)
     finally:
         env.close()
 

@@ -121,3 +121,16 @@ class Rollout:
         This only works if the model generated values.
         """
         return self.model_outs[timestep]['values'][0]
+
+    def copy(self):
+        """
+        Create a shallow copy of the rollout.
+        """
+        return Rollout(self.observations,
+                       self.model_outs,
+                       self.rewards,
+                       self.start_state,
+                       prev_steps=self.prev_steps,
+                       prev_reward=self.prev_reward,
+                       infos=self.infos,
+                       end_time=self.end_time)

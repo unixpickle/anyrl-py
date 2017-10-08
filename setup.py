@@ -23,7 +23,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.7.2',
+    version='0.7.4',
 
     description='A library for Reinforcement Learning',
     long_description=LONG_DESCRIPTION,
@@ -76,12 +76,12 @@ setup(
     install_requires=[
         'numpy>=1.0.0,<2.0.0',
         'cloudpickle>=0.4.0,<0.5.0',
-        'gym>=0.9.2,<0.10.0',
-        'mpi4py>=2.0.0,<3.0.0'
+        'gym>=0.9.2,<0.10.0'
     ],
 
     extras_require={
         "tf": ["tensorflow>=1.0.0"],
         "tf_gpu": ["tensorflow-gpu>=1.0.0"],
+        "mpi": ["mpi4py>=2.0.0,<3.0.0"]
     }
 )

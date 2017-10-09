@@ -15,7 +15,9 @@ def main():
     Entry-point for the program.
     """
     for algo in ['ppo', 'a2c']:
-        run_algorithm(algo)
+        # pylint: disable=E1129
+        with tf.Graph().as_default():
+            run_algorithm(algo)
 
 def run_algorithm(algo_name):
     """

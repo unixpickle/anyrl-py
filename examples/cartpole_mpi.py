@@ -41,7 +41,7 @@ def run_ppo():
             # pylint: disable=E1101
             print('batch %d: rank=%d mean=%f' % (i, MPI.COMM_WORLD.Get_rank(),
                                                  mean_total_reward(rollouts)))
-            mpi_ppo(ppo, optimizer, rollouts)
+            mpi_ppo(ppo, optimizer, rollouts, log_fn=print)
 
 if __name__ == '__main__':
     run_ppo()

@@ -50,8 +50,12 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12):
     """
     batch_idx = 0
     batches = ppo.model.batches(rollouts, batch_size=batch_size)
+    advantages = self._adv_est.advantages(rollouts)
+    targets = self._adv_est.targets(rollouts)
     for batch in batches:
-        feed_dict = ppo.feed_dict(rollouts, batch)
+        feed_dict = ppo.feed_dict(rollouts, batch,
+                                  advantages=advantages,
+                                  targets=targets)
         optimizer.minimize(ppo.model.session, feed_dict=feed_dict)
         batch_idx += 1
         if batch_idx == num_iter:

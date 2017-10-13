@@ -25,6 +25,9 @@ def run_ppo():
     obs_vectorizer = gym_space_vectorizer(env.observation_space)
 
     with tf.Session() as sess:
+        # Make sure all workers have the same init.
+        tf.set_random_seed(0)
+
         model = MLP(sess, action_dist, obs_vectorizer, layer_sizes=[32])
 
         # Deal with CartPole-v0 reward scale.

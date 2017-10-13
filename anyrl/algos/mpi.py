@@ -50,8 +50,8 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12):
     """
     batch_idx = 0
     batches = ppo.model.batches(rollouts, batch_size=batch_size)
-    advantages = self._adv_est.advantages(rollouts)
-    targets = self._adv_est.targets(rollouts)
+    advantages = ppo.adv_est.advantages(rollouts)
+    targets = ppo.adv_est.targets(rollouts)
     for batch in batches:
         feed_dict = ppo.feed_dict(rollouts, batch,
                                   advantages=advantages,

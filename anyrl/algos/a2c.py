@@ -26,7 +26,7 @@ class A2C:
                  adv_est=GAE(lam=0.95, discount=0.99),
                  variables=None):
         self.model = model
-        self._adv_est = adv_est
+        self.adv_est = adv_est
 
         self.variables = variables
         if variables is None:
@@ -51,8 +51,8 @@ class A2C:
         """
         if batch is None:
             batch = next(self.model.batches(rollouts))
-        advantages = advantages or self._adv_est.advantages(rollouts)
-        targets = targets or self._adv_est.targets(rollouts)
+        advantages = advantages or self.adv_est.advantages(rollouts)
+        targets = targets or self.adv_est.targets(rollouts)
         actions = util.select_model_out_from_batch('actions', rollouts, batch)
         feed_dict = batch['feed_dict']
         feed_dict[self._advs] = util.select_from_batch(advantages, batch)

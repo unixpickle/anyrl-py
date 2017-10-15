@@ -37,6 +37,7 @@ Here is the current TODO list, organized by sub-module:
 * `models`
   * Unify CNN and MLP models with a single base class.
   * Unshared actor-critics for TRPO and the like.
+  * Support nested tuple states (MultiRNNCell)
 * `rollouts`
   * Maybe: way to not record states in `model_outs` (memory saving)
   * Use class methods for worker routines?

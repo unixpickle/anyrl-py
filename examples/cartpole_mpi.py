@@ -25,6 +25,9 @@ def run_ppo():
     obs_vectorizer = gym_space_vectorizer(env.observation_space)
 
     with tf.Session() as sess:
+        # Make sure all workers have the same init.
+        tf.set_random_seed(0)
+
         model = MLP(sess, action_dist, obs_vectorizer, layer_sizes=[32])
 
         # Deal with CartPole-v0 reward scale.
@@ -41,7 +44,7 @@ def run_ppo():
             # pylint: disable=E1101
             print('batch %d: rank=%d mean=%f' % (i, MPI.COMM_WORLD.Get_rank(),
                                                  mean_total_reward(rollouts)))
-            mpi_ppo(ppo, optimizer, rollouts)
+            mpi_ppo(ppo, optimizer, rollouts, log_fn=print)
 
 if __name__ == '__main__':
     run_ppo()

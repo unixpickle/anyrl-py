@@ -69,8 +69,8 @@ class PPO(A2C):
         """
         batch_idx = 0
         batches = self.model.batches(rollouts, batch_size=batch_size)
-        advantages = self._adv_est.advantages(rollouts)
-        targets = self._adv_est.targets(rollouts)
+        advantages = self.adv_est.advantages(rollouts)
+        targets = self.adv_est.targets(rollouts)
         for batch in batches:
             terms = (self.actor_loss, self.critic_loss, self.entropy, optimize_op)
             feed_dict = self.feed_dict(rollouts, batch,

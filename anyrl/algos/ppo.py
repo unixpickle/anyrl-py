@@ -60,7 +60,7 @@ class PPO(A2C):
 
     # pylint: disable=R0913
     def run_optimize(self, optimize_op, rollouts, batch_size=None, num_iter=12,
-                     log_fn=None):
+                     log_fn=None, extra_feed_dict=None):
         """
         Run several steps of training with mini-batches.
 
@@ -76,6 +76,8 @@ class PPO(A2C):
             feed_dict = self.feed_dict(rollouts, batch,
                                        advantages=advantages,
                                        targets=targets)
+            if extra_feed_dict:
+                feed_dict.update(extra_feed_dict)
             terms = self.model.session.run(terms, feed_dict)
             if log_fn is not None:
                 log_fn('batch %d: actor=%f critic=%f entropy=%f' %

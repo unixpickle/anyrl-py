@@ -44,7 +44,6 @@ Here is the current TODO list, organized by sub-module:
 * `algos`
   * TRPO
   * Schedules for learning rates & other hyper-parameters
-  * Properly mask `NaN`s and `Inf`s
 * `spaces`
   * Dict
   * MultiDiscrete

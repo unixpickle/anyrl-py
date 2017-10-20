@@ -9,7 +9,7 @@ import unittest
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple
+from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell
 
 from anyrl.models import MLP, RNNCellAC
 from anyrl.rollouts import BasicRoller
@@ -182,12 +182,21 @@ class ACTest(unittest.TestCase):
         """
         Test an LSTM model.
         """
-        tuple_maker = lambda x: LSTMStateTuple(x[0], x[1])
         maker = lambda sess: RNNCellAC(sess,
                                        self.action_dist,
                                        self.obs_vectorizer,
-                                       make_cell=lambda: LSTMCell(32),
-                                       make_state_tuple=tuple_maker)
+                                       make_cell=lambda: LSTMCell(32))
+        ModelTester(self, maker).test_all()
+
+    def test_multi_rnn(self):
+        """
+        Test a stacked LSTM with nested tuple state.
+        """
+        make_cell = lambda: MultiRNNCell([LSTMCell(16), LSTMCell(32)])
+        maker = lambda sess: RNNCellAC(sess,
+                                       self.action_dist,
+                                       self.obs_vectorizer,
+                                       make_cell=make_cell)
         ModelTester(self, maker).test_all()
 
 if __name__ == '__main__':

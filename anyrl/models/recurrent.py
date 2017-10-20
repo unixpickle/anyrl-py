@@ -4,6 +4,7 @@ Stateful neural network models.
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.contrib.framework import nest # pylint: disable=E0611
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
@@ -170,8 +171,8 @@ class RecurrentAC(TFActorCritic):
         Set self.first_state_ph and self.init_state_vars
         with the given TF datatype and the state size.
 
-        The state size may be any of the types supported
-        by TensorFlow's RNNCell.
+        The state size may be an integer, a TensorShape,
+        or a tuple thereof.
         """
         if isinstance(state_size, tuple):
             self.first_state_ph = ()
@@ -203,11 +204,13 @@ class RNNCellAC(RecurrentAC):
     """
     A recurrent actor-critic that uses a TensorFlow
     RNNCell.
+
+    For RNNCells with nested tuple states, the tuple is
+    flattened.
     """
     # pylint: disable=R0913
     # pylint: disable=R0914
-    def __init__(self, session, action_dist, obs_vectorizer, make_cell,
-                 make_state_tuple=lambda x: x):
+    def __init__(self, session, action_dist, obs_vectorizer, make_cell):
         super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
         obs_seq_shape = (None, None) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(tf.float32, obs_seq_shape)
@@ -219,16 +222,23 @@ class RNNCellAC(RecurrentAC):
         with tf.variable_scope('cell'):
             cell = make_cell()
         with tf.variable_scope('states'):
-            self.create_state_fields(tf.float32, cell.state_size)
+            if isinstance(cell.state_size, tuple):
+                self.create_state_fields(tf.float32, tuple(nest.flatten(cell.state_size)))
+            else:
+                self.create_state_fields(tf.float32, cell.state_size)
         init_state = mix_init_states(self.is_init_state_ph,
                                      self.init_state_vars,
                                      self.first_state_ph)
         with tf.variable_scope('base'):
-            state_tuple = make_state_tuple(init_state)
+            if isinstance(init_state, tuple):
+                init_state = nest.pack_sequence_as(cell.state_size, init_state)
             base, states = tf.nn.dynamic_rnn(cell, cell_input,
                                              sequence_length=self.seq_lens_ph,
-                                             initial_state=state_tuple)
-        self.states_out = states
+                                             initial_state=init_state)
+        if isinstance(states, tuple):
+            self.states_out = tuple(nest.flatten(states))
+        else:
+            self.states_out = states
         with tf.variable_scope('actor'):
             self.actor_out = self.actor(base)
         with tf.variable_scope('critic'):

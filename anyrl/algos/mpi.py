@@ -68,7 +68,8 @@ class MPIOptimizer:
         return tuple(result)
 
 # pylint: disable=R0913
-def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None):
+def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
+            extra_feed_dict=None):
     """
     Run the PPO inner loop with an MPI optimizer.
 
@@ -82,6 +83,8 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None)
         feed_dict = ppo.feed_dict(rollouts, batch,
                                   advantages=advantages,
                                   targets=targets)
+        if extra_feed_dict:
+            feed_dict.update(extra_feed_dict)
         terms = optimizer.minimize(ppo.model.session,
                                    feed_dict=feed_dict,
                                    terms=[ppo.actor_loss, ppo.critic_loss, ppo.entropy])

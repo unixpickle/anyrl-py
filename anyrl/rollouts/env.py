@@ -221,7 +221,7 @@ class AsyncGymEnv(AsyncEnv):
             self._obs_buf = None
         self._req_queue = Queue()
         self._resp_queue = Queue()
-        self._proc = Process(target=_async_gym_worker,
+        self._proc = Process(target=self._worker,
                              args=(self._req_queue,
                                    self._resp_queue,
                                    self._obs_buf,
@@ -285,49 +285,51 @@ class AsyncGymEnv(AsyncEnv):
         shape = self.observation_space.low.shape
         return obs.reshape(shape).copy()
 
-def _async_gym_worker(req_queue, resp_queue, obs_buf, make_env):
-    """
-    Run commands for an AsyncGymController.
-    """
-    env = make_env()
-    try:
-        while True:
-            cmd, action = req_queue.get()
-            if cmd == 'action_space':
-                resp_queue.put(env.action_space)
-            elif cmd == 'reset':
-                resp_queue.put(_sendable_observation(env.reset(), obs_buf))
-            elif cmd == 'step':
-                obs, rew, done, info = env.step(action)
-                if done:
-                    obs = env.reset()
-                obs = _sendable_observation(obs, obs_buf)
-                resp_queue.put((obs, rew, done, info))
-            elif cmd == 'close':
-                return
-            else:
-                raise ValueError('unknown command: ' + cmd)
-    except BaseException as exc:
-        resp_queue.put(exc)
-    finally:
-        env.close()
+    @classmethod
+    def _worker(cls, req_queue, resp_queue, obs_buf, make_env):
+        """
+        Entry-point for the sub-process.
+        """
+        env = make_env()
+        try:
+            while True:
+                cmd, action = req_queue.get()
+                if cmd == 'action_space':
+                    resp_queue.put(env.action_space)
+                elif cmd == 'reset':
+                    resp_queue.put(cls._sendable_observation(env.reset(), obs_buf))
+                elif cmd == 'step':
+                    obs, rew, done, info = env.step(action)
+                    if done:
+                        obs = env.reset()
+                    obs = cls._sendable_observation(obs, obs_buf)
+                    resp_queue.put((obs, rew, done, info))
+                elif cmd == 'close':
+                    return
+                else:
+                    raise ValueError('unknown command: ' + cmd)
+        except BaseException as exc:
+            resp_queue.put(exc)
+        finally:
+            env.close()
 
-def _sendable_observation(obs, obs_buf):
-    """
-    Efficiently communicate the observation to the parent
-    process, either via shared memory or by returning a
-    picklable object.
-    """
-    if obs_buf is None:
-        return obs
-    if not isinstance(obs, np.ndarray):
-        obs = np.array(obs)
-    if obs.dtype != 'uint8':
-        return obs
-    dst = obs_buf.get_obj()
-    dst_np = np.frombuffer(dst, dtype=obs.dtype).reshape(obs.shape)
-    np.copyto(dst_np, obs)
-    return None
+    @staticmethod
+    def _sendable_observation(obs, obs_buf):
+        """
+        Efficiently communicate the observation to the parent
+        process, either via shared memory or by returning a
+        picklable object.
+        """
+        if obs_buf is None:
+            return obs
+        if not isinstance(obs, np.ndarray):
+            obs = np.array(obs)
+        if obs.dtype != 'uint8':
+            return obs
+        dst = obs_buf.get_obj()
+        dst_np = np.frombuffer(dst, dtype=obs.dtype).reshape(obs.shape)
+        np.copyto(dst_np, obs)
+        return None
 
 class BatchedAsyncEnv(BatchedEnv):
     """

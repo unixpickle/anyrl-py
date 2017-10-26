@@ -83,9 +83,15 @@ class MLP(FeedforwardAC):
     """
     A multi-layer perceptron actor-critic model.
     """
-    # pylint: disable=R0913
-    def __init__(self, session, action_dist, obs_vectorizer, layer_sizes,
-                 activation=tf.nn.relu):
+    # pylint: disable=R0913,R0914
+    def __init__(self,
+                 session,
+                 action_dist,
+                 obs_vectorizer,
+                 layer_sizes,
+                 activation=tf.nn.relu,
+                 actor_init=tf.zeros_initializer(),
+                 critic_init=tf.zeros_initializer()):
         """
         Create an MLP model.
 
@@ -94,6 +100,9 @@ class MLP(FeedforwardAC):
           action_dist: an action Distribution.
           obs_vectorizer: an observation SpaceVectorizer.
           layer_sizes: list of hidden layer sizes.
+          activation: the activation function.
+          actor_init: initializer for the actor head.
+          critic_init: initializer for the critic head.
         """
         super(MLP, self).__init__(session, action_dist, obs_vectorizer)
 
@@ -113,14 +122,14 @@ class MLP(FeedforwardAC):
             out_size = product(action_dist.param_shape)
             actor_out = fully_connected(layer_in, out_size,
                                         activation_fn=None,
-                                        weights_initializer=tf.zeros_initializer())
+                                        weights_initializer=actor_init)
             batch = tf.shape(actor_out)[0]
             self.actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
 
         with tf.variable_scope('critic'):
             critic_out = fully_connected(layer_in, 1,
                                          activation_fn=None,
-                                         weights_initializer=tf.zeros_initializer())
+                                         weights_initializer=critic_init)
             self.critic_out = tf.reshape(critic_out, (tf.shape(critic_out)[0],))
 
 class CNN(FeedforwardAC):
@@ -131,8 +140,14 @@ class CNN(FeedforwardAC):
     https://github.com/openai/baselines/blob/699919f1cf2527b184f4445a3758a773f333a1ba/baselines/a2c/policies.py#L91
     """
     # pylint: disable=R0913
-    def __init__(self, session, action_dist, obs_vectorizer,
-                 input_scale=1/0xff, input_dtype=tf.uint8):
+    def __init__(self,
+                 session,
+                 action_dist,
+                 obs_vectorizer,
+                 input_scale=1/0xff,
+                 input_dtype=tf.uint8,
+                 actor_init=tf.zeros_initializer(),
+                 critic_init=tf.zeros_initializer()):
         """
         Create an CNN model.
 
@@ -142,6 +157,8 @@ class CNN(FeedforwardAC):
           obs_vectorizer: an observation SpaceVectorizer.
           input_scale: factor to make inputs well-scaled.
           input_dtype: data-type for input placeholder.
+          actor_init: initializer for the actor head.
+          critic_init: initializer for the critic head.
         """
         super(CNN, self).__init__(session, action_dist, obs_vectorizer)
 
@@ -154,9 +171,9 @@ class CNN(FeedforwardAC):
         with tf.variable_scope('base'):
             base = self.base(obs_batch)
         with tf.variable_scope('actor'):
-            self.actor_out = self.actor(base)
+            self.actor_out = self.actor(base, actor_init)
         with tf.variable_scope('critic'):
-            self.critic_out = self.critic(base)
+            self.critic_out = self.critic(base, critic_init)
 
     # pylint: disable=R0201
     def base(self, obs_batch):
@@ -179,24 +196,24 @@ class CNN(FeedforwardAC):
         flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
         return tf.layers.dense(flat_in, 512, **conv_kwargs)
 
-    def actor(self, base):
+    def actor(self, base, initializer):
         """
         Turn the output from base() into action params.
         """
         out_size = product(self.action_dist.param_shape)
         actor_out = fully_connected(base, out_size,
                                     activation_fn=None,
-                                    weights_initializer=tf.zeros_initializer())
+                                    weights_initializer=initializer)
         batch = tf.shape(actor_out)[0]
         return tf.reshape(actor_out, (batch,) + self.action_dist.param_shape)
 
-    def critic(self, base):
+    def critic(self, base, initializer):
         """
         Turn the output from base() into values.
         """
         critic_out = fully_connected(base, 1,
                                      activation_fn=None,
-                                     weights_initializer=tf.zeros_initializer())
+                                     weights_initializer=initializer)
         return tf.reshape(critic_out, (tf.shape(critic_out)[0],))
 
 def _frames_from_rollouts(rollouts):

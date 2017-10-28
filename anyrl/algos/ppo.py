@@ -35,10 +35,13 @@ class PPO(A2C):
         old_log_probs = dist.log_prob(self._orig_action_params, self._actions)
         clipped_obj = clipped_objective(new_log_probs, old_log_probs,
                                         self._advs, self._epsilon)
+        clipped_samples = _clipped_samples(new_log_probs, old_log_probs,
+                                           self._advs, self._epsilon)
         critic_error = self._target_vals - critic
         self.actor_loss = util.masked_mean(mask, clipped_obj)
         self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
         self.entropy = util.masked_mean(mask, dist.entropy(actor))
+        self.num_clipped = tf.cast(util.masked_sum(mask, clipped_samples), tf.int32)
         self.objective = (self.actor_loss + entropy_reg * self.entropy -
                           vf_coeff * self.critic_loss)
 
@@ -72,7 +75,8 @@ class PPO(A2C):
         advantages = self.adv_est.advantages(rollouts)
         targets = self.adv_est.targets(rollouts)
         for batch in batches:
-            terms = (self.actor_loss, self.critic_loss, self.entropy, optimize_op)
+            terms = (self.actor_loss, self.critic_loss, self.entropy,
+                     self.num_clipped, optimize_op)
             feed_dict = self.feed_dict(rollouts, batch,
                                        advantages=advantages,
                                        targets=targets)
@@ -80,8 +84,8 @@ class PPO(A2C):
                 feed_dict.update(extra_feed_dict)
             terms = self.model.session.run(terms, feed_dict)
             if log_fn is not None:
-                log_fn('batch %d: actor=%f critic=%f entropy=%f' %
-                       (batch_idx, terms[0], terms[1], terms[2]))
+                log_fn('batch %d: actor=%f critic=%f entropy=%f clipped=%d' %
+                       (batch_idx, terms[0], terms[1], terms[2], terms[3]))
             batch_idx += 1
             if batch_idx == num_iter:
                 break
@@ -96,3 +100,12 @@ def clipped_objective(new_log_probs, old_log_probs, advs, epsilon):
     prob_ratio = tf.exp(new_log_probs - old_log_probs)
     clipped_ratio = tf.clip_by_value(prob_ratio, 1-epsilon, 1+epsilon)
     return tf.minimum(advs*clipped_ratio, advs*prob_ratio)
+
+def _clipped_samples(new_log_probs, old_log_probs, advs, epsilon):
+    """
+    Count the number of samples that are clipped by the
+    clipped PPO objective.
+    """
+    prob_ratio = tf.exp(new_log_probs - old_log_probs)
+    clipped_ratio = tf.clip_by_value(prob_ratio, 1-epsilon, 1+epsilon)
+    return tf.cast(advs*clipped_ratio < advs*prob_ratio, tf.float32)

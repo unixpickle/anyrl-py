@@ -25,5 +25,12 @@ def masked_mean(mask, vals):
     Mask the values and compute the mean of the masked
     elements.
     """
+    return masked_sum(mask, vals) / tf.reduce_sum(mask)
+
+def masked_sum(mask, vals):
+    """
+    Mask the values and compute the sum of the masked
+    elements.
+    """
     masked = tf.where(tf.equal(mask, 0), tf.zeros_like(vals), vals)
-    return tf.reduce_sum(masked) / tf.reduce_sum(mask)
+    return tf.reduce_sum(masked)

@@ -6,10 +6,12 @@ Tests for probability distributions.
 
 import unittest
 
+import gym
 import numpy as np
 import tensorflow as tf
 
-from anyrl.spaces import CategoricalSoftmax, BoxGaussian, MultiBernoulli, TupleDistribution
+from anyrl.spaces import (CategoricalSoftmax, BoxGaussian, MultiBernoulli, TupleDistribution,
+                          gym_space_distribution)
 
 # Number of times to run sample-based tests.
 NUM_SAMPLE_TRIES = 3
@@ -155,7 +157,7 @@ class TestCategoricalSoftmax(unittest.TestCase):
         """
         Run generic tests with DistributionTester.
         """
-        dist = CategoricalSoftmax(7)
+        dist = CategoricalSoftmax(7, low=2)
         tester = DistributionTester(self, dist)
         tester.test_all()
 
@@ -210,6 +212,14 @@ class TestTuple(unittest.TestCase):
         box_dist = BoxGaussian(np.array([[-3, 7, 1], [1, 2, 3.7]]),
                                np.array([[5, 7.1, 1.5], [2, 2.5, 4]]))
         dist = TupleDistribution((MultiBernoulli(3), box_dist))
+        tester = DistributionTester(self, dist)
+        tester.test_all()
+
+    def test_multi_discrete(self):
+        """
+        Run DistributionTester tests with MultiDiscrete.
+        """
+        dist = gym_space_distribution(gym.spaces.MultiDiscrete([[1, 3], [-1, 5]]))
         tester = DistributionTester(self, dist)
         tester.test_all()
 

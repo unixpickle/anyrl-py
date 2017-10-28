@@ -12,8 +12,9 @@ class CategoricalSoftmax(Distribution):
     A probability distribution that uses softmax to decide
     between a discrete number of options.
     """
-    def __init__(self, num_options):
+    def __init__(self, num_options, low=0):
         self.num_options = num_options
+        self.low = low
 
     @property
     def out_shape(self):
@@ -21,7 +22,7 @@ class CategoricalSoftmax(Distribution):
 
     def to_vecs(self, space_elements):
         res = np.zeros((len(space_elements), self.num_options))
-        res[np.arange(len(space_elements)), space_elements] = 1
+        res[np.arange(len(space_elements)), np.array(space_elements)-self.low] = 1
         return res
 
     @property
@@ -33,7 +34,7 @@ class CategoricalSoftmax(Distribution):
         cumulative_dist = np.cumsum(dist, axis=-1)
         sampled = np.random.rand(len(param_batch), 1)
         large_enoughs = cumulative_dist > sampled
-        return np.argmax(large_enoughs, axis=-1)
+        return self.low + np.argmax(large_enoughs, axis=-1)
 
     def log_prob(self, param_batch, sample_vecs):
         loss_func = tf.nn.softmax_cross_entropy_with_logits

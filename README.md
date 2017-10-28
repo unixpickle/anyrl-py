@@ -46,7 +46,6 @@ Here is the current TODO list, organized by sub-module:
   * Schedules for learning rates & other hyper-parameters
 * `spaces`
   * Dict
-  * MultiDiscrete
 * `tests`
   * Benchmarks for rollouts
   * Benchmarks for training

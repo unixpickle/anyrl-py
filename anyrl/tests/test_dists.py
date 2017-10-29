@@ -217,11 +217,15 @@ class TestTuple(unittest.TestCase):
 
     def test_multi_discrete(self):
         """
-        Run DistributionTester tests with MultiDiscrete.
+        Basic tests for MultiDiscrete, which is internally
+        implemented using a tuple.
         """
-        dist = gym_space_distribution(gym.spaces.MultiDiscrete([[1, 3], [-1, 5]]))
+        space = gym.spaces.MultiDiscrete([[1, 3], [-1, 5]])
+        dist = gym_space_distribution(space)
         tester = DistributionTester(self, dist)
         tester.test_all()
+        for sample in dist.sample(np.zeros((50,) + dist.param_shape)):
+            self.assertTrue(space.contains(sample))
 
 if __name__ == '__main__':
     unittest.main()

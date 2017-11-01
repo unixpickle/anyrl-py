@@ -39,6 +39,7 @@ Here is the current TODO list, organized by sub-module:
   * Unshared actor-critics for TRPO and the like.
 * `rollouts`
   * Maybe: way to not record states in `model_outs` (memory saving)
+  * Normalization based on advantage magnitudes.
 * `algos`
   * TRPO
   * Schedules for learning rates & other hyper-parameters

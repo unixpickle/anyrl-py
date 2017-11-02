@@ -8,7 +8,6 @@ import tensorflow as tf
 
 # pylint: disable=E1101
 
-# pylint: disable=R0903
 class MPIOptimizer:
     """
     Wraps a TensorFlow optimizer to use MPI allreduce.
@@ -66,6 +65,23 @@ class MPIOptimizer:
             total = MPI.COMM_WORLD.allreduce(term, op=MPI.SUM)
             result.append(total / MPI.COMM_WORLD.Get_size())
         return tuple(result)
+
+    def sync_from_root(self, sess):
+        """
+        Send the root node's parameters to every worker.
+
+        This may add nodes to the graph, so it should not
+        be called an unbounded number of times.
+
+        Arguments:
+          sess: the TensorFlow session.
+        """
+        rank = MPI.COMM_WORLD.Get_rank()
+        for _, var in self.grads:
+            if rank == 0:
+                MPI.COMM_WORLD.bcast(sess.run(var))
+            else:
+                sess.run(tf.assign(var, MPI.COMM_WORLD.bcast(None)))
 
 # pylint: disable=R0913
 def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,

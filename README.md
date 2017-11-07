@@ -42,7 +42,6 @@ Here is the current TODO list, organized by sub-module:
   * Normalization based on advantage magnitudes.
 * `algos`
   * TRPO
-  * Schedules for learning rates & other hyper-parameters
 * `spaces`
   * Dict
 * `tests`

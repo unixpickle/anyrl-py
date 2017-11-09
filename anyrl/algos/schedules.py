@@ -21,11 +21,11 @@ class TFSchedule(ABC):
       add_op: an Op which adds add_ph to time. It will
         never execute before self.value in the graph.
     """
-    def __init__(self):
-        time = tf.Variable(0, dtype=tf.float32, name='ScheduleCounter', trainable=False)
+    def __init__(self, dtype=tf.float32):
+        time = tf.Variable(0, dtype=dtype, name='ScheduleCounter', trainable=False)
         self.value = self.compute_schedule(time)
         self.time = time
-        self.add_ph = tf.placeholder(tf.float32)
+        self.add_ph = tf.placeholder(dtype)
         with tf.control_dependencies([self.value]):
             self.add_op = tf.assign_add(self.time, self.add_ph)
 
@@ -52,7 +52,7 @@ class LinearTFSchedule(TFSchedule):
     A schedule that linearly interpolates between a start
     and an end value.
     """
-    def __init__(self, duration=1.0, start_value=1.0, end_value=0.0):
+    def __init__(self, duration=1.0, start_value=1.0, end_value=0.0, dtype=tf.float64):
         """
         Create a linear schedule.
 
@@ -65,7 +65,7 @@ class LinearTFSchedule(TFSchedule):
         self._duration = float(duration)
         self._start_value = float(start_value)
         self._end_value = float(end_value)
-        super(LinearTFSchedule, self).__init__()
+        super(LinearTFSchedule, self).__init__(dtype=dtype)
 
     def compute_schedule(self, cur_time):
         frac_done = tf.clip_by_value(cur_time/self._duration, 0, 1)

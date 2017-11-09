@@ -65,7 +65,7 @@ class LinearTFSchedule(TFSchedule):
         self._duration = float(duration)
         self._start_value = float(start_value)
         self._end_value = float(end_value)
-        super(LinearTFSchedule, self).__init__(self)
+        super(LinearTFSchedule, self).__init__()
 
     def compute_schedule(self, cur_time):
         frac_done = tf.clip_by_value(cur_time/self._duration, 0, 1)

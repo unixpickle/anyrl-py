@@ -98,10 +98,11 @@ def softmax(param_batch):
     unnorm = np.exp(param_batch - max_vals)
     return unnorm / np.reshape(np.sum(unnorm, axis=-1), col_shape)
 
-def _pseudo_inverses(matrices, epsilon=1e-5):
+def _pseudo_inverses(matrices, epsilon=1e-8):
     """
     Compute the pseudo-inverses for a batch of matrices.
     """
     singulars, left, right = tf.svd(matrices)
-    inv_singulars = tf.matrix_diag(1 / (singulars + epsilon))
+    zero = tf.less_equal(singulars, epsilon)
+    inv_singulars = tf.matrix_diag(tf.where(zero, singulars, 1 / singulars))
     return tf.matmul(tf.matmul(left, inv_singulars), tf.transpose(right, perm=(0, 2, 1)))

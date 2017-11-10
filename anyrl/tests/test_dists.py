@@ -4,14 +4,15 @@ Tests for probability distributions.
 
 # pylint: disable=E1129
 
+import random
 import unittest
 
 import gym
 import numpy as np
 import tensorflow as tf
 
-from anyrl.spaces import (CategoricalSoftmax, BoxGaussian, MultiBernoulli, TupleDistribution,
-                          gym_space_distribution)
+from anyrl.spaces import (CategoricalSoftmax, NaturalSoftmax, BoxGaussian, MultiBernoulli,
+                          TupleDistribution, gym_space_distribution)
 
 # Number of times to run sample-based tests.
 NUM_SAMPLE_TRIES = 3
@@ -160,6 +161,68 @@ class TestCategoricalSoftmax(unittest.TestCase):
         dist = CategoricalSoftmax(7, low=2)
         tester = DistributionTester(self, dist)
         tester.test_all()
+
+class TestNaturalSoftmax(unittest.TestCase):
+    """
+    Tests for the NaturalSoftmax distribution.
+    """
+    def test_gradient_determinism(self):
+        """
+        Make sure that the gradient doesn't change from
+        run to run.
+        """
+        with tf.Graph().as_default():
+            with tf.Session() as sess:
+                dist = NaturalSoftmax(7)
+                params = tf.constant(np.random.normal(size=(15, 7)))
+                sampled = tf.one_hot([random.randrange(7) for _ in range(15)], 7,
+                                     dtype=tf.float32)
+                batched_grad = tf.gradients(dist.log_prob(params, sampled), params)[0]
+                first = sess.run(batched_grad)
+                for _ in range(10):
+                    self.assertTrue(np.allclose(first, sess.run(batched_grad)))
+
+    def test_natural_gradient(self):
+        """
+        Test random natural gradient cases.
+        """
+        with tf.Graph().as_default():
+            with tf.Session() as sess:
+                for _ in range(5):
+                    dist = NaturalSoftmax(7)
+                    softmax = CategoricalSoftmax(7)
+                    param_row = tf.constant(np.random.normal(size=(7,)))
+                    params = tf.stack([param_row])
+                    samples = tf.constant([[0, 1, 0, 0, 0, 0, 0]], dtype=tf.float32)
+                    kl_div = softmax.kl_divergence(tf.stop_gradient(params), params)
+                    hessian = sess.run(tf.hessians(kl_div, param_row)[0])
+                    gradient = sess.run(tf.gradients(softmax.log_prob(params, samples),
+                                                     params)[0][0])
+                    expected = np.matmul(np.array([gradient]), np.linalg.pinv(hessian))[0]
+                    actual = sess.run(tf.gradients(dist.log_prob(params, samples), params)[0][0])
+                    self.assertTrue(np.allclose(actual, expected))
+
+    def test_batched_gradient(self):
+        """
+        Test that batched gradients give the same results
+        as single gradients.
+        """
+        with tf.Graph().as_default():
+            with tf.Session() as sess:
+                dist = NaturalSoftmax(7)
+                params = tf.constant(np.random.normal(size=(15, 7)))
+                sampled = tf.one_hot([random.randrange(7) for _ in range(15)], 7,
+                                     dtype=tf.float32)
+                batched_grad = tf.gradients(dist.log_prob(params, sampled), params)[0]
+                single_grads = []
+                for i in range(15):
+                    sub_params = params[i:i+1]
+                    prob = dist.log_prob(sub_params, sampled[i:i+1])
+                    single_grads.append(tf.gradients(prob, sub_params)[0])
+                single_grad = tf.concat(single_grads, axis=0)
+                batched, single = sess.run((batched_grad, single_grad))
+                self.assertEqual(batched.shape, single.shape)
+                self.assertTrue(np.allclose(batched, single))
 
 class TestBoxGaussian(unittest.TestCase):
     """

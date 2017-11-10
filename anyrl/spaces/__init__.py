@@ -4,7 +4,7 @@ in Reinforcement Learning.
 """
 
 from .base import Vectorizer, Distribution
-from .categorical import CategoricalSoftmax
+from .categorical import CategoricalSoftmax, NaturalSoftmax
 from .continuous import BoxGaussian
 from .binary import MultiBernoulli
 from .aggregate import TupleDistribution

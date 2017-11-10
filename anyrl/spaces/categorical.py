@@ -2,6 +2,8 @@
 APIs for categorical (discrete) spaces.
 """
 
+from functools import partial
+
 import numpy as np
 import tensorflow as tf
 
@@ -51,6 +53,42 @@ class CategoricalSoftmax(Distribution):
         probs = tf.exp(log_probs_1)
         return tf.reduce_sum(probs * (log_probs_1 - log_probs_2), axis=-1)
 
+class NaturalSoftmax(CategoricalSoftmax):
+    """
+    A softmax distribution with natural gradients through
+    log_prob into the parameters.
+
+    The forward outputs are like CategoricalSoftmax.
+    However, the gradient through log_prob is artificially
+    filled in as the natural gradient.
+    """
+    def log_prob(self, param_batch, sample_vecs):
+        probs = super(NaturalSoftmax, self).log_prob(param_batch, sample_vecs)
+
+        grads = tf.gradients(probs, param_batch)[0]
+        fishers = self._fisher_matrices(param_batch)
+        natural_grads = tf.matmul(tf.reshape(grads, (-1, 1, self.num_options)),
+                                  _pseudo_inverses(fishers))
+        natural_grads = tf.reshape(natural_grads, (-1, self.num_options))
+        dots = tf.reduce_sum(param_batch*tf.stop_gradient(natural_grads), axis=-1)
+        return tf.stop_gradient(probs) + dots - tf.stop_gradient(dots)
+
+    def _fisher_matrices(self, param_batch):
+        """
+        Compute a Fisher matrix for each softmax.
+        """
+        num_params = tf.shape(param_batch)[0]
+        arr = tf.TensorArray(param_batch.dtype, size=num_params)
+        idx = tf.constant(0, dtype=tf.int32)
+        def loop_body(obj, idx, arr): # pylint: disable=C0111
+            row = param_batch[idx]
+            kl_div = obj.kl_divergence(tf.stop_gradient(row), row)
+            return idx+1, arr.write(idx, tf.hessians(kl_div, row)[0])
+        _, arr = tf.while_loop(cond=lambda idx, _: idx < num_params,
+                               body=partial(loop_body, self),
+                               loop_vars=(idx, arr))
+        return arr.stack()
+
 def softmax(param_batch):
     """
     Compute a batched softmax on the minor dimension.
@@ -59,3 +97,11 @@ def softmax(param_batch):
     max_vals = np.reshape(param_batch.max(axis=-1), col_shape)
     unnorm = np.exp(param_batch - max_vals)
     return unnorm / np.reshape(np.sum(unnorm, axis=-1), col_shape)
+
+def _pseudo_inverses(matrices, epsilon=1e-5):
+    """
+    Compute the pseudo-inverses for a batch of matrices.
+    """
+    singulars, left, right = tf.svd(matrices)
+    inv_singulars = tf.matrix_diag(1 / (singulars + epsilon))
+    return tf.matmul(tf.matmul(left, inv_singulars), tf.transpose(right, perm=(0, 2, 1)))

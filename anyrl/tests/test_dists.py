@@ -174,9 +174,9 @@ class TestNaturalSoftmax(unittest.TestCase):
         with tf.Graph().as_default():
             with tf.Session() as sess:
                 dist = NaturalSoftmax(7)
-                params = tf.constant(np.random.normal(size=(15, 7)))
+                params = tf.constant(np.random.normal(size=(15, 7)), dtype=tf.float64)
                 sampled = tf.one_hot([random.randrange(7) for _ in range(15)], 7,
-                                     dtype=tf.float32)
+                                     dtype=tf.float64)
                 batched_grad = tf.gradients(dist.log_prob(params, sampled), params)[0]
                 first = sess.run(batched_grad)
                 for _ in range(10):
@@ -188,12 +188,14 @@ class TestNaturalSoftmax(unittest.TestCase):
         """
         with tf.Graph().as_default():
             with tf.Session() as sess:
-                for _ in range(5):
-                    dist = NaturalSoftmax(7)
-                    softmax = CategoricalSoftmax(7)
-                    param_row = tf.constant(np.random.normal(size=(7,)))
+                for size in range(3, 9):
+                    dist = NaturalSoftmax(size, epsilon=0)
+                    softmax = CategoricalSoftmax(size)
+                    param_row = tf.constant(np.random.normal(size=(size,)), dtype=tf.float64)
                     params = tf.stack([param_row])
-                    samples = tf.constant([[0, 1, 0, 0, 0, 0, 0]], dtype=tf.float32)
+                    one_hot = np.zeros((1, size))
+                    one_hot[0, 1] = 1
+                    samples = tf.constant(one_hot, dtype=tf.float64)
                     kl_div = softmax.kl_divergence(tf.stop_gradient(params), params)
                     hessian = sess.run(tf.hessians(kl_div, param_row)[0])
                     gradient = sess.run(tf.gradients(softmax.log_prob(params, samples),
@@ -210,9 +212,9 @@ class TestNaturalSoftmax(unittest.TestCase):
         with tf.Graph().as_default():
             with tf.Session() as sess:
                 dist = NaturalSoftmax(7)
-                params = tf.constant(np.random.normal(size=(15, 7)))
+                params = tf.constant(np.random.normal(size=(15, 7)), dtype=tf.float64)
                 sampled = tf.one_hot([random.randrange(7) for _ in range(15)], 7,
-                                     dtype=tf.float32)
+                                     dtype=tf.float64)
                 batched_grad = tf.gradients(dist.log_prob(params, sampled), params)[0]
                 single_grads = []
                 for i in range(15):

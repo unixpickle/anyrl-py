@@ -2,8 +2,6 @@
 APIs for categorical (discrete) spaces.
 """
 
-from functools import partial
-
 import numpy as np
 import tensorflow as tf
 
@@ -62,32 +60,18 @@ class NaturalSoftmax(CategoricalSoftmax):
     However, the gradient through log_prob is artificially
     filled in as the natural gradient.
     """
-    def log_prob(self, param_batch, sample_vecs):
-        probs = super(NaturalSoftmax, self).log_prob(param_batch, sample_vecs)
+    def __init__(self, num_options, low=0, epsilon=1e-4):
+        super(NaturalSoftmax, self).__init__(num_options, low=low)
+        self.epsilon = epsilon
 
-        grads = tf.gradients(probs, param_batch)[0]
-        fishers = self._fisher_matrices(param_batch)
-        natural_grads = tf.matmul(tf.reshape(grads, (-1, 1, self.num_options)),
-                                  _pseudo_inverses(fishers))
-        natural_grads = tf.reshape(natural_grads, (-1, self.num_options))
+    def log_prob(self, param_batch, sample_vecs):
+        log_probs = super(NaturalSoftmax, self).log_prob(param_batch, sample_vecs)
+        probs = tf.exp(log_probs) + self.epsilon
+        neg_grads = -1 / (self.num_options * probs)
+        natural_grads = tf.tile(tf.expand_dims(neg_grads, axis=1), (1, self.num_options))
+        natural_grads -= self.num_options * natural_grads * sample_vecs
         dots = tf.reduce_sum(param_batch*tf.stop_gradient(natural_grads), axis=-1)
         return tf.stop_gradient(probs) + dots - tf.stop_gradient(dots)
-
-    def _fisher_matrices(self, param_batch):
-        """
-        Compute a Fisher matrix for each softmax.
-        """
-        num_params = tf.shape(param_batch)[0]
-        arr = tf.TensorArray(param_batch.dtype, size=num_params)
-        idx = tf.constant(0, dtype=tf.int32)
-        def loop_body(obj, idx, arr): # pylint: disable=C0111
-            row = param_batch[idx]
-            kl_div = obj.kl_divergence(tf.stop_gradient(row), row)
-            return idx+1, arr.write(idx, tf.hessians(kl_div, row)[0])
-        _, arr = tf.while_loop(cond=lambda idx, _: idx < num_params,
-                               body=partial(loop_body, self),
-                               loop_vars=(idx, arr))
-        return arr.stack()
 
 def softmax(param_batch):
     """
@@ -97,12 +81,3 @@ def softmax(param_batch):
     max_vals = np.reshape(param_batch.max(axis=-1), col_shape)
     unnorm = np.exp(param_batch - max_vals)
     return unnorm / np.reshape(np.sum(unnorm, axis=-1), col_shape)
-
-def _pseudo_inverses(matrices, epsilon=1e-8):
-    """
-    Compute the pseudo-inverses for a batch of matrices.
-    """
-    singulars, left, right = tf.svd(matrices)
-    zero = tf.less_equal(singulars, epsilon)
-    inv_singulars = tf.matrix_diag(tf.where(zero, singulars, 1 / singulars))
-    return tf.matmul(tf.matmul(left, inv_singulars), tf.transpose(right, perm=(0, 2, 1)))

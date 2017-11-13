@@ -227,6 +227,9 @@ class EpisodeRoller(TruncatedRoller):
         running_rollouts = self._starting_rollouts()
         while self._any_envs_running():
             self._step(completed_rollouts, running_rollouts)
+        # Make sure we are ready for the next reset().
+        for batch_idx in range(self.batched_env.num_sub_batches):
+            self.batched_env.step_wait(sub_batch=batch_idx)
         return completed_rollouts
 
     def _complete_rollout(self, completed, running, batch_idx, env_idx):

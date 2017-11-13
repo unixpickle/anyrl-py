@@ -138,6 +138,25 @@ class EpisodeRollerTest(unittest.TestCase):
             for kwargs_opt in kwargs_opts:
                 self._test_batch_equivalence_case(*state_opt, **kwargs_opt)
 
+    def test_multiple_batches(self):
+        """
+        Make sure calling rollouts multiple times works.
+        """
+        env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+        env = env_fn()
+        try:
+            model = SimpleModel(env.action_space.low.shape)
+        finally:
+            env.close()
+        batched_env = batched_gym_env([env_fn], sync=True)
+        try:
+            ep_roller = EpisodeRoller(batched_env, model, min_episodes=5, min_steps=7)
+            first = ep_roller.rollouts()
+            for _ in range(3):
+                _compare_rollout_batch(self, first, ep_roller.rollouts())
+        finally:
+            batched_env.close()
+
     def _test_basic_equivalence_case(self, stateful, state_tuple,
                                      **roller_kwargs):
         """

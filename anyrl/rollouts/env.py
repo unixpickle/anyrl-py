@@ -403,6 +403,7 @@ class BatchedGymEnv(BatchedEnv):
         self.observation_space = envs[0][0].observation_space
         self.envs = envs
         self._step_actions = [None] * len(self.envs)
+        self._states = [None] * len(self.envs)
 
     @property
     def num_sub_batches(self):
@@ -413,17 +414,24 @@ class BatchedGymEnv(BatchedEnv):
         return len(self.envs[0])
 
     def reset_start(self, sub_batch=0):
-        pass
+        assert self._states[sub_batch] is None
+        self._states[sub_batch] = 'reset'
 
     def reset_wait(self, sub_batch=0):
+        assert self._states[sub_batch] == 'reset'
+        self._states[sub_batch] = None
         return [env.reset() for env in self.envs[sub_batch]]
 
     def step_start(self, actions, sub_batch=0):
         assert len(actions) == self.num_envs_per_sub_batch
+        assert self._states[sub_batch] is None
+        self._states[sub_batch] = 'step'
         self._step_actions[sub_batch] = actions
 
     def step_wait(self, sub_batch=0):
         assert self._step_actions[sub_batch] is not None
+        assert self._states[sub_batch] == 'step'
+        self._states[sub_batch] = None
         obses, rews, dones, infos = ([], [], [], [])
         for env, action in zip(self.envs[sub_batch], self._step_actions[sub_batch]):
             obs, rew, done, info = env.step(action)

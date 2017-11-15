@@ -13,6 +13,7 @@ class MPIOptimizer:
     Wraps a TensorFlow optimizer to use MPI allreduce.
     """
     def __init__(self, optimizer, loss, var_list=None):
+        old_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
         self.grads = optimizer.compute_gradients(loss, var_list=var_list)
 
         # TODO: make sure gradients will be ordered
@@ -25,6 +26,8 @@ class MPIOptimizer:
             self.placeholders.append(placeholder)
             apply_in.append((placeholder, var))
         self.apply = optimizer.apply_gradients(apply_in)
+        self._optimizer_vars = [v for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+                                if v not in old_variables]
 
     def minimize(self, sess, feed_dict=None, terms=None):
         """
@@ -73,11 +76,14 @@ class MPIOptimizer:
         This may add nodes to the graph, so it should not
         be called an unbounded number of times.
 
+        This synchronizes both the model parameters and
+        any extra variables created by the optimizer.
+
         Arguments:
           sess: the TensorFlow session.
         """
         rank = MPI.COMM_WORLD.Get_rank()
-        for _, var in self.grads:
+        for var in [v for _, v in self.grads] + self._optimizer_vars:
             if rank == 0:
                 MPI.COMM_WORLD.bcast(sess.run(var))
             else:

@@ -71,7 +71,7 @@ class NaturalSoftmax(CategoricalSoftmax):
         natural_grads = tf.tile(tf.expand_dims(neg_grads, axis=1), (1, self.num_options))
         natural_grads -= self.num_options * natural_grads * sample_vecs
         dots = tf.reduce_sum(param_batch*tf.stop_gradient(natural_grads), axis=-1)
-        return tf.stop_gradient(probs) + dots - tf.stop_gradient(dots)
+        return tf.stop_gradient(log_probs) + dots - tf.stop_gradient(dots)
 
 def softmax(param_batch):
     """

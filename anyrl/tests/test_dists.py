@@ -136,7 +136,7 @@ class TestCategoricalSoftmax(unittest.TestCase):
     """
     Tests for the CategoricalSoftmax distribution.
     """
-    def test_log_prob(self):
+    def test_log_prob(self, dist_maker=CategoricalSoftmax):
         """
         Test log probabilities on a known case.
         """
@@ -148,7 +148,7 @@ class TestCategoricalSoftmax(unittest.TestCase):
                                                 [1, 0, 0],
                                                 [0, 1, 0]]),
                                       dtype=tf.float32)
-                dist = CategoricalSoftmax(3)
+                dist = dist_maker(3)
                 log_probs = np.array(sess.run(dist.log_prob(params, samples)))
                 expected = np.array([0.665241, 0.090031, 0.244728])
                 diff = np.amax(expected - np.exp(log_probs))
@@ -166,6 +166,20 @@ class TestNaturalSoftmax(unittest.TestCase):
     """
     Tests for the NaturalSoftmax distribution.
     """
+    def test_log_prob(self):
+        """
+        Test log probabilities against CategoricalSoftmax.
+        """
+        with tf.Graph().as_default():
+            with tf.Session() as sess:
+                dist = NaturalSoftmax(7)
+                params = tf.constant(np.random.normal(size=(15, 7)), dtype=tf.float64)
+                sampled = tf.one_hot([random.randrange(7) for _ in range(15)], 7,
+                                     dtype=tf.float64)
+                actual = sess.run(dist.log_prob(params, sampled))
+                expected = sess.run(CategoricalSoftmax(7).log_prob(params, sampled))
+                self.assertTrue(np.allclose(actual, expected))
+
     def test_gradient_determinism(self):
         """
         Make sure that the gradient doesn't change from

@@ -2,11 +2,12 @@
 Tests for various environment APIs.
 """
 
+import sys
 import unittest
 
 import numpy as np
 
-from anyrl.rollouts import batched_gym_env
+from anyrl.rollouts import batched_gym_env, AsyncGymEnv
 from anyrl.tests import SimpleEnv
 
 SUB_BATCH_SIZE = 4
@@ -96,6 +97,32 @@ class BatchedGymEnvTest(unittest.TestCase):
         for out1, out2 in zip(outs1[:3], outs2[:3]):
             self.assertTrue((np.array(out1) == np.array(out2)).all())
         self.assertEqual(outs1[3], outs2[3])
+
+class EnvFailuresTest(unittest.TestCase):
+    """
+    Tests for AsyncEnv failure handling.
+    """
+    def test_exit(self):
+        """
+        Test an environment that straightup exits.
+        """
+        try:
+            AsyncGymEnv(lambda: sys.exit(1), None)
+        except RuntimeError:
+            return
+        self.fail('should have gotten exception')
+
+    def test_exception(self):
+        """
+        Test an environment that throws.
+        """
+        try:
+            def raiser(): # pylint: disable=C0111
+                raise ValueError('hello world')
+            AsyncGymEnv(raiser, None)
+        except RuntimeError:
+            return
+        self.fail('should have gotten exception')
 
 if __name__ == '__main__':
     unittest.main()

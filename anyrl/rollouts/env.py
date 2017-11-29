@@ -3,7 +3,7 @@ Ways of running gym environments.
 """
 
 from abc import ABC, abstractmethod, abstractproperty
-from multiprocessing import Queue, Array, Process
+from multiprocessing import Pipe, Array, Process
 
 import cloudpickle
 import gym.spaces
@@ -219,22 +219,21 @@ class AsyncGymEnv(AsyncEnv):
             self._obs_buf = Array('b', zeros)
         else:
             self._obs_buf = None
-        self._req_queue = Queue()
-        self._resp_queue = Queue()
+        self._pipe, other_end = Pipe()
         self._proc = Process(target=self._worker,
-                             args=(self._req_queue,
-                                   self._resp_queue,
+                             args=(other_end,
                                    self._obs_buf,
                                    _CloudpickleFunc(make_env)))
         self._proc.start()
         self._running_cmd = None
-        self._req_queue.put(('action_space', None))
+        other_end.close()
+        self._pipe.send(('action_space', None))
         self.action_space = self._get_response()
 
     def reset_start(self):
         assert self._running_cmd is None
         self._running_cmd = 'reset'
-        self._req_queue.put(('reset', None))
+        self._pipe.send(('reset', None))
 
     def reset_wait(self):
         assert self._running_cmd == 'reset'
@@ -245,7 +244,7 @@ class AsyncGymEnv(AsyncEnv):
     def step_start(self, action):
         assert self._running_cmd is None
         self._running_cmd = 'step'
-        self._req_queue.put(('step', action))
+        self._pipe.send(('step', action))
 
     def step_wait(self):
         assert self._running_cmd == 'step'
@@ -261,15 +260,19 @@ class AsyncGymEnv(AsyncEnv):
             self.step_wait()
         assert self._running_cmd is None
         self._running_cmd = 'close'
-        self._req_queue.put(('close', None))
+        self._pipe.send(('close', None))
         self._proc.join()
+        self._pipe.close()
 
     def _get_response(self):
         """
         Read a value from the response queue and make sure
         it is not an exception.
         """
-        resp_obj = self._resp_queue.get()
+        try:
+            resp_obj = self._pipe.recv()
+        except EOFError:
+            raise RuntimeError('worker has died')
         if isinstance(resp_obj, BaseException):
             raise RuntimeError('exception on worker') from resp_obj
         return resp_obj
@@ -286,34 +289,35 @@ class AsyncGymEnv(AsyncEnv):
         return obs.reshape(shape).copy()
 
     @classmethod
-    def _worker(cls, req_queue, resp_queue, obs_buf, make_env):
+    def _worker(cls, pipe, obs_buf, make_env):
         """
         Entry-point for the sub-process.
         """
         try:
             env = make_env()
         except BaseException as exc:
-            resp_queue.put(exc)
+            pipe.recv()
+            pipe.send(exc)
             return
         try:
             while True:
-                cmd, action = req_queue.get()
+                cmd, action = pipe.recv()
                 if cmd == 'action_space':
-                    resp_queue.put(env.action_space)
+                    pipe.send(env.action_space)
                 elif cmd == 'reset':
-                    resp_queue.put(cls._sendable_observation(env.reset(), obs_buf))
+                    pipe.send(cls._sendable_observation(env.reset(), obs_buf))
                 elif cmd == 'step':
                     obs, rew, done, info = env.step(action)
                     if done:
                         obs = env.reset()
                     obs = cls._sendable_observation(obs, obs_buf)
-                    resp_queue.put((obs, rew, done, info))
+                    pipe.send((obs, rew, done, info))
                 elif cmd == 'close':
                     return
                 else:
                     raise ValueError('unknown command: ' + cmd)
         except BaseException as exc:
-            resp_queue.put(exc)
+            pipe.send(exc)
         finally:
             env.close()
 

@@ -290,7 +290,11 @@ class AsyncGymEnv(AsyncEnv):
         """
         Entry-point for the sub-process.
         """
-        env = make_env()
+        try:
+            env = make_env()
+        except BaseException as exc:
+            resp_queue.put(exc)
+            return
         try:
             while True:
                 cmd, action = req_queue.get()

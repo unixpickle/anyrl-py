@@ -118,16 +118,18 @@ class MLP(FeedforwardAC):
                 layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
             layer_in_size = out_size
 
+        self.base_out = layer_in
+
         with tf.variable_scope('actor'):
             out_size = product(action_dist.param_shape)
-            actor_out = fully_connected(layer_in, out_size,
+            actor_out = fully_connected(self.base_out, out_size,
                                         activation_fn=None,
                                         weights_initializer=actor_init)
             batch = tf.shape(actor_out)[0]
             self.actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
 
         with tf.variable_scope('critic'):
-            critic_out = fully_connected(layer_in, 1,
+            critic_out = fully_connected(self.base_out, 1,
                                          activation_fn=None,
                                          weights_initializer=critic_init)
             self.critic_out = tf.reshape(critic_out, (tf.shape(critic_out)[0],))
@@ -169,11 +171,11 @@ class CNN(FeedforwardAC):
         obs_batch = tf.cast(self.obs_ph, tf.float32) * input_scale
 
         with tf.variable_scope('base'):
-            base = self.base(obs_batch)
+            self.base_out = self.base(obs_batch)
         with tf.variable_scope('actor'):
-            self.actor_out = self.actor(base, actor_init)
+            self.actor_out = self.actor(self.base_out, actor_init)
         with tf.variable_scope('critic'):
-            self.critic_out = self.critic(base, critic_init)
+            self.critic_out = self.critic(self.base_out, critic_init)
 
     # pylint: disable=R0201
     def base(self, obs_batch):

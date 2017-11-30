@@ -232,17 +232,17 @@ class RNNCellAC(RecurrentAC):
         with tf.variable_scope('base'):
             if isinstance(init_state, tuple):
                 init_state = nest.pack_sequence_as(cell.state_size, init_state)
-            base, states = tf.nn.dynamic_rnn(cell, cell_input,
-                                             sequence_length=self.seq_lens_ph,
-                                             initial_state=init_state)
+            self.base_out, states = tf.nn.dynamic_rnn(cell, cell_input,
+                                                      sequence_length=self.seq_lens_ph,
+                                                      initial_state=init_state)
         if isinstance(states, tuple):
             self.states_out = tuple(nest.flatten(states))
         else:
             self.states_out = states
         with tf.variable_scope('actor'):
-            self.actor_out = self.actor(base)
+            self.actor_out = self.actor(self.base_out)
         with tf.variable_scope('critic'):
-            self.critic_out = self.critic(base)
+            self.critic_out = self.critic(self.base_out)
 
     def cell_input_sequences(self):
         """

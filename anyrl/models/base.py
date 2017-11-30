@@ -72,6 +72,8 @@ class TFActorCritic(Model):
 
         These tensors are used in conjunction with the
         feed_dict returned by batches().
+
+        This method may be called multiple times.
         """
         pass
 

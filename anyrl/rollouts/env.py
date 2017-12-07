@@ -359,9 +359,9 @@ class BatchedAsyncEnv(BatchedEnv):
 
         first_env = sub_batches[0][0]
         if hasattr(first_env, 'action_space'):
-            self.action_space = sub_batches[0][0].action_space
+            self.action_space = first_env.action_space
         if hasattr(first_env, 'observation_space'):
-            self.observation_space = sub_batches[0][0].observation_space
+            self.observation_space = first_env.observation_space
 
     @property
     def num_sub_batches(self):

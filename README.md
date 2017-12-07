@@ -34,6 +34,7 @@ This project relies on TensorFlow for models and training algorithms. However, a
 
 Here is the current TODO list, organized by sub-module:
 
+* Create `envs` sub-module and move `rollouts/env.py` and `wrappers/*` into it.
 * `models`
   * Unify CNN and MLP models with a single base class.
   * Unshared actor-critics for TRPO and the like.

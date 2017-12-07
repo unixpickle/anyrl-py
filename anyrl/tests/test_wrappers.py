@@ -7,8 +7,9 @@ import unittest
 import gym
 import numpy as np
 
+from anyrl.rollouts import batched_gym_env
 from anyrl.tests import SimpleEnv
-from anyrl.wrappers import RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv
+from anyrl.wrappers import RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv, BatchedFrameStack
 
 class RL2EnvTest(unittest.TestCase):
     """
@@ -120,6 +121,36 @@ class FrameStackEnvTest(unittest.TestCase):
         self.assertFalse((obs2 == obs3).all())
         self.assertTrue((obs1[:, :, 2:] == obs2[:, :, :4]).all())
         self.assertTrue((obs2[:, :, 2:] == obs3[:, :, :4]).all())
+
+class BatchedFrameStackTest(unittest.TestCase):
+    """
+    Tests for BatchedFrameStack.
+    """
+    def test_equivalence(self):
+        """
+        Test that BatchedFrameStack is equivalent to a
+        regular batched FrameStackEnv.
+        """
+        envs = [lambda idx=i: SimpleEnv(idx+2, (3, 2, 5), 'float32') for i in range(6)]
+        env1 = BatchedFrameStack(batched_gym_env(envs, num_sub_batches=3, sync=True))
+        env2 = batched_gym_env([lambda env=e: FrameStackEnv(env()) for e in envs],
+                               num_sub_batches=3, sync=True)
+        for j in range(50):
+            for i in range(3):
+                if j == 0 or (j + i) % 17 == 0:
+                    env1.reset_start(sub_batch=i)
+                    env2.reset_start(sub_batch=i)
+                    obs1 = env1.reset_wait(sub_batch=i)
+                    obs2 = env2.reset_wait(sub_batch=i)
+                    self.assertTrue(np.allclose(obs1, obs2))
+                actions = [env1.action_space.sample() for _ in range(2)]
+                env1.step_start(actions, sub_batch=i)
+                env2.step_start(actions, sub_batch=i)
+                obs1, rews1, dones1, _ = env1.step_wait(sub_batch=i)
+                obs2, rews2, dones2, _ = env2.step_wait(sub_batch=i)
+                self.assertTrue(np.allclose(obs1, obs2))
+                self.assertTrue(np.array(rews1 == rews2).all())
+                self.assertTrue(np.array(dones1 == dones2).all())
 
 class ShapeEnv(gym.Env):
     """

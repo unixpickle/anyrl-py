@@ -62,8 +62,7 @@ class FrameStackEnv(gym.Wrapper):
     """
     An environment that stacks images.
 
-    Input images should be 3-D, and are stacked along the
-    inner-most dimension.
+    Input arrays are stacked along the inner dimension.
 
     The stacking is ordered from oldest to newest.
 

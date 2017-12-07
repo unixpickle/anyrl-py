@@ -17,7 +17,7 @@ on top of the CNN wrapper.
 import gym
 import numpy as np
 
-from .base import BatchedEnv
+from ..base import BatchedEnv
 
 class BatchedWrapper(BatchedEnv):
     """

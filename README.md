@@ -42,6 +42,7 @@ Here is the current TODO list, organized by sub-module:
   * Normalization based on advantage magnitudes.
 * `algos`
   * TRPO
+  * PPO: allow clipping for value function
 * `spaces`
   * Dict
 * `tests`

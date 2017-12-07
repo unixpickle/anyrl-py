@@ -3,10 +3,8 @@ Ways of gathering rollouts.
 """
 
 from abc import ABC, abstractmethod
-from threading import Event, Lock, Thread
 import time
 
-from .env import BatchedAsyncEnv
 from .rollout import empty_rollout
 
 # pylint: disable=R0903
@@ -254,66 +252,6 @@ class EpisodeRoller(TruncatedRoller):
         Check if any environment is not masked out.
         """
         return any([any(masks) for masks in self._env_mask])
-
-# pylint: disable=R0902
-class ThreadedRoller(Roller):
-    """
-    Gather rollouts from a batch of AsyncEnvs by running
-    each trajectory on a separate thread.
-
-    This requires thread-safe models.
-    """
-    def __init__(self, async_envs, model, num_timesteps):
-        self.model = model
-        self.num_timesteps = num_timesteps
-        self._closing = False
-        self._rollout_lock = Lock()
-        self._rollout_results = []
-        self._run_events = [Event() for _ in async_envs]
-        self._done_events = [Event() for _ in async_envs]
-        self._threads = [Thread(target=self._worker_thread,
-                                args=(env, run_event, done_event))
-                         for env, run_event, done_event
-                         in zip(async_envs, self._run_events, self._done_events)]
-        for thread in self._threads:
-            thread.start()
-
-    def rollouts(self):
-        self._rollout_results = []
-        for evt in self._run_events:
-            evt.set()
-        for evt in self._done_events:
-            evt.wait()
-            evt.clear()
-        return self._rollout_results
-
-    def close(self):
-        """
-        Clean up the resources associated with the roller.
-
-        This will not close the environments.
-        """
-        self._closing = True
-        for evt in self._run_events:
-            evt.set()
-        for thread in self._threads:
-            thread.join()
-
-    def _worker_thread(self, env, run_event, done_event):
-        """
-        Background thread for gathering rollouts.
-        """
-        roller = TruncatedRoller(BatchedAsyncEnv([[env]]), self.model, self.num_timesteps)
-        while True:
-            run_event.wait()
-            run_event.clear()
-            if self._closing:
-                return
-            rollouts = roller.rollouts()
-            self._rollout_lock.acquire()
-            self._rollout_results.extend(rollouts)
-            self._rollout_lock.release()
-            done_event.set()
 
 def _reduce_states(state_batch, env_idx):
     """

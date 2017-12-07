@@ -15,10 +15,10 @@ pip install anyrl
 There are several different sub-modules in anyrl:
 
  * `models`: abstractions and concrete implementations of RL models. This includes actor-critic RNNs, MLPs, CNNs, etc. Takes care of sequence padding, BPTT, etc.
+ * `envs`: APIs for dealing with environments, including wrappers and asynchronous environments.
  * `rollouts`: APIs for gathering and manipulating batches of episodes or partial episodes. Many RL algorithms include a "gather trajectories" step, and this sub-module fulfills that role.
  * `algos`: well-known learning algorithms like policy gradients or PPO. Also includes mini-algorithms like Generalized Advantage Estimation.
  * `spaces`: tools for using action and observation spaces. Includes parameterized probability distributions for implementing stochastic policies.
- * `wrappers`: convenient and reusable environment wrappers.
 
 # Motivation
 
@@ -34,7 +34,6 @@ This project relies on TensorFlow for models and training algorithms. However, a
 
 Here is the current TODO list, organized by sub-module:
 
-* Create `envs` sub-module and move `rollouts/env.py` and `wrappers/*` into it.
 * `models`
   * Unify CNN and MLP models with a single base class.
   * Unshared actor-critics for TRPO and the like.

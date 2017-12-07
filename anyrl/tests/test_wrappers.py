@@ -7,9 +7,9 @@ import unittest
 import gym
 import numpy as np
 
-from anyrl.rollouts import batched_gym_env
+from anyrl.envs import (batched_gym_env, RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv,
+                        BatchedFrameStack)
 from anyrl.tests import SimpleEnv
-from anyrl.wrappers import RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv, BatchedFrameStack
 
 class RL2EnvTest(unittest.TestCase):
     """

@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from anyrl.rollouts import batched_gym_env, AsyncGymEnv
+from anyrl.envs import batched_gym_env, AsyncGymEnv
 from anyrl.tests import SimpleEnv
 
 SUB_BATCH_SIZE = 4

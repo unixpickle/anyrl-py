@@ -9,7 +9,7 @@ import numpy as np
 
 from anyrl.envs import batched_gym_env
 from anyrl.envs.wrappers import (RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv,
-                                 BatchedFrameStack)
+                                 BatchedFrameStack, ObservationPadEnv)
 from anyrl.tests import SimpleEnv
 
 class RL2EnvTest(unittest.TestCase):
@@ -152,6 +152,36 @@ class BatchedFrameStackTest(unittest.TestCase):
                 self.assertTrue(np.allclose(obs1, obs2))
                 self.assertTrue(np.array(rews1 == rews2).all())
                 self.assertTrue(np.array(dones1 == dones2).all())
+
+class ObservationPadEnvTest(unittest.TestCase):
+    """
+    Tests for ObservationPadEnv.
+    """
+    def test_centered(self):
+        """
+        Test centered padding.
+        """
+        env = ShapeEnv(np.array([[1, 2, 5], [3, 4, 0]]),
+                       np.array([[12, 21, 15], [31, 14, 10]]))
+        padded = ObservationPadEnv(env, (3, 5))
+        self.assertEqual(padded.observation_space.shape, (3, 5))
+        self.assertTrue(np.allclose(padded.observation_space.low,
+                                    np.array([[0, 1, 2, 5, 0], [0, 3, 4, 0, 0], [0]*5])))
+        self.assertTrue(np.allclose(padded.observation_space.high,
+                                    np.array([[0, 12, 21, 15, 0], [0, 31, 14, 10, 0], [0]*5])))
+
+    def test_uncentered(self):
+        """
+        Test uncentered padding.
+        """
+        env = ShapeEnv(np.array([[1, 2, 5], [3, 4, 0]]),
+                       np.array([[12, 21, 15], [31, 14, 10]]))
+        padded = ObservationPadEnv(env, (3, 5), center=False)
+        self.assertEqual(padded.observation_space.shape, (3, 5))
+        self.assertTrue(np.allclose(padded.observation_space.low,
+                                    np.array([[1, 2, 5, 0, 0], [3, 4, 0, 0, 0], [0]*5])))
+        self.assertTrue(np.allclose(padded.observation_space.high,
+                                    np.array([[12, 21, 15, 0, 0], [31, 14, 10, 0, 0], [0]*5])))
 
 class ShapeEnv(gym.Env):
     """

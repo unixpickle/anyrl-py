@@ -2,14 +2,18 @@
 Tests for environment wrappers.
 """
 
+import os
+import shutil
+import tempfile
 import unittest
 
 import gym
 import numpy as np
+import pandas
 
 from anyrl.envs import batched_gym_env
 from anyrl.envs.wrappers import (RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv,
-                                 BatchedFrameStack, ObservationPadEnv)
+                                 BatchedFrameStack, ObservationPadEnv, LoggedEnv)
 from anyrl.tests import SimpleEnv
 
 class RL2EnvTest(unittest.TestCase):
@@ -182,6 +186,56 @@ class ObservationPadEnvTest(unittest.TestCase):
                                     np.array([[1, 2, 5, 0, 0], [3, 4, 0, 0, 0], [0]*5])))
         self.assertTrue(np.allclose(padded.observation_space.high,
                                     np.array([[12, 21, 15, 0, 0], [31, 14, 10, 0, 0], [0]*5])))
+
+class LoggedEnvTest(unittest.TestCase):
+    """
+    Tests for LoggedEnv.
+    """
+    def test_single_env(self):
+        """
+        Test monitoring for a single environment.
+        """
+        dirpath = tempfile.mkdtemp()
+        try:
+            log_file = os.path.join(dirpath, 'monitor.csv')
+            env = LoggedEnv(SimpleEnv(2, (3,), 'float32'), log_file)
+            for _ in range(4):
+                env.reset()
+                while not env.step(env.action_space.sample())[2]:
+                    pass
+            env.close()
+            with open(log_file, 'rt'):
+                log_contents = pandas.read_csv(log_file)
+                self.assertEqual(list(log_contents['r']), [2] * 4)
+                self.assertEqual(list(log_contents['l']), [3] * 4)
+        finally:
+            shutil.rmtree(dirpath)
+
+    def test_multi_env(self):
+        """
+        Test monitoring for concurrent environments.
+        """
+        dirpath = tempfile.mkdtemp()
+        try:
+            log_file = os.path.join(dirpath, 'monitor.csv')
+            env1 = LoggedEnv(SimpleEnv(2, (3,), 'float32'), log_file, use_locking=True)
+            env2 = LoggedEnv(SimpleEnv(3, (3,), 'float32'), log_file, use_locking=True)
+
+            env1.reset()
+            env2.reset()
+            for _ in range(13):
+                for env in [env1, env2]:
+                    if env.step(env.action_space.sample())[2]:
+                        env.reset()
+            env1.close()
+            env2.close()
+
+            with open(log_file, 'rt'):
+                log_contents = pandas.read_csv(log_file)
+                self.assertEqual(list(log_contents['r']), [2, 2.5, 2, 2.5, 2, 2, 2.5])
+                self.assertEqual(list(log_contents['l']), [3, 4, 3, 4, 3, 3, 4])
+        finally:
+            shutil.rmtree(dirpath)
 
 class ShapeEnv(gym.Env):
     """

@@ -14,7 +14,8 @@ class MPIOptimizer:
     """
     def __init__(self, optimizer, loss, var_list=None):
         old_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-        self.grads = optimizer.compute_gradients(loss, var_list=var_list)
+        self.grads = [pair for pair in optimizer.compute_gradients(loss, var_list=var_list)
+                      if pair[0] is not None]
 
         # TODO: make sure gradients will be ordered
         # deterministically.

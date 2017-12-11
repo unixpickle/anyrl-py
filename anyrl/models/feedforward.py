@@ -116,7 +116,6 @@ class MLP(FeedforwardAC):
         for layer_idx, out_size in enumerate(layer_sizes):
             with tf.variable_scope('layer_' + str(layer_idx)):
                 layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
-            layer_in_size = out_size
 
         self.base_out = layer_in
 

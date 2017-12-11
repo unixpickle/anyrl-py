@@ -43,6 +43,7 @@ Here is the current TODO list, organized by sub-module:
 * `algos`
   * TRPO
   * PPO: allow clipping for value function
+  * Change the sign of "actor_loss" to make it a quantity to minimize
 * `spaces`
   * Dict
 * `tests`

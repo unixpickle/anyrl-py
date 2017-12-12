@@ -66,7 +66,7 @@ class AsyncGymEnv(AsyncEnv):
         self._proc = Process(target=self._worker,
                              args=(other_end,
                                    self._obs_buf,
-                                   _CloudpickleFunc(make_env)),
+                                   cloudpickle.dumps(make_env)),
                              daemon=True)
         self._proc.start()
         self._running_cmd = None
@@ -138,7 +138,7 @@ class AsyncGymEnv(AsyncEnv):
         Entry-point for the sub-process.
         """
         try:
-            env = make_env()
+            env = cloudpickle.loads(make_env)()
         except BaseException as exc:
             pipe.recv()
             pipe.send(exc)
@@ -238,20 +238,3 @@ class BatchedGymEnv(BatchedEnv):
         for batch in self.envs:
             for env in batch:
                 env.close()
-
-# pylint: disable=R0903
-class _CloudpickleFunc:
-    """
-    A function that cloudpickle will serialize.
-    """
-    def __init__(self, func):
-        self.func = func
-
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
-
-    def __getstate__(self):
-        return cloudpickle.dumps(self.func)
-
-    def __setstate__(self, val):
-        self.func = cloudpickle.loads(val)

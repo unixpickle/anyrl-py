@@ -66,7 +66,8 @@ class AsyncGymEnv(AsyncEnv):
         self._proc = Process(target=self._worker,
                              args=(other_end,
                                    self._obs_buf,
-                                   _CloudpickleFunc(make_env)))
+                                   _CloudpickleFunc(make_env)),
+                             daemon=True)
         self._proc.start()
         self._running_cmd = None
         other_end.close()

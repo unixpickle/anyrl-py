@@ -86,10 +86,10 @@ class A2C:
         log_probs = dist.log_prob(actor, self._actions)
         entropies = dist.entropy(actor)
         critic_error = self._target_vals - critic
-        self.actor_loss = util.masked_mean(mask, log_probs * self._advs)
+        self.actor_loss = -util.masked_mean(mask, log_probs * self._advs)
         self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
         self.entropy = util.masked_mean(mask, entropies)
-        self.objective = (self.actor_loss + entropy_reg * self.entropy -
+        self.objective = (entropy_reg * self.entropy - self.actor_loss -
                           vf_coeff * self.critic_loss)
 
     # TODO: API that supports schedules and runs the

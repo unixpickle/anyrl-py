@@ -38,11 +38,11 @@ class PPO(A2C):
         clipped_samples = _clipped_samples(new_log_probs, old_log_probs,
                                            self._advs, self._epsilon)
         critic_error = self._target_vals - critic
-        self.actor_loss = util.masked_mean(mask, clipped_obj)
+        self.actor_loss = -util.masked_mean(mask, clipped_obj)
         self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
         self.entropy = util.masked_mean(mask, dist.entropy(actor))
         self.num_clipped = tf.cast(util.masked_sum(mask, clipped_samples), tf.int32)
-        self.objective = (self.actor_loss + entropy_reg * self.entropy -
+        self.objective = (entropy_reg * self.entropy - self.actor_loss -
                           vf_coeff * self.critic_loss)
 
     def feed_dict(self, rollouts, batch=None, advantages=None, targets=None):

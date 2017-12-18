@@ -85,7 +85,7 @@ class PPO(A2C):
             terms = self.model.session.run(terms, feed_dict)
             if log_fn is not None:
                 log_fn('batch %d: actor=%f critic=%f entropy=%f clipped=%d' %
-                       (batch_idx, terms[0], terms[1], terms[2], terms[3]))
+                       (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
             batch_idx += 1
             if batch_idx == num_iter:
                 break

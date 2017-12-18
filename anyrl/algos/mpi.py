@@ -114,7 +114,7 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
                                           ppo.num_clipped])
         if log_fn and MPI.COMM_WORLD.Get_rank() == 0:
             log_fn('batch %d: actor=%f critic=%f entropy=%f clipped=%d' %
-                   (batch_idx, terms[0], terms[1], terms[2], terms[3]))
+                   (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
         batch_idx += 1
         if batch_idx == num_iter:
             break

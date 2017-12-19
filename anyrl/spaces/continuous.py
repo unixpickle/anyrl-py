@@ -108,7 +108,7 @@ class BoxBeta(Distribution):
 
     def kl_divergence(self, param_batch_1, param_batch_2):
         # KL is scale-invariant.
-        return _reduce_sums(tf.distributions.kl_divergence(
+        return _reduce_sums(tf.contrib.distributions.kl_divergence(
             self._create_dist(param_batch_1),
             self._create_dist(param_batch_2)))
 

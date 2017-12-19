@@ -67,6 +67,64 @@ class BoxGaussian(Distribution):
         scale = (self.high - self.low) / 2
         return means + bias, log_stddevs + np.log(scale)
 
+class BoxBeta(Distribution):
+    """
+    A probability distribution over continuous variables,
+    parameterized as a component-wise scaled beta
+    distribution.
+
+    By default, inputs to the distribution are fed through
+    `1 + softplus` to ensure that they are valid.
+    """
+    def __init__(self, low, high, softplus=True):
+        self.low = low
+        self.high = high
+        self.softplus = softplus
+
+    @property
+    def out_shape(self):
+        return self.low.shape
+
+    def to_vecs(self, space_elements):
+        return np.array(space_elements)
+
+    @property
+    def param_shape(self):
+        return self.low.shape + (2,)
+
+    def sample(self, param_batch):
+        params = self._squash_inputs(np.array(param_batch))
+        raw = np.random.beta(params[..., 0], params[..., 1])
+        return raw * (self.high - self.low) + self.low
+
+    def log_prob(self, param_batch, sample_vecs):
+        scaled_samples = (sample_vecs - self.low) / (self.high - self.low)
+        raw_probs = self._create_dist(param_batch).log_prob(scaled_samples)
+        return _reduce_sums(raw_probs - np.log(self.high - self.low))
+
+    def entropy(self, param_batch):
+        raw_ents = self._create_dist(param_batch).entropy()
+        return _reduce_sums(raw_ents + np.log(self.high - self.low))
+
+    def kl_divergence(self, param_batch_1, param_batch_2):
+        # KL is scale-invariant.
+        return _reduce_sums(tf.distributions.kl_divergence(
+            self._create_dist(param_batch_1),
+            self._create_dist(param_batch_2)))
+
+    def _create_dist(self, param_batch):
+        params = self._squash_inputs(param_batch)
+        return tf.contrib.distributions.Beta(params[..., 0], params[..., 1])
+
+    def _squash_inputs(self, inputs):
+        if not self.softplus:
+            return inputs
+        if isinstance(inputs, np.ndarray):
+            softplus = np.log(1 + np.exp(inputs))
+            non_linear = (inputs < 30)
+            return 1 + np.where(non_linear, softplus, inputs)
+        return 1 + tf.nn.softplus(inputs)
+
 def _reduce_sums(batch):
     """
     Reduce a batch of shape [batch x out_shape] to a

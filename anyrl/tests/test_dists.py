@@ -11,7 +11,7 @@ import gym
 import numpy as np
 import tensorflow as tf
 
-from anyrl.spaces import (CategoricalSoftmax, NaturalSoftmax, BoxGaussian, MultiBernoulli,
+from anyrl.spaces import (CategoricalSoftmax, NaturalSoftmax, BoxGaussian, BoxBeta, MultiBernoulli,
                           TupleDistribution, gym_space_distribution)
 
 # Number of times to run sample-based tests.
@@ -252,6 +252,60 @@ class TestBoxGaussian(unittest.TestCase):
                            np.array([[5, 7.1, 3], [2, 3.1, 4]]))
         tester = DistributionTester(self, dist)
         tester.test_all()
+
+class TestBoxBeta(unittest.TestCase):
+    """
+    Tests for the BoxBeta distribution.
+    """
+    def test_generic_simple(self):
+        """
+        Run generic tests with an unscaled distribution.
+        """
+        dist = BoxBeta(np.array([0]), np.array([1]))
+        tester = DistributionTester(self, dist)
+        tester.test_all()
+
+    # def test_generic(self):
+    #     """
+    #     Run generic tests with DistributionTester.
+    #     """
+    #     dist = BoxBeta(np.array([[-3, 7, 1], [1, 2, 3]]),
+    #                    np.array([[5, 7.1, 3], [2, 3.1, 4]]))
+    #     tester = DistributionTester(self, dist)
+    #     tester.test_all()
+
+    def test_log_prob_simple(self):
+        """
+        Test log probs for a very simple distribution.
+        """
+        with tf.Graph().as_default():
+            with tf.Session() as sess:
+                dist = BoxBeta(np.array([0]), np.array([1]), softplus=False)
+                actual = sess.run(dist.log_prob(np.array([[0.5, 0.5]]), np.array([0.5])))
+                expected = np.array([_beta_log_prob(0.5, 0.5, 0.5)])
+                self.assertTrue(np.allclose(actual, expected, atol=1e-4))
+
+    def test_log_prob(self):
+        """
+        Test log probs for known situations.
+        """
+        with tf.Graph().as_default():
+            with tf.Session() as sess:
+                dist = BoxBeta(np.array([[0], [-2]]), np.array([[1], [3]]), softplus=False)
+                actual = sess.run(dist.log_prob(np.array([[[0.1, 0.5]], [[0.3, 0.7]]]),
+                                                np.array([[0.4], [-0.5]])))
+                expected = np.array([_beta_log_prob(0.1, 0.5, 0.4),
+                                     _beta_log_prob(0.3, 0.7, 0.3) - np.log(5)])
+                self.assertTrue(np.allclose(actual, expected, atol=1e-4))
+
+def _beta_log_prob(alpha, beta, value):
+    with tf.Graph().as_default():
+        with tf.Session() as sess:
+            gamma_a, gamma_b, gamma_ab = sess.run((tf.lgamma(alpha), tf.lgamma(beta),
+                                                   tf.lgamma(alpha + beta)))
+    log_denom = gamma_a + gamma_b - gamma_ab
+    log_num = np.log((value ** (alpha - 1)) * ((1 - value) ** (beta - 1)))
+    return log_num - log_denom
 
 class TestMultiBernoulli(unittest.TestCase):
     """

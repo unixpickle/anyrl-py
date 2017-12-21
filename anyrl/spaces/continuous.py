@@ -99,6 +99,8 @@ class BoxBeta(Distribution):
 
     def log_prob(self, param_batch, sample_vecs):
         scaled_samples = (sample_vecs - self.low) / (self.high - self.low)
+        epsilon = 1e-20
+        scaled_samples = tf.clip_by_value(scaled_samples, 0+epsilon, 1-epsilon)
         raw_probs = self._create_dist(param_batch).log_prob(scaled_samples)
         return _reduce_sums(raw_probs - np.log(self.high - self.low))
 

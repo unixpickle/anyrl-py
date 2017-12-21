@@ -265,14 +265,14 @@ class TestBoxBeta(unittest.TestCase):
         tester = DistributionTester(self, dist)
         tester.test_all()
 
-    # def test_generic(self):
-    #     """
-    #     Run generic tests with DistributionTester.
-    #     """
-    #     dist = BoxBeta(np.array([[-3, 7, 1], [1, 2, 3]]),
-    #                    np.array([[5, 7.1, 3], [2, 3.1, 4]]))
-    #     tester = DistributionTester(self, dist)
-    #     tester.test_all()
+    def test_generic(self):
+        """
+        Run generic tests with DistributionTester.
+        """
+        dist = BoxBeta(np.array([[-3, 7, 1], [1, 2, 3]]),
+                       np.array([[5, 7.1, 3], [2, 3.1, 4]]))
+        tester = DistributionTester(self, dist, batch_size=400000)
+        tester.test_all()
 
     def test_log_prob_simple(self):
         """

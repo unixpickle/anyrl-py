@@ -39,6 +39,7 @@ class DistributionTester:
                 self.test_shapes()
                 self.test_entropy()
                 self.test_kl()
+                self.test_mode()
 
     def test_shapes(self):
         """
@@ -118,6 +119,20 @@ class DistributionTester:
 
             est_kl = np.mean(log_probs_out_1 - log_probs_out_2)
             self.test.assertTrue(abs(1 - kl_out/est_kl) < self.prec)
+
+    def test_mode(self):
+        """
+        Test that the mode is truly the most likely.
+        """
+        param_batch = self._random_params(use_numpy=True)
+        samples = tf.constant(self.dist.to_vecs(self.dist.sample(param_batch)))
+        modes = self.dist.to_vecs(self.dist.mode(param_batch))
+        modes = tf.constant(modes)
+        param_batch = tf.constant(param_batch)
+
+        sample_probs = self.session.run(self.dist.log_prob(param_batch, samples))
+        mode_probs = self.session.run(self.dist.log_prob(param_batch, modes))
+        self.test.assertTrue((sample_probs <= mode_probs).all())
 
     def _random_params(self, use_numpy=False):
         params = np.random.normal(size=self.dist.param_shape)

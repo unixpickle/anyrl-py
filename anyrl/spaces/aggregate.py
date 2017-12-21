@@ -35,6 +35,11 @@ class TupleDistribution(Distribution):
         samples = [d.sample(p) for d, p in zip(self.tuple, per_dist)]
         return list(zip(*samples))
 
+    def mode(self, param_batch):
+        per_dist = self.unpack_params(np.array(param_batch))
+        modes = [d.mode(p) for d, p in zip(self.tuple, per_dist)]
+        return list(zip(*modes))
+
     def log_prob(self, param_batch, sample_vecs):
         per_dist = self.unpack_params(param_batch)
         samples = self.unpack_outs(sample_vecs)

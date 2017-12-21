@@ -52,6 +52,19 @@ class Distribution(Vectorizer):
         pass
 
     @abstractmethod
+    def mode(self, param_batch):
+        """
+        Compute the most likely sample for each parameter
+        vector in a batch of parameter vectors.
+
+        The param_batch should be some kind of array-like
+        object.
+        The result is a list-like object of space
+        elements.
+        """
+        pass
+
+    @abstractmethod
     def log_prob(self, param_batch, sample_vecs):
         """
         Compute the log probability (or log density) of

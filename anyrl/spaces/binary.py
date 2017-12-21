@@ -32,7 +32,12 @@ class MultiBernoulli(Distribution):
         rand = np.random.uniform(size=probs.shape)
         return (probs > rand).astype('int')
 
+    def mode(self, param_batch):
+        probs = 1 / (1 + np.exp(np.negative(np.array(param_batch))))
+        return (probs > 0.5).astype('int')
+
     def log_prob(self, param_batch, sample_vecs):
+        sample_vecs = tf.cast(sample_vecs, param_batch.dtype)
         log_probs_on = tf.log_sigmoid(param_batch) * sample_vecs
         log_probs_off = tf.log_sigmoid(-param_batch) * (1-sample_vecs)
         return tf.reduce_sum(log_probs_on + log_probs_off, axis=-1)

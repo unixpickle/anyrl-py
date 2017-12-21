@@ -35,6 +35,10 @@ class BoxGaussian(Distribution):
         stddevs = np.exp(log_stddevs)
         return np.random.normal(loc=means, scale=stddevs)
 
+    def mode(self, param_batch):
+        params = np.array(param_batch)
+        return self._mean_and_log_stddevs(params)[0]
+
     def log_prob(self, param_batch, sample_vecs):
         means, log_stddevs = self._mean_and_log_stddevs(param_batch)
         constant_factor = 0.5 * math.log(2 * math.pi)
@@ -95,6 +99,12 @@ class BoxBeta(Distribution):
     def sample(self, param_batch):
         params = self._squash_inputs(np.array(param_batch))
         raw = np.random.beta(params[..., 0], params[..., 1])
+        return raw * (self.high - self.low) + self.low
+
+    def mode(self, param_batch):
+        params = self._squash_inputs(np.array(param_batch))
+        alpha, beta = params[..., 0], params[..., 1]
+        raw = (alpha - 1) / (alpha + beta - 2)
         return raw * (self.high - self.low) + self.low
 
     def log_prob(self, param_batch, sample_vecs):

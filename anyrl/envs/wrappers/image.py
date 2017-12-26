@@ -95,3 +95,55 @@ class FrameStackEnv(gym.Wrapper):
         self._history.append(obs)
         self._history = self._history[1:]
         return np.concatenate(self._history, axis=-1), rew, done, info
+
+class MaxEnv(gym.Wrapper):
+    """
+    An environment that takes the component-wise maximum
+    over the last few observations.
+    """
+    def __init__(self, env, num_images=2):
+        super(MaxEnv, self).__init__(env)
+        self._num_images = num_images
+        self._history = []
+
+    def _reset(self, **kwargs):
+        obs = super(MaxEnv, self)._reset(**kwargs)
+        self._history = [obs]
+        return np.max(self._history, axis=0)
+
+    def _step(self, action):
+        obs, rew, done, info = super(MaxEnv, self)._step(action)
+        self._history.append(obs)
+        self._history = self._history[-self._num_images:]
+        return np.max(self._history, axis=0), rew, done, info
+
+class ResizeImageEnv(gym.ObservationWrapper):
+    """
+    An environment that resizes observation images.
+
+    This lazily imports TensorFlow when initialized.
+    """
+    def __init__(self, env, size=(84, 84), method=None):
+        """
+        Create a resizing wrapper.
+
+        Args:
+          env: the environment to wrap.
+          size: the new (height, width) tuple.
+          method: an interpolation method. Defaults to
+            tf.image.ResizeMethod.AREA.
+        """
+        super(ResizeImageEnv, self).__init__(env)
+        import tensorflow as tf
+        config = tf.ConfigProto(device_count={'GPU': 0})
+        self._sess = tf.Session(config=config)
+        self._ph = tf.placeholder(tf.int32, shape=env.observation_space.shape)
+        if method is None:
+            method = tf.image.ResizeMethod.AREA
+        self._resized = tf.image.resize_images(self._ph, size, method=method)
+        old_space = env.observation_space
+        self.observation_space = gym.spaces.Box(self._observation(old_space.low),
+                                                self._observation(old_space.high))
+
+    def _observation(self, observation):
+        return self._sess.run(self._resized, feed_dict={self._ph: observation})

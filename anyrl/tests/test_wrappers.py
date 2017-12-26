@@ -10,10 +10,12 @@ import unittest
 import gym
 import numpy as np
 import pandas
+import tensorflow as tf
 
 from anyrl.envs import batched_gym_env
 from anyrl.envs.wrappers import (RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv,
-                                 BatchedFrameStack, ObservationPadEnv, LoggedEnv)
+                                 MaxEnv, ResizeImageEnv, BatchedFrameStack, ObservationPadEnv,
+                                 LoggedEnv)
 from anyrl.tests import SimpleEnv
 
 class RL2EnvTest(unittest.TestCase):
@@ -126,6 +128,49 @@ class FrameStackEnvTest(unittest.TestCase):
         self.assertFalse((obs2 == obs3).all())
         self.assertTrue((obs1[:, :, 2:] == obs2[:, :, :4]).all())
         self.assertTrue((obs2[:, :, 2:] == obs3[:, :, :4]).all())
+
+class MaxEnvTest(unittest.TestCase):
+    """
+    Tests for MaxEnv.
+    """
+    def test_max_2(self):
+        """
+        Test maxing 2 frames.
+        """
+        env = SimpleEnv(5, (3, 2, 5), 'float32')
+        actions = [env.action_space.sample() for _ in range(4)]
+        frame1 = env.reset()
+        frame2 = env.step(actions[0])[0]
+        frame3 = env.step(actions[1])[0]
+        frame4 = env.step(actions[2])[0]
+        frame5 = env.step(actions[3])[0]
+        wrapped = MaxEnv(env, num_images=2)
+        max1 = wrapped.reset()
+        max2 = wrapped.step(actions[0])[0]
+        max3 = wrapped.step(actions[1])[0]
+        max4 = wrapped.step(actions[2])[0]
+        max5 = wrapped.step(actions[3])[0]
+        self.assertTrue((max1 == frame1).all())
+        self.assertTrue((max2 == np.max([frame1, frame2], axis=0)).all())
+        self.assertTrue((max3 == np.max([frame2, frame3], axis=0)).all())
+        self.assertTrue((max4 == np.max([frame3, frame4], axis=0)).all())
+        self.assertTrue((max5 == np.max([frame4, frame5], axis=0)).all())
+
+class ResizeImageEnvTest(unittest.TestCase):
+    """
+    Tests for ResizeImageEnv.
+    """
+    def test_resize_even(self):
+        """
+        Test resizing for an even number of pixels.
+        """
+        env = SimpleEnv(5, (13, 5, 3), 'float32')
+        frame = env.reset()
+        actual = ResizeImageEnv(env, size=(5, 4)).reset()
+        expected = tf.Session().run(
+            tf.image.resize_images(frame, [5, 4], method=tf.image.ResizeMethod.AREA))
+        self.assertEqual(actual.shape, (5, 4, 3))
+        self.assertTrue(np.allclose(actual, expected))
 
 class BatchedFrameStackTest(unittest.TestCase):
     """

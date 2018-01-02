@@ -8,6 +8,6 @@ from .categorical import CategoricalSoftmax, NaturalSoftmax
 from .continuous import BoxGaussian, BoxBeta
 from .binary import MultiBernoulli
 from .aggregate import TupleDistribution
-from .gym import gym_space_distribution, gym_space_vectorizer
+from .gym import gym_space_distribution, gym_space_enumerator, gym_space_vectorizer
 
 __all__ = dir()

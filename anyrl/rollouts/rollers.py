@@ -3,6 +3,7 @@ Ways of gathering rollouts.
 """
 
 from abc import ABC, abstractmethod
+import copy
 import time
 
 from .rollout import empty_rollout
@@ -252,6 +253,32 @@ class EpisodeRoller(TruncatedRoller):
         Check if any environment is not masked out.
         """
         return any([any(masks) for masks in self._env_mask])
+
+class TreeRoller(Roller):
+    def __init__(self, env, model, tree, min_episodes=1):
+        self.env = env
+        self.model = model
+        self.tree = tree
+        self.min_episodes = min_episodes
+
+    def rollouts(self):
+        episodes = []
+        while len(episodes) < self.min_episodes:
+            states = self.model.start_state(1)
+            rollout = empty_rollout(states)
+            obs = self.env.reset()
+            while True:
+                rollout.observations.append(obs)
+                selected_action, states = self.tree.search(
+                    self.model, copy.deepcopy(self.env), obs, states, rollout)
+                obs, rew, done, info = self.env.step(selected_action[0])
+                rollout.rewards.append(rew)
+                rollout.infos.append(info)
+                if done:
+                    break
+            rollout.end_time = time.time()
+            episodes.append(rollout)
+        return episodes
 
 def _reduce_states(state_batch, env_idx):
     """

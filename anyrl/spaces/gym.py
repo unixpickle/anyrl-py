@@ -4,6 +4,8 @@ Conversions to and from Gym spaces.
 
 import gym.spaces as spaces
 
+import itertools
+
 from .aggregate import TupleDistribution
 from .binary import MultiBernoulli
 from .categorical import CategoricalSoftmax
@@ -39,6 +41,22 @@ def gym_space_distribution(space):
         discretes = tuple(CategoricalSoftmax(high-low+1, low=low)
                           for low, high in zip(space.low, space.high))
         return TupleDistribution(discretes)
+    raise UnsupportedGymSpace(space)
+
+def gym_space_enumerator(space):
+    """
+    Create an enumeration of all the possible combination from a discrete/binary space.
+
+    If the space is not supported, throws an
+    UnsupportedActionSpace exception.
+    """
+    if isinstance(space, spaces.Discrete):
+        return list(range(space.n))
+    elif isinstance(space, spaces.MultiBinary):
+        return list(itertools.product([0, 1], repeat=space.n))
+    elif isinstance(space, spaces.MultiDiscrete):
+        return list(itertools.product(*[list(range(low, high))
+                    for low, high in zip(space.low, space.high)]))
     raise UnsupportedGymSpace(space)
 
 def gym_space_vectorizer(space):

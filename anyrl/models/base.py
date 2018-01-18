@@ -115,12 +115,14 @@ class TFQNetwork(Model):
       name: the variable scope name for the network.
       variables: the trainable variables of the network.
 
-    When a Q-network is instantiated, a version of the
-    model is created for the step() method.
-    This involves creating a set of variables and
-    placeholders in the graph.
+    When a Q-network is instantiated, a graph is created
+    that can be used by the step() method. This involves
+    creating a set of variables and placeholders in the
+    graph.
+
     After construction, other Q-network methods like
-    transition_loss() may reuse variables.
+    transition_loss() reuse the variables that were made
+    at construction time.
     """
     def __init__(self, session, num_actions, obs_vectorizer, name):
         """
@@ -142,7 +144,7 @@ class TFQNetwork(Model):
 
     # pylint: disable=R0913
     @abstractmethod
-    def transition_loss(self, target_net, obses, actions, rews, new_obses, discounts):
+    def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
         """
         Create a loss term for the Bellman update.
 
@@ -156,6 +158,10 @@ class TFQNetwork(Model):
           actions: the 1-D int32 Tensor of actions.
           rews: the 1-D Tensor of rewards.
           new_obses: the Tensor of final observations.
+            For terminal transitions, the observation may
+            be anything, e.g. a bunch of 0's.
+          terminals: a 1-D boolean Tensor indicating which
+            transitions are terminal.
           discounts: the 1-D Tensor of discount factors.
             For n-step Q-learning, this contains the true
             discount factor raised to the n-th power.

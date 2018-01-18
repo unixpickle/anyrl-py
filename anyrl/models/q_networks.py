@@ -46,11 +46,12 @@ class ScalarQNetwork(TFQNetwork):
             'action_values': values
         }
 
-    def transition_loss(self, target_net, obses, actions, rews, new_obses, discounts):
+    def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
         with tf.variable_scope(self.name, reuse=True):
             max_actions = tf.argmax(self.value_func(self.base(new_obses)), axis=1)
         with tf.variable_scope(target_net.name, reuse=True):
             target_preds = target_net.value_func(target_net.base(new_obses))
+            target_preds = tf.where(terminals, tf.zeros_like(target_preds), target_preds)
         targets = rews + discounts * target_preds[tf.range(tf.shape(new_obses)[0]), max_actions]
         with tf.variable_scope(self.name, reuse=True):
             online_preds = self.value_func(self.base(new_obses))
@@ -142,5 +143,5 @@ class EpsGreedyQNetwork(TFQNetwork):
         result['actions'] = new_actions
         return result
 
-    def transition_loss(self, target_net, obses, actions, rews, new_obses, discounts):
+    def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
         return self.model.transition_loss(target_net, obses, actions, rews, new_obses, discounts)

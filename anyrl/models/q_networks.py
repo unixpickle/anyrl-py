@@ -3,6 +3,7 @@ Stateless Q-networks.
 """
 
 from abc import abstractmethod
+import random
 
 import numpy as np
 import tensorflow as tf
@@ -10,7 +11,7 @@ import tensorflow as tf
 from .base import TFQNetwork
 from .util import nature_cnn
 
-# pylint: disable=R0913
+# pylint: disable=R0913,R0903
 
 class ScalarQNetwork(TFQNetwork):
     """
@@ -29,6 +30,7 @@ class ScalarQNetwork(TFQNetwork):
             self.step_values = self.value_func(self.step_base_out)
         self.variables = [v for v in tf.trainable_variables() if v not in old_vars]
 
+    @property
     def stateful(self):
         return False
 
@@ -99,7 +101,6 @@ class NatureQNetwork(ScalarQNetwork):
     def value_func(self, feature_batch):
         return tf.layers.dense(feature_batch, self.num_actions)
 
-# pylint: disable=R0903
 class DuelingQNetwork:
     """
     A mixin that uses a dueling Q-network architecture.
@@ -111,3 +112,35 @@ class DuelingQNetwork:
         actions = tf.layers.dense(feature_batch, self.num_actions)
         actions -= tf.reduce_mean(actions, axis=1, keep_dims=True)
         return values + actions
+
+class EpsGreedyQNetwork(TFQNetwork):
+    """
+    A wrapper around a Q-network that adds epsilon-greedy
+    exploration to the actions.
+    """
+    def __init__(self, model, epsilon):
+        super(EpsGreedyQNetwork, self).__init__(model.session, model.num_actions,
+                                                model.obs_vectorizer, model.name)
+        self.model = model
+        self.epsilon = epsilon
+
+    @property
+    def stateful(self):
+        return self.model.stateful
+
+    def start_state(self, batch_size):
+        return self.model.start_state(batch_size)
+
+    def step(self, observations, states):
+        result = self.model.step(observations, states)
+        new_actions = []
+        for action in result['actions']:
+            if random.random() < self.epsilon:
+                new_actions.append(random.randrange(self.num_actions))
+            else:
+                new_actions.append(action)
+        result['actions'] = new_actions
+        return result
+
+    def transition_loss(self, target_net, obses, actions, rews, new_obses, discounts):
+        return self.model.transition_loss(target_net, obses, actions, rews, new_obses, discounts)

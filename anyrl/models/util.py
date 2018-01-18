@@ -2,6 +2,8 @@
 Helpers for implementing models.
 """
 
+import math
+
 import numpy as np
 import tensorflow as tf
 
@@ -58,6 +60,26 @@ def _batchify(batch_size, tensor):
     ones = tf.ones(tensor.shape.ndims, dtype=tf.int32)
     repeat_count = tf.concat([[batch_size], ones], axis=0)
     return tf.tile(batchable, repeat_count)
+
+def nature_cnn(obs_batch):
+    """
+    Apply the CNN architecture from the Nature DQN paper.
+
+    The result is a batch of feature vectors.
+    """
+    conv_kwargs = {
+        'activation': tf.nn.relu,
+        'kernel_initializer': tf.orthogonal_initializer(gain=math.sqrt(2))
+    }
+    with tf.variable_scope('layer_1'):
+        cnn_1 = tf.layers.conv2d(obs_batch, 32, 8, 4, **conv_kwargs)
+    with tf.variable_scope('layer_2'):
+        cnn_2 = tf.layers.conv2d(cnn_1, 64, 4, 2, **conv_kwargs)
+    with tf.variable_scope('layer_3'):
+        cnn_3 = tf.layers.conv2d(cnn_2, 64, 3, 1, **conv_kwargs)
+    flat_size = np.prod(cnn_3.get_shape()[1:])
+    flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
+    return tf.layers.dense(flat_in, 512, **conv_kwargs)
 
 def product(vals):
     """

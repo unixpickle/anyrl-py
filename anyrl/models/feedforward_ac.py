@@ -2,14 +2,12 @@
 Stateless neural network models.
 """
 
-import math
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
-from .util import mini_batches, product
+from .util import mini_batches, nature_cnn, product
 
 # pylint: disable=E1129
 
@@ -183,19 +181,7 @@ class CNN(FeedforwardAC):
         Return a batch that is fed into actor() and
         critic().
         """
-        conv_kwargs = {
-            'activation': tf.nn.relu,
-            'kernel_initializer': tf.orthogonal_initializer(gain=math.sqrt(2))
-        }
-        with tf.variable_scope('layer_1'):
-            cnn_1 = tf.layers.conv2d(obs_batch, 32, 8, 4, **conv_kwargs)
-        with tf.variable_scope('layer_2'):
-            cnn_2 = tf.layers.conv2d(cnn_1, 64, 4, 2, **conv_kwargs)
-        with tf.variable_scope('layer_3'):
-            cnn_3 = tf.layers.conv2d(cnn_2, 64, 3, 1, **conv_kwargs)
-        flat_size = np.prod(cnn_3.get_shape()[1:])
-        flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
-        return tf.layers.dense(flat_in, 512, **conv_kwargs)
+        return nature_cnn(obs_batch)
 
     def actor(self, base, initializer):
         """

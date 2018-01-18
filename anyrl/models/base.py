@@ -40,6 +40,8 @@ class Model(ABC):
           'values': (optional) predicted value function
           'action_params': (optional) parameters that were
             fed into the action distribution.
+          'action_values': (optional) value predictions
+            for each possible action.
         """
         pass
 

@@ -182,8 +182,8 @@ class EpsGreedyQNetwork(TFQNetwork):
         return result
 
     def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
-        return self.model.transition_loss(target_net, obses, actions, rews, new_obses, terminals,
-                                          discounts)
+        return self.model.transition_loss(target_net.model, obses, actions, rews, new_obses,
+                                          terminals, discounts)
 
     @property
     def input_dtype(self):

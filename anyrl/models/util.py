@@ -89,3 +89,23 @@ def product(vals):
     for val in vals:
         prod *= val
     return prod
+
+def simple_mlp(inputs, layer_sizes, activation):
+    """
+    Apply a simple multi-layer perceptron model to the
+    batch of inputs.
+
+    Args:
+      inputs: the batch of inputs. This may have any shape
+        with at least two dimensions, provided all the
+        sizes are known ahead of time besides the batch
+        size.
+      layer_sizes: a sequence of hidden layer sizes.
+      activation: the activation function.
+    """
+    layer_in_size = product([x.value for x in inputs.get_shape()[1:]])
+    layer_in = tf.reshape(inputs, (tf.shape(inputs)[0], layer_in_size))
+    for layer_idx, out_size in enumerate(layer_sizes):
+        with tf.variable_scope(None, default_name='layer_' + str(layer_idx)):
+            layer_in = tf.layers.dense(layer_in, out_size, activation=activation)
+    return layer_in

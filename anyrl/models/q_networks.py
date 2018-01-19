@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from .base import TFQNetwork
-from .util import nature_cnn
+from .util import nature_cnn, simple_mlp
 
 # pylint: disable=R0913,R0903
 
@@ -89,6 +89,41 @@ class ScalarQNetwork(TFQNetwork):
     def step_feed_dict(self, observations, states):
         """Produce a feed_dict for taking a step."""
         return {self.step_obs_ph: self.obs_vectorizer.to_vecs(observations)}
+
+class MLPQNetwork(ScalarQNetwork):
+    """
+    A multi-layer perceptron Q-network.
+    """
+    # pylint: disable=R0913,R0914
+    def __init__(self,
+                 session,
+                 num_actions,
+                 obs_vectorizer,
+                 name,
+                 layer_sizes,
+                 activation=tf.nn.relu):
+        """
+        Create an MLP model.
+
+        Args:
+          session: the TF session used by step().
+          num_actions: the number of possible actions.
+          obs_vectorizer: a vectorizer for the observation
+            space.
+          name: the scope name for the model. This should
+            be different for the target and online models.
+          layer_sizes: sequence of hidden layer sizes.
+          activation: the activation function.
+        """
+        self.layer_sizes = layer_sizes
+        self.activation = activation
+        super(MLPQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
+
+    def base(self, obs_batch):
+        return simple_mlp(obs_batch, self.layer_sizes, self.activation)
+
+    def value_func(self, feature_batch):
+        return tf.layers.dense(feature_batch, self.num_actions)
 
 class NatureQNetwork(ScalarQNetwork):
     """

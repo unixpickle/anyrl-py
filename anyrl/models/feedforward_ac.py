@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
-from .util import mini_batches, nature_cnn, product
+from .util import mini_batches, nature_cnn, product, simple_mlp
 
 # pylint: disable=E1129
 
@@ -107,15 +107,7 @@ class MLP(FeedforwardAC):
         in_batch_shape = (None,) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(tf.float32, shape=in_batch_shape)
 
-        # Iteratively generate hidden layers.
-        layer_in_size = product(obs_vectorizer.out_shape)
-        vectorized_shape = (tf.shape(self.obs_ph)[0], layer_in_size)
-        layer_in = tf.reshape(self.obs_ph, vectorized_shape)
-        for layer_idx, out_size in enumerate(layer_sizes):
-            with tf.variable_scope('layer_' + str(layer_idx)):
-                layer_in = fully_connected(layer_in, out_size, activation_fn=activation)
-
-        self.base_out = layer_in
+        self.base_out = simple_mlp(self.obs_ph, layer_sizes, activation)
 
         with tf.variable_scope('actor'):
             out_size = product(action_dist.param_shape)

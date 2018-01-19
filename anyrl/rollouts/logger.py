@@ -45,6 +45,9 @@ class EpisodeLogger:
             return
         self.write_frame(pandas.DataFrame(data))
 
+    # TODO: add write_transitions() method for Q-learning
+    # equivalent of write_rollouts().
+
     def write_frame(self, frame):
         """
         Write the pandas DataFrame to the end of the log.

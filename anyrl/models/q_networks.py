@@ -25,7 +25,8 @@ class ScalarQNetwork(TFQNetwork):
         super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
         old_vars = tf.trainable_variables()
         with tf.variable_scope(name):
-            self.step_obs_ph = tf.placeholder(input_dtype, shape=(None,) + obs_vectorizer.out_shape)
+            self.step_obs_ph = tf.placeholder(self.input_dtype,
+                                              shape=(None,) + obs_vectorizer.out_shape)
             self.step_base_out = self.base(self.step_obs_ph)
             self.step_values = self.value_func(self.step_base_out)
         self.variables = [v for v in tf.trainable_variables() if v not in old_vars]
@@ -153,3 +154,7 @@ class EpsGreedyQNetwork(TFQNetwork):
 
     def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
         return self.model.transition_loss(target_net, obses, actions, rews, new_obses, discounts)
+
+    @property
+    def input_dtype(self):
+        return self.model.input_dtype

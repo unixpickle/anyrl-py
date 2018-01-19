@@ -21,8 +21,9 @@ class ScalarQNetwork(TFQNetwork):
     Subclasses should override the base() and value_func()
     methods with specific neural network architectures.
     """
-    def __init__(self, session, num_actions, obs_vectorizer, name):
+    def __init__(self, session, num_actions, obs_vectorizer, name, dueling=False):
         super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
+        self.dueling = dueling
         old_vars = tf.trainable_variables()
         with tf.variable_scope(name):
             self.step_obs_ph = tf.placeholder(self.input_dtype,
@@ -75,16 +76,23 @@ class ScalarQNetwork(TFQNetwork):
         """
         pass
 
-    @abstractmethod
     def value_func(self, feature_batch):
         """
         Go from a Tensor of feature vectors to a Tensor of
         predicted action values.
 
+        Args:
+          feature_batch: a batch of features from base().
+
         Returns:
           A Tensor of shape [batch_size x num_actions].
         """
-        pass
+        if not self.dueling:
+            return tf.layers.dense(feature_batch, self.num_actions)
+        values = tf.layers.dense(feature_batch, 1)
+        actions = tf.layers.dense(feature_batch, self.num_actions)
+        actions -= tf.reduce_mean(actions, axis=1, keep_dims=True)
+        return values + actions
 
     # pylint: disable=W0613
     def step_feed_dict(self, observations, states):
@@ -102,7 +110,8 @@ class MLPQNetwork(ScalarQNetwork):
                  obs_vectorizer,
                  name,
                  layer_sizes,
-                 activation=tf.nn.relu):
+                 activation=tf.nn.relu,
+                 dueling=False):
         """
         Create an MLP model.
 
@@ -118,23 +127,22 @@ class MLPQNetwork(ScalarQNetwork):
         """
         self.layer_sizes = layer_sizes
         self.activation = activation
-        super(MLPQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
+        super(MLPQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
+                                          dueling=dueling)
 
     def base(self, obs_batch):
         return simple_mlp(obs_batch, self.layer_sizes, self.activation)
-
-    def value_func(self, feature_batch):
-        return tf.layers.dense(feature_batch, self.num_actions)
 
 class NatureQNetwork(ScalarQNetwork):
     """
     A Q-network model based on the Nature DQN paper.
     """
     def __init__(self, session, num_actions, obs_vectorizer, name,
-                 input_dtype=tf.uint8, input_scale=1/0xff):
+                 dueling=False, input_dtype=tf.uint8, input_scale=1/0xff):
         self._input_dtype = input_dtype
         self.input_scale = input_scale
-        super(NatureQNetwork, self).__init__(self, session, num_actions, obs_vectorizer, name)
+        super(NatureQNetwork, self).__init__(self, session, num_actions, obs_vectorizer, name,
+                                             dueling=dueling)
 
     @property
     def input_dtype(self):
@@ -143,21 +151,6 @@ class NatureQNetwork(ScalarQNetwork):
     def base(self, obs_batch):
         obs_batch = tf.cast(obs_batch, tf.float32) * self.input_scale
         return nature_cnn(obs_batch)
-
-    def value_func(self, feature_batch):
-        return tf.layers.dense(feature_batch, self.num_actions)
-
-class DuelingQNetwork:
-    """
-    A mixin that uses a dueling Q-network architecture.
-    """
-    num_actions = 0
-    def value_func(self, feature_batch):
-        """Dueling value function."""
-        values = tf.layers.dense(feature_batch, 1)
-        actions = tf.layers.dense(feature_batch, self.num_actions)
-        actions -= tf.reduce_mean(actions, axis=1, keep_dims=True)
-        return values + actions
 
 class EpsGreedyQNetwork(TFQNetwork):
     """

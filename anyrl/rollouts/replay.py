@@ -55,7 +55,7 @@ class ReplayBuffer(ABC):
         pass
 
     @abstractmethod
-    def add_sample(self, sample, initial_weight=None):
+    def add_sample(self, sample, init_weight=None):
         """
         Add a sampled transition to the buffer.
 
@@ -63,7 +63,7 @@ class ReplayBuffer(ABC):
           sample: a transition dict similar to the one
             returned by sample(), except that this dict
             shouldn't have an 'id' or 'weight' field.
-          initial_weight: an initial sampling weight for
+          init_weight: an initial sampling weight for
             the transition. This is related to the weights
             passed to update_weights().
         """
@@ -110,7 +110,7 @@ class UniformReplayBuffer(ReplayBuffer):
             transition['weight'] = 1
         return res
 
-    def add_sample(self, sample, initial_weight=None):
+    def add_sample(self, sample, init_weight=None):
         self.transitions.append(sample)
         while len(self.transitions) > self.capacity:
             del self.transitions[0]
@@ -124,23 +124,44 @@ class PrioritizedReplayBuffer(ReplayBuffer):
     are assumed to be error terms (e.g. the absolute TD
     error).
     """
-    def __init__(self, capacity, alpha, beta, default_init_weight=1e5):
+    # pylint: disable=R0913
+    def __init__(self, capacity, alpha, beta, default_init_weight=1e5, epsilon=0):
+        """
+        Create a prioritized replay buffer.
+
+        Args:
+          capacity: the maximum number of transitions to
+            store in the buffer.
+          alpha: an exponent controlling the temperature.
+            Higher values result in more prioritization.
+            A value of 0 yields uniform prioritization.
+          beta: an exponent controlling the amount of
+            importance sampling. A value of 1 yields
+            unbiased sampling. A value of 0 yields no
+            importance sampling.
+          default_init_weight: the initial weight for new
+            samples when add_sample() is called without an
+            init_weight argument.
+          epsilon: a value which is added to every error
+            term before the error term is used.
+        """
         self.capacity = capacity
         self.alpha = alpha
         self.beta = beta
+        self.default_init_weight = default_init_weight
+        self.epsilon = epsilon
         self.transitions = []
         self.errors = []
-        self.default_init_weight = default_init_weight
 
     @property
     def size(self):
         return len(self.transitions)
 
     def sample(self, num_samples):
-        probs = np.pow(np.array(self.errors), self.alpha)
+        probs = np.power(np.array(self.errors), self.alpha).astype('float64')
         probs /= np.sum(probs)
         sampled_indices = np.random.choice(len(probs), size=num_samples, replace=False, p=probs)
-        importance_weights = np.pow(probs[sampled_indices] * self.size, -self.beta)
+        importance_weights = np.power(probs[sampled_indices] * self.size, -self.beta)
         importance_weights /= np.amax(importance_weights)
         samples = []
         for i, weight in zip(sampled_indices, importance_weights):
@@ -150,16 +171,16 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             samples.append(sample)
         return samples
 
-    def add_sample(self, sample, initial_weight=None):
+    def add_sample(self, sample, init_weight=None):
         self.transitions.append(sample)
-        if initial_weight is None:
+        if init_weight is None:
             self.errors.append(self.default_init_weight)
         else:
-            self.errors.append(initial_weight)
+            self.errors.append(init_weight + self.epsilon)
         while self.size > self.capacity:
             del self.transitions[0]
             del self.errors[0]
 
     def update_weights(self, samples, new_weights):
         for sample, weight in zip(samples, new_weights):
-            self.errors[sample['id']] = weight
+            self.errors[sample['id']] = weight + self.epsilon

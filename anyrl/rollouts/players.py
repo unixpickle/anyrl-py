@@ -131,27 +131,29 @@ class NStepPlayer(Player):
         for trans in self.player.play():
             assert len(trans['rewards']) == 1
             ep_id = trans['episode_id']
-            if ep_id in trans:
-                trans[ep_id].append(trans)
+            if ep_id in self._ep_to_history:
+                self._ep_to_history[ep_id].append(trans)
             else:
-                trans[ep_id] = [trans]
+                self._ep_to_history[ep_id] = [trans]
         res = []
-        for ep_id, history in self._ep_to_history.items():
-            trans = self._next_transition(history)
-            if trans is not None:
+        for ep_id, history in list(self._ep_to_history.items()):
+            while history:
+                trans = self._next_transition(history)
+                if trans is None:
+                    break
                 res.append(trans)
-        for ep_id, history in self._ep_to_history.items():
             if not history:
                 del self._ep_to_history[ep_id]
+        return res
 
     def _next_transition(self, history):
         if len(history) < self.num_steps:
             if not history[-1]['is_last']:
                 return None
         res = history[0].copy()
-        res['rewards'] = [h['rewards'][0] for h in history]
-        res['total_reward'] += sum(h['rewards'][0] for h in history[1:])
+        res['rewards'] = [h['rewards'][0] for h in history[:self.num_steps]]
+        res['total_reward'] += sum(h['rewards'][0] for h in history[1:self.num_steps])
         if len(history) == self.num_steps:
-            res['new_obs'] = history[-1]['new_obs']
+            res['new_obs'] = history[self.num_steps-1]['new_obs']
         del history[0]
         return res

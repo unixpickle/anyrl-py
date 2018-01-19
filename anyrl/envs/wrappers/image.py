@@ -56,7 +56,7 @@ class GrayscaleEnv(gym.ObservationWrapper):
             observation = observation // 3
         else:
             observation = observation / 3
-        return np.sum(observation, axis=-1, keepdims=self._keep_depth)
+        return np.sum(observation, axis=-1, keepdims=self._keep_depth, dtype=observation.dtype)
 
 class FrameStackEnv(gym.Wrapper):
     """

@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from .base import TFQNetwork
-from .util import nature_cnn, simple_mlp
+from .util import nature_cnn, simple_mlp, take_vector_elems
 
 # pylint: disable=R0913,R0903
 
@@ -49,14 +49,15 @@ class ScalarQNetwork(TFQNetwork):
 
     def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
         with tf.variable_scope(self.name, reuse=True):
-            max_actions = tf.argmax(self.value_func(self.base(new_obses)), axis=1)
+            max_actions = tf.argmax(self.value_func(self.base(new_obses)),
+                                    axis=1, output_type=tf.int32)
         with tf.variable_scope(target_net.name, reuse=True):
             target_preds = target_net.value_func(target_net.base(new_obses))
             target_preds = tf.where(terminals, tf.zeros_like(target_preds), target_preds)
-        targets = rews + discounts * target_preds[tf.range(tf.shape(new_obses)[0]), max_actions]
+        targets = rews + discounts * take_vector_elems(target_preds, max_actions)
         with tf.variable_scope(self.name, reuse=True):
-            online_preds = self.value_func(self.base(new_obses))
-            onlines = online_preds[tf.range(tf.shape(new_obses)[0]), max_actions]
+            online_preds = self.value_func(self.base(obses))
+            onlines = take_vector_elems(online_preds, actions)
             return tf.square(onlines - tf.stop_gradient(targets))
 
     @property
@@ -188,7 +189,8 @@ class EpsGreedyQNetwork(TFQNetwork):
         return result
 
     def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
-        return self.model.transition_loss(target_net, obses, actions, rews, new_obses, discounts)
+        return self.model.transition_loss(target_net, obses, actions, rews, new_obses, terminals,
+                                          discounts)
 
     @property
     def input_dtype(self):

@@ -109,3 +109,17 @@ def simple_mlp(inputs, layer_sizes, activation):
         with tf.variable_scope(None, default_name='layer_' + str(layer_idx)):
             layer_in = tf.layers.dense(layer_in, out_size, activation=activation)
     return layer_in
+
+def take_vector_elems(vectors, indices):
+    """
+    For a batch of vectors, take a single vector component
+    out of each vector.
+
+    Args:
+      vectors: a [batch x dims] Tensor.
+      indices: an int32 Tensor with `batch` entries.
+
+    Returns:
+      A Tensor with `batch` entries, one for each vector.
+    """
+    return tf.gather_nd(vectors, tf.stack([tf.range(tf.shape(vectors)[0]), indices], axis=1))

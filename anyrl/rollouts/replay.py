@@ -35,15 +35,8 @@ class ReplayBuffer(ABC):
         Returns:
           A sequence of num_samples transition dicts.
 
-        Each transition dict should have these keys:
-          'obs': the starting observation.
-          'action': the chosen action.
-          'reward': the reward after taking the action.
-          'new_obs': the new observation, or None if the
-            episode terminates after this transition.
-          'steps': the number of steps bridging the start
-            and end observations. For n-step Q-learning,
-            this is n.
+        Each transition dict is a copy of a dict passed to
+        add_sample(), but with extra keys:
           'weight': an importance-sampling weight for the
             sample, possibly relative to the rest of the
             samples in the batch.
@@ -60,9 +53,7 @@ class ReplayBuffer(ABC):
         Add a sampled transition to the buffer.
 
         Args:
-          sample: a transition dict similar to the one
-            returned by sample(), except that this dict
-            shouldn't have an 'id' or 'weight' field.
+          sample: a dict describing a state transition.
           init_weight: an initial sampling weight for
             the transition. This is related to the weights
             passed to update_weights().

@@ -46,7 +46,7 @@ def main():
                 transitions = player.play()
                 for trans in transitions:
                     if trans['is_last']:
-                        rewards.append(trans['total_rew'])
+                        rewards.append(trans['total_reward'])
                     num_steps += 1
                     replay_buffer.add_sample(trans)
                 if replay_buffer.size > MIN_BUFFER_SIZE:

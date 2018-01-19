@@ -54,9 +54,9 @@ class DQN:
         res = {
             self.obses_ph: obs_vect.to_vecs([t['obs'] for t in transitions]),
             self.actions_ph: [t['action'] for t in transitions],
-            self.rews_ph: [t['reward'] for t in transitions],
+            self.rews_ph: [self._discounted_rewards(t['rewards']) for t in transitions],
             self.terminals_ph: [t['new_obs'] is None for t in transitions],
-            self.discounts_ph: [(self.discount ** t['steps']) for t in transitions],
+            self.discounts_ph: [(self.discount ** len(t['rewards'])) for t in transitions],
             self.weights_ph: [t['weight'] for t in transitions]
         }
         new_obses = []
@@ -88,3 +88,9 @@ class DQN:
         for dst, src in zip(self.target_net.variables, self.online_net.variables):
             assigns.append(tf.assign(dst, src))
         return tf.group(*assigns)
+
+    def _discounted_rewards(self, rews):
+        res = 0
+        for i, rew in enumerate(rews):
+            res += rew * (self.discount ** i)
+        return res

@@ -25,12 +25,10 @@ class Player(ABC):
         Each transition dict should have these keys:
           'obs': the starting observation.
           'action': the chosen action.
-          'reward': the reward after taking the action.
+          'rewards': the rewards after taking the action.
+            For n-step Q-learning, there are n rewards.
           'new_obs': the new observation, or None if the
             transition is terminal.
-          'steps': the number of steps bridging the start
-            and end observations. For n-step Q-learning,
-            this is n.
           'info': the info dictionary from the step when
             the action was taken.
           'start_state': the model's state when it chose
@@ -48,8 +46,8 @@ class Player(ABC):
             be True even if new_obs is None, since n-step
             Q-learning can result in multiple terminal
             transitions.
-          'total_rew': the total reward for the episode up
-            to and including this transition.
+          'total_reward': the total reward for the episode
+            up to and including this transition.
             If 'new_obs' is None, then this is the total
             reward for the episode.
         """
@@ -69,7 +67,7 @@ class BasicPlayer(Player):
         self._last_obs = None
         self._episode_id = 0
         self._episode_step = 0
-        self._total_rew = 0.0
+        self._total_reward = 0.0
 
     def play(self):
         return [self._gather_transition() for _ in range(self.batch_size)]
@@ -81,23 +79,22 @@ class BasicPlayer(Player):
             self._last_obs = self.env.reset()
             self._episode_id += 1
             self._episode_step = 0
-            self._total_rew = 0.0
+            self._total_reward = 0.0
         output = self.model.step([self._last_obs], self._cur_state)
         new_obs, rew, self._needs_reset, info = self.env.step(output['actions'][0])
-        self._total_rew += rew
+        self._total_reward += rew
         res = {
             'obs': self._last_obs,
             'action': output['actions'][0],
-            'reward': rew,
+            'rewards': [rew],
             'new_obs': (new_obs if not self._needs_reset else None),
-            'steps': 1,
             'info': info,
             'start_state': self._cur_state,
             'episode_id': self._episode_id,
             'episode_step': self._episode_step,
             'end_time': time.time(),
             'is_last': self._needs_reset,
-            'total_rew': self._total_rew
+            'total_reward': self._total_reward
         }
         self._cur_state = output['states']
         self._last_obs = new_obs

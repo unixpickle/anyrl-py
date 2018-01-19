@@ -1,6 +1,6 @@
 """
-Use A2C to train a model on the CartPole-v0 environment in
-OpenAI Gym.
+Use A2C or PPO to train a model on the CartPole-v0
+environment in OpenAI Gym.
 """
 
 from anyrl.algos import A2C, PPO

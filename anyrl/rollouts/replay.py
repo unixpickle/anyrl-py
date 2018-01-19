@@ -41,9 +41,9 @@ class ReplayBuffer(ABC):
           'reward': the reward after taking the action.
           'new_obs': the new observation, or None if the
             episode terminates after this transition.
-          'discount': the discount factor bridging rewards
-            from the start and end timesteps.
-            For n-step Q-learning, this is `gamma^n`.
+          'steps': the number of steps bridging the start
+            and end observations. For n-step Q-learning,
+            this is n.
           'weight': an importance-sampling weight for the
             sample, possibly relative to the rest of the
             samples in the batch.

@@ -22,7 +22,8 @@ class ScalarQNetwork(TFQNetwork):
     methods with specific neural network architectures.
     """
     def __init__(self, session, num_actions, obs_vectorizer, name, input_dtype=tf.float32):
-        super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
+        super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
+                                             input_dtype=input_dtype)
         old_vars = tf.trainable_variables()
         with tf.variable_scope(name):
             self.step_obs_ph = tf.placeholder(input_dtype, shape=obs_vectorizer.out_shape)

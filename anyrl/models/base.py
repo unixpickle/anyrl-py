@@ -124,7 +124,8 @@ class TFQNetwork(Model):
     transition_loss() reuse the variables that were made
     at construction time.
     """
-    def __init__(self, session, num_actions, obs_vectorizer, name):
+    # pylint: disable=R0913
+    def __init__(self, session, num_actions, obs_vectorizer, name, input_dtype):
         """
         Construct a Q-network.
 
@@ -135,11 +136,13 @@ class TFQNetwork(Model):
             space.
           name: the scope name for the model. This should
             be different for the target and online models.
+          input_dtype: the observation data-type.
         """
         self.session = session
         self.num_actions = num_actions
         self.obs_vectorizer = obs_vectorizer
         self.name = name
+        self.input_dtype = input_dtype
         self.variables = []
 
     # pylint: disable=R0913

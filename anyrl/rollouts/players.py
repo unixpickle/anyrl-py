@@ -120,6 +120,14 @@ class NStepPlayer(Player):
         self._ep_to_history = OrderedDict()
 
     def play(self):
+        # Let the buffers fill up until we get actual
+        # n-step transitions.
+        while True:
+            transes = self._play_once()
+            if transes:
+                return transes
+
+    def _play_once(self):
         for trans in self.player.play():
             assert len(trans['rewards']) == 1
             ep_id = trans['episode_id']

@@ -21,9 +21,8 @@ class ScalarQNetwork(TFQNetwork):
     Subclasses should override the base() and value_func()
     methods with specific neural network architectures.
     """
-    def __init__(self, session, num_actions, obs_vectorizer, name, input_dtype=tf.float32):
-        super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                             input_dtype=input_dtype)
+    def __init__(self, session, num_actions, obs_vectorizer, name):
+        super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
         old_vars = tf.trainable_variables()
         with tf.variable_scope(name):
             self.step_obs_ph = tf.placeholder(input_dtype, shape=(None,) + obs_vectorizer.out_shape)
@@ -59,6 +58,10 @@ class ScalarQNetwork(TFQNetwork):
             onlines = online_preds[tf.range(tf.shape(new_obses)[0]), max_actions]
             return tf.square(onlines - tf.stop_gradient(targets))
 
+    @property
+    def input_dtype(self):
+        return tf.float32
+
     @abstractmethod
     def base(self, obs_batch):
         """
@@ -92,9 +95,13 @@ class NatureQNetwork(ScalarQNetwork):
     """
     def __init__(self, session, num_actions, obs_vectorizer, name,
                  input_dtype=tf.uint8, input_scale=1/0xff):
+        self._input_dtype = input_dtype
         self.input_scale = input_scale
-        super(NatureQNetwork, self).__init__(self, session, num_actions, obs_vectorizer, name,
-                                             input_dtype=input_dtype)
+        super(NatureQNetwork, self).__init__(self, session, num_actions, obs_vectorizer, name)
+
+    @property
+    def input_dtype(self):
+        return self._input_dtype
 
     def base(self, obs_batch):
         obs_batch = tf.cast(obs_batch, tf.float32) * self.input_scale

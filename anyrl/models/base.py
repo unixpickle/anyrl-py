@@ -125,7 +125,7 @@ class TFQNetwork(Model):
     at construction time.
     """
     # pylint: disable=R0913
-    def __init__(self, session, num_actions, obs_vectorizer, name, input_dtype):
+    def __init__(self, session, num_actions, obs_vectorizer, name):
         """
         Construct a Q-network.
 
@@ -136,13 +136,11 @@ class TFQNetwork(Model):
             space.
           name: the scope name for the model. This should
             be different for the target and online models.
-          input_dtype: the observation data-type.
         """
         self.session = session
         self.num_actions = num_actions
         self.obs_vectorizer = obs_vectorizer
         self.name = name
-        self.input_dtype = input_dtype
         self.variables = []
 
     # pylint: disable=R0913
@@ -172,5 +170,15 @@ class TFQNetwork(Model):
         Returns:
           A 1-D Tensor containing a loss value for each
             transition in the batch of transitions.
+        """
+        pass
+
+    @abstractproperty
+    def input_dtype(self):
+        """
+        Get the TF dtype to use for observation vectors.
+
+        The returned dtype should be used for the Tensors
+        that are passed into transition_loss().
         """
         pass

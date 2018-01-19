@@ -56,7 +56,7 @@ class Player(ABC):
 class BasicPlayer(Player):
     """
     A Player that uses a single Gym environment to gather
-    sequential batches of transitions.
+    sequential batches of 1-step transitions.
     """
     def __init__(self, env, model, batch_size=1):
         self.env = env

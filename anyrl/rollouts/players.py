@@ -4,6 +4,7 @@ buffer.
 """
 
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 import time
 
 # pylint: disable=R0902,R0903
@@ -39,8 +40,8 @@ class Player(ABC):
             the particular episode for this timestep.
           'episode_step': the timestep of the initial
             observation, starting from 0.
-          'end_time': the UNIX timestamp when the step was
-            finished being taken.
+          'end_time': the UNIX timestamp when the action
+            was finished being applied taken.
           'is_last': a boolean indicating if this is the
             last transition for the episode. This may not
             be True even if new_obs is None, since n-step
@@ -50,6 +51,12 @@ class Player(ABC):
             up to and including this transition.
             If 'new_obs' is None, then this is the total
             reward for the episode.
+
+        All transitions must be ordered such that, if you
+        lay out the transitions first according to play()
+        call index and then according to the order within
+        a batch, episode_step should always be increasing
+        for the corresponding episode_id.
         """
         pass
 
@@ -99,4 +106,44 @@ class BasicPlayer(Player):
         self._cur_state = output['states']
         self._last_obs = new_obs
         self._episode_step += 1
+        return res
+
+class NStepPlayer(Player):
+    """
+    A Player that wraps another Player and uses n-step
+    transitions instead of 1-step transitions.
+    """
+    # pylint: disable=R0913
+    def __init__(self, player, num_steps):
+        self.player = player
+        self.num_steps = num_steps
+        self._ep_to_history = OrderedDict()
+
+    def play(self):
+        for trans in self.player.play():
+            assert len(trans['rewards']) == 1
+            ep_id = trans['episode_id']
+            if ep_id in trans:
+                trans[ep_id].append(trans)
+            else:
+                trans[ep_id] = [trans]
+        res = []
+        for ep_id, history in self._ep_to_history.items():
+            trans = self._next_transition(history)
+            if trans is not None:
+                res.append(trans)
+        for ep_id, history in self._ep_to_history.items():
+            if not history:
+                del self._ep_to_history[ep_id]
+
+    def _next_transition(self, history):
+        if len(history) < self.num_steps:
+            if not history[-1]['is_last']:
+                return None
+        res = history[0].copy()
+        res['rewards'] = [h['rewards'][0] for h in history]
+        res['total_reward'] += sum(h['rewards'][0] for h in history[1:])
+        if len(history) == self.num_steps:
+            res['new_obs'] = history[-1]['new_obs']
+        del history[0]
         return res

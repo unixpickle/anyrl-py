@@ -2,8 +2,9 @@
 Learning algorithms for RL.
 """
 
-from .advantages import AdvantageEstimator, GAE
 from .a2c import A2C
+from .advantages import AdvantageEstimator, GAE
+from .dqn import DQN
 from .ppo import PPO
 from .schedules import TFSchedule, LinearTFSchedule
 

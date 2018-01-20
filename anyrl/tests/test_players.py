@@ -6,7 +6,8 @@ import unittest
 
 import numpy as np
 
-from anyrl.rollouts import BasicPlayer, NStepPlayer
+from anyrl.envs import batched_gym_env
+from anyrl.rollouts import BasicPlayer, NStepPlayer, BatchedPlayer
 from anyrl.tests.util import SimpleEnv, SimpleModel
 
 class NStepPlayerTest(unittest.TestCase):
@@ -74,6 +75,25 @@ class NStepPlayerTest(unittest.TestCase):
         for batch_size in range(2, 52):
             actual = _gather_transitions(batch_size)
             for trans1, trans2 in zip(expected, actual):
+                self.assertTrue(_transitions_equal(trans1, trans2))
+
+class BatchedPlayerTest(unittest.TestCase):
+    """
+    Tests for BatchedPlayer.
+    """
+    def test_single_batch(self):
+        """
+        Test when the batch size is 1.
+        """
+        make_env = lambda: SimpleEnv(9, (1, 2, 3), 'float32')
+        make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
+        basic_player = BasicPlayer(make_env(), make_agent(), 3)
+        batched_player = BatchedPlayer(batched_gym_env([make_env]), make_agent(), 3)
+        for _ in range(50):
+            transes1 = basic_player.play()
+            transes2 = batched_player.play()
+            self.assertEqual(len(transes1), len(transes2))
+            for trans1, trans2 in zip(transes1, transes2):
                 self.assertTrue(_transitions_equal(trans1, trans2))
 
 def _transitions_equal(trans1, trans2):

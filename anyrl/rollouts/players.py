@@ -75,7 +75,7 @@ class BasicPlayer(Player):
         self._needs_reset = True
         self._cur_state = None
         self._last_obs = None
-        self._episode_id = 0
+        self._episode_id = -1
         self._episode_step = 0
         self._total_reward = 0.0
 
@@ -183,9 +183,12 @@ class BatchedPlayer(Player):
                                for _ in range(batched_env.num_sub_batches)]
 
     def play(self):
+        if self._cur_states is None:
+            self._setup()
         results = []
-        for i in range(self.batched_env.num_sub_batches):
-            results.extend(self._step_sub_batch(i))
+        for _ in range(self.num_timesteps):
+            for i in range(self.batched_env.num_sub_batches):
+                results.extend(self._step_sub_batch(i))
         return results
 
     def _step_sub_batch(self, sub_batch):
@@ -194,7 +197,7 @@ class BatchedPlayer(Player):
         outs = self.batched_env.step_wait(sub_batch=sub_batch)
         end_time = time.time()
         transitions = []
-        for i, (obs, rew, done, info) in enumerate(outs):
+        for i, (obs, rew, done, info) in enumerate(zip(*outs)):
             self._total_rewards[sub_batch][i] += rew
             transitions.append({
                 'obs': self._last_obses[sub_batch][i],

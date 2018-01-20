@@ -35,5 +35,25 @@ class NStepPlayerTest(unittest.TestCase):
                     else:
                         self.assertTrue(np.allclose(trans1[key], trans2[key]))
 
+    def test_multi_step(self):
+        """
+        Test an NStepPlayer in the multi-step case.
+        """
+        make_env = lambda: SimpleEnv(14, (1, 2, 3), 'float32')
+        make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
+        make_basic = lambda: BasicPlayer(make_env(), make_agent(), batch_size=2)
+        player1 = make_basic()
+        player2 = NStepPlayer(make_basic(), 3)
+        raw_trans = [t for _ in range(20) for t in player1.play()]
+        nstep_trans = [t for _ in range(20) for t in player2.play()]
+        for trans1, trans2 in zip(raw_trans, nstep_trans):
+            for key in ['episode_step', 'episode_id', 'is_last']:
+                self.assertEqual(trans1[key], trans2[key])
+            for key in ['obs', 'action']:
+                self.assertTrue(np.allclose(trans1[key], trans2[key]))
+            self.assertEqual(trans1['rewards'], trans2['rewards'][:1])
+            self.assertEqual(trans1['total_reward'] + sum(trans2['rewards'][1:]),
+                             trans2['total_reward'])
+
 if __name__ == '__main__':
     unittest.main()

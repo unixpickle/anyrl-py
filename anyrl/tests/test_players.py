@@ -147,11 +147,20 @@ def _transitions_equal(trans1, trans2, ignore_id=False):
     else:
         if not np.allclose(trans1['new_obs'], trans2['new_obs']):
             return False
-    if not np.allclose(trans1['model_outs']['actions'][0], trans2['model_outs']['actions'][0]):
+    if (not np.allclose(trans1['model_outs']['actions'][0], trans2['model_outs']['actions'][0]) or
+            not _states_equal(trans1['model_outs']['states'], trans2['model_outs']['states'])):
         return False
     if not np.allclose(trans1['obs'], trans2['obs']):
         return False
     return True
+
+def _states_equal(states1, states2):
+    if isinstance(states1, tuple):
+        if not isinstance(states2, tuple):
+            return False
+        return all(np.allclose(x, y) for x, y in zip(states1, states2))
+    else:
+        return np.allclose(states1, states2)
 
 if __name__ == '__main__':
     unittest.main()

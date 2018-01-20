@@ -261,7 +261,7 @@ def _reduce_states(state_batch, env_idx):
         return None
     elif isinstance(state_batch, tuple):
         return tuple(_reduce_states(s, env_idx) for s in state_batch)
-    return state_batch[env_idx : env_idx+1]
+    return state_batch[env_idx : env_idx+1].copy()
 
 def _inject_state(state_batch, state, env_idx):
     """
@@ -287,5 +287,5 @@ def _reduce_model_outs(model_outs, env_idx):
         elif isinstance(val, tuple):
             out[key] = _reduce_states(val, env_idx)
         else:
-            out[key] = val[env_idx : env_idx+1]
+            out[key] = val[env_idx : env_idx+1].copy()
     return out

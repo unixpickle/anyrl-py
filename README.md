@@ -41,7 +41,6 @@ Here is the current TODO list, organized by sub-module:
   * Maybe: way to not record states in `model_outs` (memory saving)
   * Normalization based on advantage magnitudes.
   * Optimize for sub-batches in `BatchedPlayer`
-  * Fix states in `model_outs` for last timestep of episode (both players and rollers)?
 * `algos`
   * TRPO
   * PPO: allow clipping for value function

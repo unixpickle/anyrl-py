@@ -79,6 +79,11 @@ class SimpleModel(Model):
                 actions.append(states[i] + obs)
                 new_states.append(states[i] + 2*obs)
             values.append(np.sum(obs))
+        if new_states:
+            if self.state_tuple:
+                new_states = tuple(np.array(x) for x in new_states)
+            else:
+                new_states = np.array(new_states)
         return {
             'actions': actions,
             'values': values,

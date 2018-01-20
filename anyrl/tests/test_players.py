@@ -96,9 +96,50 @@ class BatchedPlayerTest(unittest.TestCase):
             for trans1, trans2 in zip(transes1, transes2):
                 self.assertTrue(_transitions_equal(trans1, trans2))
 
-def _transitions_equal(trans1, trans2):
-    for key in ['episode_step', 'episode_id', 'total_reward', 'is_last', 'rewards']:
-        if trans1[key] != trans2[key]:
+    def test_mixed_batch(self):
+        """
+        Test a batch with a bunch of different
+        environments.
+        """
+        env_fns = [lambda s=seed: SimpleEnv(s, (1, 2, 3), 'float32')
+                   for seed in [3, 3, 3, 3, 3, 3]] #[5, 8, 1, 9, 3, 2]]
+        make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
+        for num_sub in [1, 2, 3]:
+            batched_player = BatchedPlayer(batched_gym_env(env_fns, num_sub_batches=num_sub),
+                                           make_agent(), 3)
+            expected_eps = []
+            for player in [BasicPlayer(env_fn(), make_agent(), 3) for env_fn in env_fns]:
+                transes = [t for _ in range(50) for t in player.play()]
+                expected_eps.extend(_separate_episodes(transes))
+            actual_transes = [t for _ in range(50) for t in batched_player.play()]
+            actual_eps = _separate_episodes(actual_transes)
+            self.assertEqual(len(expected_eps), len(actual_eps))
+            for episode in expected_eps:
+                found = False
+                for i, actual in enumerate(actual_eps):
+                    if _episodes_equivalent(episode, actual):
+                        del actual_eps[i]
+                        found = True
+                        break
+                self.assertTrue(found)
+
+def _separate_episodes(transes):
+    res = []
+    for ep_id in set([t['episode_id'] for t in transes]):
+        res.append([t for t in transes if t['episode_id'] == ep_id])
+    return res
+
+def _episodes_equivalent(transes1, transes2):
+    if len(transes1) != len(transes2):
+        return False
+    for trans1, trans2 in zip(transes1, transes2):
+        if not _transitions_equal(trans1, trans2, ignore_id=True):
+            return False
+    return True
+
+def _transitions_equal(trans1, trans2, ignore_id=False):
+    for key in ['episode_step', 'total_reward', 'is_last', 'rewards']:
+        if trans1[key] != trans2[key] and (key != 'episode_id' or not ignore_id):
             return False
     if trans1['new_obs'] is None:
         if trans2['new_obs'] is not None:

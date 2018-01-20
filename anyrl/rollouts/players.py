@@ -221,7 +221,7 @@ class BatchedPlayer(Player):
             else:
                 self._episode_steps[sub_batch][i] += 1
         self._cur_states[sub_batch] = model_outs['states']
-        self._last_obses = outs[0]
+        self._last_obses[sub_batch] = outs[0]
         return transitions
 
     def _setup(self):

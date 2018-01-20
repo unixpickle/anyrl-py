@@ -153,7 +153,9 @@ class NStepPlayer(Player):
         res = history[0].copy()
         res['rewards'] = [h['rewards'][0] for h in history[:self.num_steps]]
         res['total_reward'] += sum(h['rewards'][0] for h in history[1:self.num_steps])
-        if len(history) == self.num_steps:
+        if len(history) >= self.num_steps:
             res['new_obs'] = history[self.num_steps-1]['new_obs']
+        else:
+            res['new_obs'] = None
         del history[0]
         return res

@@ -53,7 +53,7 @@ class DQN:
         obs_vect = self.online_net.obs_vectorizer
         res = {
             self.obses_ph: obs_vect.to_vecs([t['obs'] for t in transitions]),
-            self.actions_ph: [t['action'] for t in transitions],
+            self.actions_ph: [t['model_outs']['actions'][0] for t in transitions],
             self.rews_ph: [self._discounted_rewards(t['rewards']) for t in transitions],
             self.terminals_ph: [t['new_obs'] is None for t in transitions],
             self.discounts_ph: [(self.discount ** len(t['rewards'])) for t in transitions],

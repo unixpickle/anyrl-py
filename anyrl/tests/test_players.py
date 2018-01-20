@@ -43,8 +43,9 @@ class NStepPlayerTest(unittest.TestCase):
         for raw, multi in zip(raw_trans, nstep_trans):
             for key in ['episode_step', 'episode_id', 'is_last']:
                 self.assertEqual(raw[key], multi[key])
-            for key in ['obs', 'action']:
-                self.assertTrue(np.allclose(raw[key], multi[key]))
+            self.assertTrue(np.allclose(raw['model_outs']['actions'][0],
+                                        multi['model_outs']['actions'][0]))
+            self.assertTrue(np.allclose(raw['obs'], multi['obs']))
             self.assertEqual(raw['rewards'], multi['rewards'][:1])
             self.assertEqual(raw['total_reward'] + sum(multi['rewards'][1:]),
                              multi['total_reward'])
@@ -79,13 +80,16 @@ def _transitions_equal(trans1, trans2):
     for key in ['episode_step', 'episode_id', 'total_reward', 'is_last', 'rewards']:
         if trans1[key] != trans2[key]:
             return False
-    for key in ['obs', 'action', 'new_obs']:
-        if trans1[key] is None:
-            if trans2[key] is not None:
-                return False
-        else:
-            if not np.allclose(trans1[key], trans2[key]):
-                return False
+    if trans1['new_obs'] is None:
+        if trans2['new_obs'] is not None:
+            return False
+    else:
+        if not np.allclose(trans1['new_obs'], trans2['new_obs']):
+            return False
+    if not np.allclose(trans1['model_outs']['actions'][0], trans2['model_outs']['actions'][0]):
+        return False
+    if not np.allclose(trans1['obs'], trans2['obs']):
+        return False
     return True
 
 if __name__ == '__main__':

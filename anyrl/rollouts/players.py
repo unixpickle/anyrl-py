@@ -25,7 +25,8 @@ class Player(ABC):
 
         Each transition dict should have these keys:
           'obs': the starting observation.
-          'action': the chosen action.
+          'model_outs': the batch-size 1 model output
+            after seeing the observation.
           'rewards': the rewards after taking the action.
             For n-step Q-learning, there are n rewards.
           'new_obs': the new observation, or None if the
@@ -92,7 +93,7 @@ class BasicPlayer(Player):
         self._total_reward += rew
         res = {
             'obs': self._last_obs,
-            'action': output['actions'][0],
+            'model_outs': output,
             'rewards': [rew],
             'new_obs': (new_obs if not self._needs_reset else None),
             'info': info,

@@ -42,11 +42,9 @@ class StackedBoxSpace(gym.Space):
         return all(self.box.contains(e) for e in x)
 
     def to_jsonable(self, sample_n):
-        # TODO: test this.
         return [self.box.to_jsonable(sample) for sample in zip(*sample_n)]
 
     def from_jsonable(self, sample_n):
-        # TODO: test this.
         return list(list(l) for l in zip(*[self.box.from_jsonable(sample) for sample in sample_n]))
 
     def __repr__(self):

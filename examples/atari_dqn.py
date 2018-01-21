@@ -12,7 +12,7 @@ from functools import partial
 
 from anyrl.algos import DQN
 from anyrl.envs import batched_gym_env
-from anyrl.envs.wrappers import DownsampleEnv, FrameStackEnv, GrayscaleEnv
+from anyrl.envs.wrappers import BatchedFrameStack, DownsampleEnv, GrayscaleEnv
 from anyrl.models import NatureQNetwork, EpsGreedyQNetwork
 from anyrl.rollouts import BatchedPlayer, UniformReplayBuffer
 from anyrl.spaces import gym_space_vectorizer
@@ -25,6 +25,11 @@ def main():
     """
     args = _parse_args()
     env = batched_gym_env([partial(make_single_env, args.game)] * args.workers)
+
+    # Using BatchedFrameStack with concat=False is more
+    # memory efficient than other stacking options.
+    env = BatchedFrameStack(env, num_images=4, concat=False)
+
     with tf.Session() as sess:
         make_net = lambda name: NatureQNetwork(
             sess, env.action_space.n, gym_space_vectorizer(env.observation_space), name,
@@ -59,7 +64,7 @@ def main():
 def make_single_env(game):
     """Make a preprocessed gym.Env."""
     env = gym.make(game + '-v0')
-    return FrameStackEnv(GrayscaleEnv(DownsampleEnv(env, 2)), num_images=4)
+    return GrayscaleEnv(DownsampleEnv(env, 2))
 
 def _parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

@@ -61,7 +61,7 @@ def _batchify(batch_size, tensor):
     repeat_count = tf.concat([[batch_size], ones], axis=0)
     return tf.tile(batchable, repeat_count)
 
-def nature_cnn(obs_batch):
+def nature_cnn(obs_batch, dense=tf.layers.dense):
     """
     Apply the CNN architecture from the Nature DQN paper.
 
@@ -77,9 +77,9 @@ def nature_cnn(obs_batch):
         cnn_2 = tf.layers.conv2d(cnn_1, 64, 4, 2, **conv_kwargs)
     with tf.variable_scope('layer_3'):
         cnn_3 = tf.layers.conv2d(cnn_2, 64, 3, 1, **conv_kwargs)
-    flat_size = np.prod(cnn_3.get_shape()[1:])
+    flat_size = product(cnn_3.get_shape()[1:])
     flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
-    return tf.layers.dense(flat_in, 512, **conv_kwargs)
+    return dense(flat_in, 512, **conv_kwargs)
 
 def product(vals):
     """
@@ -90,7 +90,7 @@ def product(vals):
         prod *= val
     return prod
 
-def simple_mlp(inputs, layer_sizes, activation):
+def simple_mlp(inputs, layer_sizes, activation, dense=tf.layers.dense):
     """
     Apply a simple multi-layer perceptron model to the
     batch of inputs.
@@ -102,12 +102,13 @@ def simple_mlp(inputs, layer_sizes, activation):
         size.
       layer_sizes: a sequence of hidden layer sizes.
       activation: the activation function.
+      dense: the dense layer implementation.
     """
     layer_in_size = product([x.value for x in inputs.get_shape()[1:]])
     layer_in = tf.reshape(inputs, (tf.shape(inputs)[0], layer_in_size))
     for layer_idx, out_size in enumerate(layer_sizes):
         with tf.variable_scope(None, default_name='layer_' + str(layer_idx)):
-            layer_in = tf.layers.dense(layer_in, out_size, activation=activation)
+            layer_in = dense(layer_in, out_size, activation=activation)
     return layer_in
 
 def take_vector_elems(vectors, indices):

@@ -3,6 +3,7 @@ Stateless Q-networks.
 """
 
 from abc import abstractmethod
+from math import sqrt
 import random
 
 import numpy as np
@@ -21,9 +22,11 @@ class ScalarQNetwork(TFQNetwork):
     Subclasses should override the base() and value_func()
     methods with specific neural network architectures.
     """
-    def __init__(self, session, num_actions, obs_vectorizer, name, dueling=False):
+    def __init__(self, session, num_actions, obs_vectorizer, name,
+                 dueling=False, dense=tf.layers.dense):
         super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
         self.dueling = dueling
+        self.dense = dense
         old_vars = tf.trainable_variables()
         with tf.variable_scope(name):
             self.step_obs_ph = tf.placeholder(self.input_dtype,
@@ -88,9 +91,9 @@ class ScalarQNetwork(TFQNetwork):
           A Tensor of shape [batch_size x num_actions].
         """
         if not self.dueling:
-            return tf.layers.dense(feature_batch, self.num_actions)
-        values = tf.layers.dense(feature_batch, 1)
-        actions = tf.layers.dense(feature_batch, self.num_actions)
+            return self.dense(feature_batch, self.num_actions)
+        values = self.dense(feature_batch, 1)
+        actions = self.dense(feature_batch, self.num_actions)
         actions -= tf.reduce_mean(actions, axis=1, keep_dims=True)
         return values + actions
 
@@ -111,7 +114,8 @@ class MLPQNetwork(ScalarQNetwork):
                  name,
                  layer_sizes,
                  activation=tf.nn.relu,
-                 dueling=False):
+                 dueling=False,
+                 dense=tf.layers.dense):
         """
         Create an MLP model.
 
@@ -128,21 +132,22 @@ class MLPQNetwork(ScalarQNetwork):
         self.layer_sizes = layer_sizes
         self.activation = activation
         super(MLPQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                          dueling=dueling)
+                                          dueling=dueling, dense=dense)
 
     def base(self, obs_batch):
-        return simple_mlp(obs_batch, self.layer_sizes, self.activation)
+        return simple_mlp(obs_batch, self.layer_sizes, self.activation, dense=self.dense)
 
 class NatureQNetwork(ScalarQNetwork):
     """
     A Q-network model based on the Nature DQN paper.
     """
     def __init__(self, session, num_actions, obs_vectorizer, name,
-                 dueling=False, input_dtype=tf.uint8, input_scale=1/0xff):
+                 dueling=False, dense=tf.layers.dense, input_dtype=tf.uint8,
+                 input_scale=1/0xff):
         self._input_dtype = input_dtype
         self.input_scale = input_scale
         super(NatureQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                             dueling=dueling)
+                                             dueling=dueling, dense=dense)
 
     @property
     def input_dtype(self):
@@ -150,7 +155,7 @@ class NatureQNetwork(ScalarQNetwork):
 
     def base(self, obs_batch):
         obs_batch = tf.cast(obs_batch, tf.float32) * self.input_scale
-        return nature_cnn(obs_batch)
+        return nature_cnn(obs_batch, dense=self.dense)
 
 class EpsGreedyQNetwork(TFQNetwork):
     """
@@ -188,3 +193,58 @@ class EpsGreedyQNetwork(TFQNetwork):
     @property
     def input_dtype(self):
         return self.model.input_dtype
+
+def noisy_net_dense(inputs,
+                    units,
+                    activation=None,
+                    sigma0=0.5,
+                    kernel_initializer=None,
+                    name=None,
+                    reuse=None):
+    """
+    Apply a factorized Noisy Net layer.
+
+    See https://arxiv.org/abs/1706.10295.
+
+    Args:
+      inputs: the batch of input vectors.
+      units: the number of output units.
+      activation: the activation function.
+      sigma0: initial stddev for the weight noise.
+      kernel_initializer: initializer for kernels. Default
+        is to use Gaussian noise that preserves stddev.
+      name: the name for the layer.
+      reuse: reuse the variable scope.
+    """
+    num_inputs = inputs.get_shape()[-1].value
+    stddev = 1 / sqrt(num_inputs)
+    if activation is None:
+        activation = lambda x: x
+    if kernel_initializer is None:
+        kernel_initializer = tf.truncated_normal_initializer(stddev=stddev)
+    with tf.variable_scope(None, default_name=(name or 'noisy_layer'), reuse=reuse):
+        weight_mean = tf.get_variable('weight_mu',
+                                      shape=(num_inputs, units),
+                                      initializer=kernel_initializer)
+        bias_mean = tf.get_variable('bias_mu',
+                                    shape=(units,),
+                                    initializer=tf.zeros_initializer())
+        stddev *= sigma0
+        weight_stddev = tf.get_variable('weight_sigma',
+                                        shape=(num_inputs, units),
+                                        initializer=tf.truncated_normal_initializer(stddev=stddev))
+        bias_stddev = tf.get_variable('bias_sigma',
+                                      shape=(units,),
+                                      initializer=tf.truncated_normal_initializer(stddev=stddev))
+        bias_noise = tf.random_normal((units,), dtype=bias_stddev.dtype.base_dtype)
+        weight_noise = _factorized_noise(num_inputs, units)
+        return activation(tf.matmul(inputs, weight_mean + weight_stddev * weight_noise) +
+                          bias_mean + bias_stddev * bias_noise)
+
+def _factorized_noise(inputs, outputs):
+    noise1 = _signed_sqrt(tf.random_normal((inputs, 1)))
+    noise2 = _signed_sqrt(tf.random_normal((1, outputs)))
+    return tf.matmul(noise1, noise2)
+
+def _signed_sqrt(values):
+    return tf.sqrt(tf.abs(values)) * tf.sign(values)

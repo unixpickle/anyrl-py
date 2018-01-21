@@ -7,7 +7,7 @@ import math
 import numpy as np
 import tensorflow as tf
 
-from .base import Distribution
+from .base import Distribution, Vectorizer
 
 class BoxGaussian(Distribution):
     """
@@ -136,6 +136,21 @@ class BoxBeta(Distribution):
             non_linear = (inputs < 30)
             return 1 + np.where(non_linear, softplus, inputs)
         return 1 + tf.nn.softplus(inputs)
+
+class BoxStacker(Vectorizer):
+    """
+    An observation vectorizer that concatenates lists of
+    numpy arrays along the inner-most direction.
+    """
+    def __init__(self, box_shape, num_dimensions):
+        self._out_shape = tuple(box_shape[:-1]) + (box_shape[-1] * num_dimensions,)
+
+    @property
+    def out_shape(self):
+        return self._out_shape
+
+    def to_vecs(self, space_elements):
+        return [np.concatenate(x, axis=-1) for x in space_elements]
 
 def _reduce_sums(batch):
     """

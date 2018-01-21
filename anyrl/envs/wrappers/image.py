@@ -5,6 +5,8 @@ Wrappers for image preprocessing.
 import gym
 import numpy as np
 
+from anyrl.spaces import StackedBoxSpace
+
 class DownsampleEnv(gym.ObservationWrapper):
     """
     An environment that downsamples its image inputs.
@@ -62,14 +64,16 @@ class FrameStackEnv(gym.Wrapper):
     """
     An environment that stacks images.
 
-    Input arrays are stacked along the inner dimension.
+    In the normal case, input arrays are stacked along the
+    inner dimension. In the case where concat=False, the
+    arrays are put together in a list.
 
     The stacking is ordered from oldest to newest.
 
     At the beginning of an episode, the first observation
     is repeated in order to complete the stack.
     """
-    def __init__(self, env, num_images=2):
+    def __init__(self, env, num_images=2, concat=True):
         """
         Create a frame stacking environment.
 
@@ -77,24 +81,39 @@ class FrameStackEnv(gym.Wrapper):
           env: the environment to wrap.
           num_images: the number of images to stack.
             This includes the current observation.
+          concat: if True, stacked frames are joined
+            together along the inner-most dimension.
+            If False, the stacked frames are simply put
+            together in a list. In this case, a special
+            observation space, StackedBoxSpace, is used.
         """
         super(FrameStackEnv, self).__init__(env)
+        self.concat = concat
         old_space = env.observation_space
-        self.observation_space = gym.spaces.Box(np.repeat(old_space.low, num_images, axis=-1),
-                                                np.repeat(old_space.high, num_images, axis=-1))
+        if concat:
+            self.observation_space = gym.spaces.Box(np.repeat(old_space.low, num_images, axis=-1),
+                                                    np.repeat(old_space.high, num_images, axis=-1))
+        else:
+            self.observation_space = StackedBoxSpace(old_space, num_images)
         self._num_images = num_images
         self._history = []
 
     def _reset(self, **kwargs):
         obs = super(FrameStackEnv, self)._reset(**kwargs)
         self._history = [obs] * self._num_images
-        return np.concatenate(self._history, axis=-1)
+        if self.concat:
+            return np.concatenate(self._history, axis=-1)
+        else:
+            return self._history.copy()
 
     def _step(self, action):
         obs, rew, done, info = super(FrameStackEnv, self)._step(action)
         self._history.append(obs)
         self._history = self._history[1:]
-        return np.concatenate(self._history, axis=-1), rew, done, info
+        if self.concat:
+            return np.concatenate(self._history, axis=-1), rew, done, info
+        else:
+            return self._history.copy()
 
 class MaxEnv(gym.Wrapper):
     """

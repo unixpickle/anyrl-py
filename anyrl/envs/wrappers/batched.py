@@ -17,6 +17,7 @@ on top of the CNN wrapper.
 import gym
 import numpy as np
 
+from anyrl.spaces import StackedBoxSpace
 from ..base import BatchedEnv
 
 class BatchedWrapper(BatchedEnv):
@@ -58,12 +59,16 @@ class BatchedFrameStack(BatchedWrapper):
     """
     The batched analog of FrameStackEnv.
     """
-    def __init__(self, env, num_images=2):
+    def __init__(self, env, num_images=2, concat=True):
         super(BatchedFrameStack, self).__init__(env)
+        self.concat = concat
         if hasattr(self, 'observation_space'):
-            old_space = self.observation_space
-            self.observation_space = gym.spaces.Box(np.repeat(old_space.low, num_images, axis=-1),
-                                                    np.repeat(old_space.high, num_images, axis=-1))
+            old = self.observation_space
+            if concat:
+                self.observation_space = gym.spaces.Box(np.repeat(old.low, num_images, axis=-1),
+                                                        np.repeat(old.high, num_images, axis=-1))
+            else:
+                self.observation_space = StackedBoxSpace(old, num_images)
         self._num_images = num_images
         self._history = [None] * env.num_sub_batches
 
@@ -87,4 +92,6 @@ class BatchedFrameStack(BatchedWrapper):
         Pack the sub-batch's observation along the
         inner dimension.
         """
-        return [np.concatenate(o, axis=-1) for o in self._history[sub_batch]]
+        if self.concat:
+            return [np.concatenate(o, axis=-1) for o in self._history[sub_batch]]
+        return [o.copy() for o in self._history[sub_batch]]

@@ -2,12 +2,13 @@
 Conversions to and from Gym spaces.
 """
 
+import gym
 import gym.spaces as spaces
 
 from .aggregate import TupleDistribution
 from .binary import MultiBernoulli
 from .categorical import CategoricalSoftmax
-from .continuous import BoxGaussian
+from .continuous import BoxGaussian, BoxStacker
 
 class UnsupportedGymSpace(Exception):
     """
@@ -18,6 +19,38 @@ class UnsupportedGymSpace(Exception):
         msg = 'unsupported Gym space: ' + str(space)
         super(UnsupportedGymSpace, self).__init__(msg)
         self.space = space
+
+class StackedBoxSpace(gym.Space):
+    """
+    A gym.Space representing a list of gym.Box elements.
+
+    This space is used for frame stacking when no
+    concatenation is used. This way, the observation
+    vectorizer can concatenate the frames right when
+    turning them into vectors for a model.
+    """
+    def __init__(self, box, count):
+        self.box = box
+        self.count = count
+
+    def sample(self):
+        return [self.box.sample() for _ in range(self.count)]
+
+    def contains(self, x):
+        if not isinstance(x, list) or len(x) != self.count:
+            return False
+        return all(self.box.contains(e) for e in x)
+
+    def to_jsonable(self, sample_n):
+        # TODO: test this.
+        return [self.box.to_jsonable(sample) for sample in zip(*sample_n)]
+
+    def from_jsonable(self, sample_n):
+        # TODO: test this.
+        return list(list(l) for l in zip(*[self.box.from_jsonable(sample) for sample in sample_n]))
+
+    def __repr__(self):
+        return "StackedBox" + str(self.box.shape)
 
 def gym_space_distribution(space):
     """
@@ -48,4 +81,6 @@ def gym_space_vectorizer(space):
     If the space is not supported, throws an
     UnsupportedActionSpace exception.
     """
+    if isinstance(space, StackedBoxSpace):
+        return BoxStacker(space.box.shape, space.count)
     return gym_space_distribution(space)

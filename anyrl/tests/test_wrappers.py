@@ -129,6 +129,20 @@ class FrameStackEnvTest(unittest.TestCase):
         self.assertTrue((obs1[:, :, 2:] == obs2[:, :, :4]).all())
         self.assertTrue((obs2[:, :, 2:] == obs3[:, :, :4]).all())
 
+    def test_stack_3_no_concat(self):
+        """
+        Test stacking 3 frames with no concatenation.
+        """
+        low = np.zeros((4, 5, 2))
+        high = np.zeros((4, 5, 2)) + 0xff
+        env = FrameStackEnv(ShapeEnv(low, high), 3, concat=False)
+        self.assertEqual(env.observation_space.box.shape, (4, 5, 2))
+        self.assertEqual(env.observation_space.count, 3)
+        obs1 = env.reset()
+        obs2, _, _, _, = env.step(0)
+        self.assertTrue(np.allclose(obs2[0], obs1[0]))
+        self.assertFalse(np.allclose(obs2[-1], obs1[0]))
+
 class MaxEnvTest(unittest.TestCase):
     """
     Tests for MaxEnv.
@@ -181,9 +195,14 @@ class BatchedFrameStackTest(unittest.TestCase):
         Test that BatchedFrameStack is equivalent to a
         regular batched FrameStackEnv.
         """
+        self._test_equivalence(True)
+        self._test_equivalence(False)
+
+    def _test_equivalence(self, concat):
         envs = [lambda idx=i: SimpleEnv(idx+2, (3, 2, 5), 'float32') for i in range(6)]
-        env1 = BatchedFrameStack(batched_gym_env(envs, num_sub_batches=3, sync=True))
-        env2 = batched_gym_env([lambda env=e: FrameStackEnv(env()) for e in envs],
+        env1 = BatchedFrameStack(batched_gym_env(envs, num_sub_batches=3, sync=True),
+                                 concat=concat)
+        env2 = batched_gym_env([lambda env=e: FrameStackEnv(env(), concat=concat) for e in envs],
                                num_sub_batches=3, sync=True)
         for j in range(50):
             for i in range(3):

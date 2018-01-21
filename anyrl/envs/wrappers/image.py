@@ -113,7 +113,7 @@ class FrameStackEnv(gym.Wrapper):
         if self.concat:
             return np.concatenate(self._history, axis=-1), rew, done, info
         else:
-            return self._history.copy()
+            return self._history.copy(), rew, done, info
 
 class MaxEnv(gym.Wrapper):
     """

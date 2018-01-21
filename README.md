@@ -41,7 +41,6 @@ Here is the current TODO list, organized by sub-module:
   * Maybe: way to not record states in `model_outs` (memory saving)
   * Normalization based on advantage magnitudes.
   * Optimize for sub-batches in `BatchedPlayer`.
-  * Make a `ReplayBuffer` wrapper that applies frame stacking (to save memory).
 * `algos`
   * TRPO
   * PPO: allow clipping for value function

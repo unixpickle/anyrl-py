@@ -52,7 +52,8 @@ def main():
                 if replay_buffer.size > args.min_buffer_size:
                     batch = replay_buffer.sample(args.batch_size)
                     sess.run(optimize_op, feed_dict=dqn.feed_dict(batch))
-            print('%d steps: mean=%f' % (num_steps, sum(rewards[-10:]) / len(rewards[-10:])))
+            if rewards:
+                print('%d steps: mean=%f' % (num_steps, sum(rewards[-10:]) / len(rewards[-10:])))
             sess.run(update_target_op)
 
 def make_single_env(game):

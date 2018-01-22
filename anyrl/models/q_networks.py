@@ -269,7 +269,7 @@ class DiscreteDist:
         """Get the mean rewards for the distributions."""
         return tf.reduce_sum(tf.exp(log_probs) * tf.constant(self.atom_values), axis=-1)
 
-    def add_rewards(self, log_probs, rewards, discount):
+    def add_rewards(self, log_probs, rewards, discounts):
         """
         Compute new distributions after adding rewards to
         old distributions.
@@ -277,8 +277,8 @@ class DiscreteDist:
         Args:
           log_probs: a batch of log probability vectors.
           rewards: a batch of rewards.
-          discount: the discount factor to apply to the
-            bootstrapped rewards.
+          discounts: the discount factors to apply to the
+            distribution rewards.
 
         Returns:
           A new batch of log probability vectors.
@@ -289,7 +289,7 @@ class DiscreteDist:
             old_probs = log_probs[:, i]
             # If the position is exactly 0, rounding up
             # and subtracting 1 would cause problems.
-            new_idxs = ((rewards + atom_rew * discount) - self.min_val) / self._delta
+            new_idxs = ((rewards + discounts * atom_rew) - self.min_val) / self._delta
             new_idxs = tf.clip_by_value(new_idxs, 1e-5, float(self.num_atoms - 1))
             index1 = tf.cast(tf.ceil(new_idxs) - 1, tf.int32)
             frac1 = tf.abs(tf.ceil(new_idxs) - new_idxs)

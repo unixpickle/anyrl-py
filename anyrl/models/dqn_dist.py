@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from .base import TFQNetwork
-from .util import take_vector_elems, put_vector_elems
+from .util import nature_cnn, simple_mlp, take_vector_elems, put_vector_elems
 
 # pylint: disable=R0913
 
@@ -23,6 +23,22 @@ class DistQNetwork(TFQNetwork):
     """
     def __init__(self, session, num_actions, obs_vectorizer, name, num_atoms, min_val, max_val,
                  dueling=False, dense=tf.layers.dense):
+        """
+        Create a distributional network.
+
+        Args:
+          session: the TF session.
+          num_actions: size of action space.
+          obs_vectorizer: observation vectorizer.
+          name: name for this model.
+          num_atoms: number of distribution atoms.
+          min_val: minimum atom value.
+          max_val: maximum atom value.
+          dueling: if True, use a separate baseline and
+            per-action value function.
+          dense: the dense layer for use throughout the
+            network.
+        """
         super(DistQNetwork).__init__(self, session, num_actions, obs_vectorizer, name)
         self.dueling = dueling
         self.dense = dense
@@ -36,6 +52,13 @@ class DistQNetwork(TFQNetwork):
             values = self.dist.mean(log_probs)
             self.step_outs = (values, log_probs)
         self.variables = [v for v in tf.trainable_variables() if v not in old_vars]
+
+    @property
+    def stateful(self):
+        return False
+
+    def start_state(self, batch_size):
+        return None
 
     def step(self, observations, states):
         feed = self.step_feed_dict(observations, states)
@@ -61,6 +84,10 @@ class DistQNetwork(TFQNetwork):
             online_preds = self.value_func(self.base(obses))
             onlines = take_vector_elems(online_preds, actions)
             return _kl_divergence(tf.stop_gradient(target_dists), onlines)
+
+    @property
+    def input_dtype(self):
+        return tf.float32
 
     @abstractmethod
     def base(self, obs_batch):
@@ -98,6 +125,80 @@ class DistQNetwork(TFQNetwork):
     def step_feed_dict(self, observations, states):
         """Produce a feed_dict for taking a step."""
         return {self.step_obs_ph: self.obs_vectorizer.to_vecs(observations)}
+
+class MLPDistQNetwork(DistQNetwork):
+    """
+    A multi-layer perceptron distributional Q-network.
+    """
+    # pylint: disable=R0913,R0914
+    def __init__(self,
+                 session,
+                 num_actions,
+                 obs_vectorizer,
+                 name,
+                 num_atoms,
+                 min_val,
+                 max_val,
+                 layer_sizes,
+                 activation=tf.nn.relu,
+                 dueling=False,
+                 dense=tf.layers.dense):
+        """
+        Create an MLP model.
+
+        Args:
+          session: the TF session used by step().
+          num_actions: the number of possible actions.
+          obs_vectorizer: a vectorizer for the observation
+            space.
+          name: the scope name for the model. This should
+            be different for the target and online models.
+          num_atoms: number of distribution atoms.
+          min_val: minimum atom value.
+          max_val: maximum atom value.
+          layer_sizes: sequence of hidden layer sizes.
+          activation: the activation function.
+          dueling: use a dueling architecture.
+          dense: the dense layer function.
+        """
+        self.layer_sizes = layer_sizes
+        self.activation = activation
+        super(MLPDistQNetwork, self).__init__(session, num_actions, obs_vectorizer, name, num_atoms,
+                                              min_val, max_val, dueling=dueling, dense=dense)
+
+    def base(self, obs_batch):
+        return simple_mlp(obs_batch, self.layer_sizes, self.activation, dense=self.dense)
+
+class NatureDistQNetwork(DistQNetwork):
+    """
+    A distributional Q-network model based on the Nature
+    DQN paper.
+    """
+    def __init__(self,
+                 session,
+                 num_actions,
+                 obs_vectorizer,
+                 name,
+                 num_atoms,
+                 min_val,
+                 max_val,
+                 dueling=False,
+                 dense=tf.layers.dense,
+                 input_dtype=tf.uint8,
+                 input_scale=1 / 0xff):
+        self._input_dtype = input_dtype
+        self.input_scale = input_scale
+        super(NatureDistQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
+                                                 num_atoms, min_val, max_val,
+                                                 dueling=dueling, dense=dense)
+
+    @property
+    def input_dtype(self):
+        return self._input_dtype
+
+    def base(self, obs_batch):
+        obs_batch = tf.cast(obs_batch, tf.float32) * self.input_scale
+        return nature_cnn(obs_batch, dense=self.dense)
 
 class ActionDist:
     """

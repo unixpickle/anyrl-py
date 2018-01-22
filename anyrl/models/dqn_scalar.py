@@ -128,6 +128,8 @@ class MLPQNetwork(ScalarQNetwork):
             be different for the target and online models.
           layer_sizes: sequence of hidden layer sizes.
           activation: the activation function.
+          dueling: use a dueling architecture.
+          dense: the dense layer function.
         """
         self.layer_sizes = layer_sizes
         self.activation = activation

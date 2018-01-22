@@ -143,9 +143,15 @@ class NatureQNetwork(ScalarQNetwork):
     """
     A Q-network model based on the Nature DQN paper.
     """
-    def __init__(self, session, num_actions, obs_vectorizer, name,
-                 dueling=False, dense=tf.layers.dense, input_dtype=tf.uint8,
-                 input_scale=1/0xff):
+    def __init__(self,
+                 session,
+                 num_actions,
+                 obs_vectorizer,
+                 name,
+                 dueling=False,
+                 dense=tf.layers.dense,
+                 input_dtype=tf.uint8,
+                 input_scale=1 / 0xff):
         self._input_dtype = input_dtype
         self.input_scale = input_scale
         super(NatureQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,

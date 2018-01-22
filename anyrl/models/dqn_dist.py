@@ -129,6 +129,8 @@ class DistQNetwork(TFQNetwork):
 class MLPDistQNetwork(DistQNetwork):
     """
     A multi-layer perceptron distributional Q-network.
+
+    This is the distributional equivalent of MLPQNetwork.
     """
     # pylint: disable=R0913,R0914
     def __init__(self,
@@ -143,24 +145,6 @@ class MLPDistQNetwork(DistQNetwork):
                  activation=tf.nn.relu,
                  dueling=False,
                  dense=tf.layers.dense):
-        """
-        Create an MLP model.
-
-        Args:
-          session: the TF session used by step().
-          num_actions: the number of possible actions.
-          obs_vectorizer: a vectorizer for the observation
-            space.
-          name: the scope name for the model. This should
-            be different for the target and online models.
-          num_atoms: number of distribution atoms.
-          min_val: minimum atom value.
-          max_val: maximum atom value.
-          layer_sizes: sequence of hidden layer sizes.
-          activation: the activation function.
-          dueling: use a dueling architecture.
-          dense: the dense layer function.
-        """
         self.layer_sizes = layer_sizes
         self.activation = activation
         super(MLPDistQNetwork, self).__init__(session, num_actions, obs_vectorizer, name, num_atoms,
@@ -173,6 +157,8 @@ class NatureDistQNetwork(DistQNetwork):
     """
     A distributional Q-network model based on the Nature
     DQN paper.
+
+    This is the distributional equivalent of NatureQNetwork.
     """
     def __init__(self,
                  session,

@@ -26,7 +26,7 @@ class DistQNetwork(TFQNetwork):
         super(DistQNetwork).__init__(self, session, num_actions, obs_vectorizer, name)
         self.dueling = dueling
         self.dense = dense
-        self.dist = DiscreteDist(num_atoms, min_val, max_val)
+        self.dist = ActionDist(num_atoms, min_val, max_val)
         old_vars = tf.trainable_variables()
         with tf.variable_scope(name):
             self.step_obs_ph = tf.placeholder(self.input_dtype,
@@ -99,7 +99,7 @@ class DistQNetwork(TFQNetwork):
         """Produce a feed_dict for taking a step."""
         return {self.step_obs_ph: self.obs_vectorizer.to_vecs(observations)}
 
-class DiscreteDist:
+class ActionDist:
     """
     A discrete reward distribution.
     """
@@ -117,7 +117,8 @@ class DiscreteDist:
 
     def mean(self, log_probs):
         """Get the mean rewards for the distributions."""
-        return tf.reduce_sum(tf.exp(log_probs) * tf.constant(self.atom_values), axis=-1)
+        probs = tf.exp(log_probs)
+        return tf.reduce_sum(probs * tf.constant(self.atom_values(), dtype=probs.dtype), axis=-1)
 
     def add_rewards(self, log_probs, rewards, discounts):
         """
@@ -133,14 +134,14 @@ class DiscreteDist:
         Returns:
           A new batch of log probability vectors.
         """
-        minus_inf = tf.zeros_like(log_probs) - tf.constant(np.inf)
+        minus_inf = tf.zeros_like(log_probs) - tf.constant(np.inf, dtype=log_probs.dtype)
         new_probs = minus_inf
         for i, atom_rew in enumerate(self.atom_values()):
             old_probs = log_probs[:, i]
             # If the position is exactly 0, rounding up
             # and subtracting 1 would cause problems.
             new_idxs = ((rewards + discounts * atom_rew) - self.min_val) / self._delta
-            new_idxs = tf.clip_by_value(new_idxs, 1e-5, float(self.num_atoms - 1))
+            new_idxs = tf.clip_by_value(new_idxs, 1e-18, float(self.num_atoms - 1))
             index1 = tf.cast(tf.ceil(new_idxs) - 1, tf.int32)
             frac1 = tf.abs(tf.ceil(new_idxs) - new_idxs)
             for indices, frac in [(index1, frac1), (index1 + 1, 1 - frac1)]:

@@ -269,7 +269,7 @@ class DiscreteDist:
         """Get the mean rewards for the distributions."""
         return tf.reduce_sum(tf.exp(log_probs) * tf.constant(self.atom_values), axis=-1)
 
-    def add_rewards(self, log_probs, rewards):
+    def add_rewards(self, log_probs, rewards, discount):
         """
         Compute new distributions after adding rewards to
         old distributions.
@@ -277,6 +277,8 @@ class DiscreteDist:
         Args:
           log_probs: a batch of log probability vectors.
           rewards: a batch of rewards.
+          discount: the discount factor to apply to the
+            bootstrapped rewards.
 
         Returns:
           A new batch of log probability vectors.
@@ -287,12 +289,11 @@ class DiscreteDist:
             old_probs = log_probs[:, i]
             # If the position is exactly 0, rounding up
             # and subtracting 1 would cause problems.
-            new_idxs = tf.clip_by_value(((rewards + atom_rew) - self.min_val) / self._delta,
-                                        1e-5, float(self.num_atoms - 1))
+            new_idxs = ((rewards + atom_rew * discount) - self.min_val) / self._delta
+            new_idxs = tf.clip_by_value(new_idxs, 1e-5, float(self.num_atoms - 1))
             index1 = tf.cast(tf.ceil(new_idxs) - 1, tf.int32)
-            index2 = tf.cast(tf.ceil(new_idxs), tf.int32)
             frac1 = tf.abs(tf.ceil(new_idxs) - new_idxs)
-            for indices, frac in [(index1, frac1), (index2, 1 - frac1)]:
+            for indices, frac in [(index1, frac1), (index1 + 1, 1 - frac1)]:
                 prob_offset = put_vector_elems(indices, old_probs - 1 + tf.log(frac),
                                                self.num_atoms)
                 prob_offset = tf.where(tf.equal(prob_offset, 0), minus_inf, prob_offset + 1)

@@ -245,4 +245,6 @@ def _add_log_probs(probs1, probs2):
                     tf.reduce_logsumexp(tf.stack([probs1, probs2]), axis=0))
 
 def _kl_divergence(dists1, dists2):
-    return tf.reduce_sum(tf.exp(dists1) * (dists1 - dists2), axis=-1)
+    probs = tf.exp(dists1)
+    masked_diff = tf.where(np.equal(probs, 0), tf.zeros_like(dists1), dists1 - dists2)
+    return tf.reduce_sum(probs * masked_diff, axis=-1)

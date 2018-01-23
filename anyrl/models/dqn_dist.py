@@ -9,9 +9,32 @@ import numpy as np
 import tensorflow as tf
 
 from .base import TFQNetwork
+from .dqn_scalar import noisy_net_dense
 from .util import nature_cnn, simple_mlp, take_vector_elems, put_vector_elems
 
 # pylint: disable=R0913
+
+def rainbow_models(session, num_actions, obs_vectorizer, num_atoms=51, min_val=-10, max_val=10):
+    """
+    Create the models used for Rainbow
+    (https://arxiv.org/abs/1710.02298).
+
+    Args:
+      session: the TF session.
+      num_actions: size of action space.
+      obs_vectorizer: observation vectorizer.
+      name: name for this model.
+      num_atoms: number of distribution atoms.
+      min_val: minimum atom value.
+      max_val: maximum atom value.
+
+    Returns:
+      A tuple (online, target).
+    """
+    maker = lambda name: NatureDistQNetwork(session, num_actions, obs_vectorizer, name,
+                                            num_atoms, min_val, max_val, dueling=True,
+                                            dense=noisy_net_dense)
+    return maker('online'), maker('target')
 
 class DistQNetwork(TFQNetwork):
     """

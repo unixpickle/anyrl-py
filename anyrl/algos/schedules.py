@@ -71,6 +71,7 @@ class LinearTFSchedule(TFSchedule):
         frac_done = tf.clip_by_value(cur_time/self._duration, 0, 1)
         return (1-frac_done)*self._start_value + frac_done*self._end_value
 
+# pylint: disable=R0903
 class TFScheduleValue:
     """
     A wrapper around a TFSchedule that supports conversion

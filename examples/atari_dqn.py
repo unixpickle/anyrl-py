@@ -19,6 +19,8 @@ from anyrl.spaces import gym_space_vectorizer
 import gym
 import tensorflow as tf
 
+REWARD_HISTORY = 10
+
 def main():
     """
     Entry-point for the program.
@@ -35,31 +37,29 @@ def main():
             sess, env.action_space.n, gym_space_vectorizer(env.observation_space), name,
             dueling=True)
         dqn = DQN(make_net('online'), make_net('target'))
-        replay_buffer = UniformReplayBuffer(args.buffer_size)
         player = BatchedPlayer(env, EpsGreedyQNetwork(dqn.online_net, args.epsilon))
-
-        optimize_op = dqn.optimize(learning_rate=args.lr)
-        update_target_op = dqn.update_target()
+        optimize = dqn.optimize(learning_rate=args.lr)
 
         sess.run(tf.global_variables_initializer())
-        sess.run(update_target_op)
 
-        rewards = []
-        num_steps = 0
-        while True:
-            for _ in range(args.target_interval):
-                transitions = player.play()
-                for trans in transitions:
-                    if trans['is_last']:
-                        rewards.append(trans['total_reward'])
-                    num_steps += 1
-                    replay_buffer.add_sample(trans)
-                if replay_buffer.size > args.min_buffer_size:
-                    batch = replay_buffer.sample(args.batch_size)
-                    sess.run(optimize_op, feed_dict=dqn.feed_dict(batch))
-            if rewards:
-                print('%d steps: mean=%f' % (num_steps, sum(rewards[-10:]) / len(rewards[-10:])))
-            sess.run(update_target_op)
+        reward_hist = []
+        total_steps = 0
+        def _handle_ep(steps, rew):
+            nonlocal total_steps
+            total_steps += steps
+            reward_hist.append(rew)
+            if len(reward_hist) == REWARD_HISTORY:
+                print('%d steps: mean=%f' % (total_steps, sum(reward_hist) / len(reward_hist)))
+                reward_hist.clear()
+
+        dqn.train(num_steps=int(1e7),
+                  player=player,
+                  replay_buffer=UniformReplayBuffer(args.buffer_size),
+                  optimize_op=optimize,
+                  target_interval=args.target_interval,
+                  batch_size=args.batch_size,
+                  min_buffer_size=args.min_buffer_size,
+                  handle_ep=_handle_ep)
 
 def make_single_env(game):
     """Make a preprocessed gym.Env."""
@@ -73,7 +73,7 @@ def _parse_args():
                         type=int, default=2000)
     parser.add_argument('--buffer-size', help='replay buffer size', type=int, default=50000)
     parser.add_argument('--workers', help='number of parallel envs', type=int, default=8)
-    parser.add_argument('--target-interval', help='training iters per log', type=int, default=512)
+    parser.add_argument('--target-interval', help='training iters per log', type=int, default=8192)
     parser.add_argument('--batch-size', help='SGD batch size', type=int, default=32)
     parser.add_argument('--epsilon', help='initial epsilon', type=float, default=0.1)
     parser.add_argument('game', help='game name', default='Pong')

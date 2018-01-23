@@ -29,31 +29,20 @@ def main():
             sess, env.action_space.n, gym_space_vectorizer(env.observation_space), name,
             layer_sizes=[32])
         dqn = DQN(make_net('online'), make_net('target'))
-        replay_buffer = UniformReplayBuffer(BUFFER_SIZE)
         player = BasicPlayer(env, EpsGreedyQNetwork(dqn.online_net, EPSILON),
                              batch_size=STEPS_PER_UPDATE)
-
-        optimize_op = dqn.optimize(learning_rate=LEARNING_RATE)
-        update_target_op = dqn.update_target()
+        optimize = dqn.optimize(learning_rate=LEARNING_RATE)
 
         sess.run(tf.global_variables_initializer())
-        sess.run(update_target_op)
 
-        rewards = []
-        num_steps = 0
-        while True:
-            for _ in range(ITERS_PER_LOG):
-                transitions = player.play()
-                for trans in transitions:
-                    if trans['is_last']:
-                        rewards.append(trans['total_reward'])
-                    num_steps += 1
-                    replay_buffer.add_sample(trans)
-                if replay_buffer.size > MIN_BUFFER_SIZE:
-                    batch = replay_buffer.sample(BATCH_SIZE)
-                    sess.run(optimize_op, feed_dict=dqn.feed_dict(batch))
-            print('%d steps: mean=%f' % (num_steps, sum(rewards[-10:]) / len(rewards[-10:])))
-            sess.run(update_target_op)
+        dqn.train(num_steps=30000,
+                  player=player,
+                  replay_buffer=UniformReplayBuffer(BUFFER_SIZE),
+                  optimize_op=optimize,
+                  target_interval=200,
+                  batch_size=64,
+                  min_buffer_size=200,
+                  handle_ep_rew=lambda rew: print('got reward: ' + str(rew)))
 
 if __name__ == '__main__':
     main()

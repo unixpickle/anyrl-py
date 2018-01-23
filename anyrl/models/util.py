@@ -77,7 +77,7 @@ def nature_cnn(obs_batch, dense=tf.layers.dense):
         cnn_2 = tf.layers.conv2d(cnn_1, 64, 4, 2, **conv_kwargs)
     with tf.variable_scope('layer_3'):
         cnn_3 = tf.layers.conv2d(cnn_2, 64, 3, 1, **conv_kwargs)
-    flat_size = product(cnn_3.get_shape()[1:])
+    flat_size = product([x.value for x in cnn_3.get_shape()[1:]])
     flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
     return dense(flat_in, 512, **conv_kwargs)
 

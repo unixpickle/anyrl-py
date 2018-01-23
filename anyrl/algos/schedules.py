@@ -70,3 +70,15 @@ class LinearTFSchedule(TFSchedule):
     def compute_schedule(self, cur_time):
         frac_done = tf.clip_by_value(cur_time/self._duration, 0, 1)
         return (1-frac_done)*self._start_value + frac_done*self._end_value
+
+class TFScheduleValue:
+    """
+    A wrapper around a TFSchedule that supports conversion
+    to float via the float() built-in.
+    """
+    def __init__(self, sess, schedule):
+        self.session = sess
+        self.schedule = schedule
+
+    def __float__(self):
+        return self.session.run(self.schedule.value)

@@ -121,6 +121,10 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         """
         Create a prioritized replay buffer.
 
+        The beta parameter can be any object that has
+        support for the float() built-in.
+        This way, you can use a TFScheduleValue.
+
         Args:
           capacity: the maximum number of transitions to
             store in the buffer.
@@ -151,9 +155,9 @@ class PrioritizedReplayBuffer(ReplayBuffer):
 
     def sample(self, num_samples):
         indices, probs = self.errors.sample(num_samples)
-        importance_weights = np.power(probs * self.size, -self.beta)
-        importance_weights /= np.power(self.errors.min() / self.errors.sum() * self.size,
-                                       -self.beta)
+        beta = float(self.beta)
+        importance_weights = np.power(probs * self.size, -beta)
+        importance_weights /= np.power(self.errors.min() / self.errors.sum() * self.size, -beta)
         samples = []
         for i, weight in zip(indices, importance_weights):
             sample = self.transitions[i].copy()

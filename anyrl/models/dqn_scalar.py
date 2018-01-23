@@ -169,6 +169,9 @@ class EpsGreedyQNetwork(TFQNetwork):
     """
     A wrapper around a Q-network that adds epsilon-greedy
     exploration to the actions.
+
+    The epsilon parameter can be any object that supports
+    float() conversion, including TFScheduleValue.
     """
     def __init__(self, model, epsilon):
         super(EpsGreedyQNetwork, self).__init__(model.session, model.num_actions,
@@ -186,8 +189,9 @@ class EpsGreedyQNetwork(TFQNetwork):
     def step(self, observations, states):
         result = self.model.step(observations, states)
         new_actions = []
+        eps = float(self.epsilon)
         for action in result['actions']:
-            if random.random() < self.epsilon:
+            if random.random() < eps:
                 new_actions.append(random.randrange(self.num_actions))
             else:
                 new_actions.append(action)

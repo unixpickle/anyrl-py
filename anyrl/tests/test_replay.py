@@ -57,22 +57,54 @@ class PrioritizedReplayTest(unittest.TestCase):
 
     def test_simple_importance_sampling(self):
         """
-        Test importance sampling with beta=1.
+        Test importance sampling when the buffer is never
+        changed after the initial build-up.
         """
         np.random.seed(1337)
-        buf = PrioritizedReplayBuffer(capacity=10, alpha=1.5, beta=1, epsilon=0.5)
+        buf = PrioritizedReplayBuffer(capacity=10, alpha=1.5, beta=1.3, epsilon=0.5)
         for i in range(10):
             sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1, 'idx': i}
             buf.add_sample(sample, init_weight=i)
-        sampled_weights = [0.0] * 10
-        for i in range(50000):
-            samples = buf.sample(10)
-            for sample in samples:
-                sampled_weights[sample['idx']] += sample['weight']
-        sampled_weights = np.array(sampled_weights) / max(sampled_weights)
-        weights = 1 / np.power(np.arange(10).astype('float64') + 0.5, 1.5)
+        weights = np.power(np.arange(10).astype('float64') + 0.5, 1.5)
+        weights /= np.sum(weights)
+        weights = np.power(weights * len(weights), -1.3)
         weights /= np.max(weights)
-        self.assertTrue(np.allclose(sampled_weights, weights, atol=1e-2, rtol=1e-2))
+        for i in range(1000):
+            samples = buf.sample(3)
+            for sample in samples:
+                self.assertTrue(np.allclose(weights[sample['idx']], sample['weight']))
+
+    def test_online_updates(self):
+        """
+        Test importance sampling when new samples are
+        inserted and new errors are inserted.
+        """
+        buf = PrioritizedReplayBuffer(capacity=10, alpha=1.5, beta=0.5, epsilon=0.5)
+        weights = []
+        def _random_weight():
+            return np.abs(np.random.normal())
+        def _add_sample():
+            sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1}
+            weight = _random_weight()
+            buf.add_sample(sample, init_weight=weight)
+            weights.append(weight)
+        for _ in range(5):
+            _add_sample()
+        for _ in range(1000):
+            samples = buf.sample(3)
+            importance = np.power(np.array(weights) + 0.5, 1.5) / np.sum(weights)
+            importance = np.power(importance * len(importance), -0.5)
+            importance /= np.max(importance)
+            new_weights = []
+            for sample in samples:
+                self.assertTrue(np.allclose(importance[sample['id']], sample['weight']))
+                weight = _random_weight()
+                weights[sample['id']] = weight
+                new_weights.append(weight)
+            buf.update_weights(samples, new_weights)
+            _add_sample()
+            if len(weights) > 10:
+                weights = weights[1:]
 
 if __name__ == '__main__':
     unittest.main()

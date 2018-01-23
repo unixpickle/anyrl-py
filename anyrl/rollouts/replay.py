@@ -152,7 +152,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
     def sample(self, num_samples):
         indices, probs = self.errors.sample(num_samples)
         importance_weights = np.power(probs * self.size, -self.beta)
-        importance_weights /= np.amax(importance_weights)
+        importance_weights /= np.power(self.errors.min() / self.errors.sum() * self.size,
+                                       -self.beta)
         samples = []
         for i, weight in zip(indices, importance_weights):
             sample = self.transitions[i].copy()
@@ -198,6 +199,7 @@ class FloatBuffer:
         if num_bins * self._bin_size < capacity:
             num_bins += 1
         self._bin_sums = np.zeros((num_bins,), dtype=dtype)
+        self._min = 0
 
     def append(self, value):
         """
@@ -205,14 +207,12 @@ class FloatBuffer:
 
         If the buffer is full, the first value is removed.
         """
-        assert not np.isnan(value)
-        assert value > 0
         idx = (self._start + self._used) % self._capacity
-        self._set_idx(idx, value)
         if self._used < self._capacity:
             self._used += 1
         else:
             self._start = (self._start + 1) % self._capacity
+        self._set_idx(idx, value)
 
     def sample(self, num_values):
         """
@@ -239,14 +239,37 @@ class FloatBuffer:
     def set_value(self, idx, value):
         """Set the value at the given index."""
         idx = (idx + self._start) % self._capacity
-        self._buffer[idx] = value
+        self._set_idx(idx, value)
+
+    def min(self):
+        """Get the minimum value in the buffer."""
+        return self._min
+
+    def sum(self):
+        """Get the sum of the values in the buffer."""
+        return np.sum(self._bin_sums)
 
     def _set_idx(self, idx, value):
+        assert not np.isnan(value)
+        assert value > 0
+        needs_recompute = False
+        if self._min == self._buffer[idx]:
+            needs_recompute = True
+        elif value < self._min:
+            self._min = value
         bin_idx = idx // self._bin_size
         self._buffer[idx] = value
         self._bin_sums[bin_idx] = np.sum(self._bin(bin_idx))
+        if needs_recompute:
+            self._recompute_min()
 
     def _bin(self, bin_idx):
         if bin_idx == len(self._bin_sums) - 1:
             return self._buffer[self._bin_size * bin_idx:]
         return self._buffer[self._bin_size * bin_idx : self._bin_size * (bin_idx + 1)]
+
+    def _recompute_min(self):
+        if self._used < self._capacity:
+            self._min = np.min(self._buffer[:self._used])
+        else:
+            self._min = np.min(self._buffer)

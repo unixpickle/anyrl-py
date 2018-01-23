@@ -149,7 +149,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         return len(self.transitions)
 
     def sample(self, num_samples):
-        probs = np.power(self.errors.values, self.alpha).astype('float64')
+        probs = np.power(self.errors.values + self.epsilon, self.alpha).astype('float64')
         probs /= np.sum(probs)
         sampled_indices = np.random.choice(len(probs), size=num_samples, replace=False, p=probs)
         importance_weights = np.power(probs[sampled_indices] * self.size, -self.beta)
@@ -167,13 +167,13 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         if init_weight is None:
             self.errors.append(self.default_init_weight)
         else:
-            self.errors.append(init_weight + self.epsilon)
+            self.errors.append(init_weight)
         while len(self.transitions) > self.capacity:
             del self.transitions[0]
 
     def update_weights(self, samples, new_weights):
         for sample, weight in zip(samples, new_weights):
-            self.errors.values[self.errors.unindices(sample['id'])] = weight + self.epsilon
+            self.errors.values[self.errors.unindices(sample['id'])] = weight
 
 class FloatBuffer:
     """A ring-buffer of floating point values."""

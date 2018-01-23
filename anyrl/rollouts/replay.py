@@ -3,6 +3,7 @@ Various replay buffer implementations.
 """
 
 from abc import ABC, abstractmethod, abstractproperty
+from math import sqrt
 import random
 
 import numpy as np
@@ -149,13 +150,11 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         return len(self.transitions)
 
     def sample(self, num_samples):
-        probs = np.power(self.errors.values + self.epsilon, self.alpha).astype('float64')
-        probs /= np.sum(probs)
-        sampled_indices = np.random.choice(len(probs), size=num_samples, replace=False, p=probs)
-        importance_weights = np.power(probs[sampled_indices] * self.size, -self.beta)
+        indices, probs = self.errors.sample(num_samples)
+        importance_weights = np.power(probs * self.size, -self.beta)
         importance_weights /= np.amax(importance_weights)
         samples = []
-        for i, weight in zip(self.errors.indices(sampled_indices), importance_weights):
+        for i, weight in zip(indices, importance_weights):
             sample = self.transitions[i].copy()
             sample['weight'] = weight
             sample['id'] = i
@@ -165,15 +164,18 @@ class PrioritizedReplayBuffer(ReplayBuffer):
     def add_sample(self, sample, init_weight=None):
         self.transitions.append(sample)
         if init_weight is None:
-            self.errors.append(self.default_init_weight)
+            self.errors.append(self._process_weight(self.default_init_weight))
         else:
-            self.errors.append(init_weight)
+            self.errors.append(self._process_weight(init_weight))
         while len(self.transitions) > self.capacity:
             del self.transitions[0]
 
     def update_weights(self, samples, new_weights):
         for sample, weight in zip(samples, new_weights):
-            self.errors.values[self.errors.unindices(sample['id'])] = weight
+            self.errors.set_value(sample['id'], self._process_weight(weight))
+
+    def _process_weight(self, weight):
+        return (weight + self.epsilon) ** self.alpha
 
 class FloatBuffer:
     """A ring-buffer of floating point values."""
@@ -182,6 +184,11 @@ class FloatBuffer:
         self._start = 0
         self._used = 0
         self._buffer = np.zeros((capacity,), dtype=dtype)
+        self._bin_size = int(sqrt(capacity))
+        num_bins = capacity // self._bin_size
+        if num_bins * self._bin_size < capacity:
+            num_bins += 1
+        self._bin_sums = np.zeros((num_bins,), dtype=dtype)
 
     def append(self, value):
         """
@@ -189,40 +196,48 @@ class FloatBuffer:
 
         If the buffer is full, the first value is removed.
         """
-        self._buffer[(self._start + self._used) % self._capacity] = value
+        assert not np.isnan(value)
+        assert value > 0
+        idx = (self._start + self._used) % self._capacity
+        self._set_idx(idx, value)
         if self._used < self._capacity:
             self._used += 1
         else:
             self._start = (self._start + 1) % self._capacity
 
-    @property
-    def values(self):
+    def sample(self, num_values):
         """
-        Get a slice into the values in the buffer.
+        Sample indices in proportion to their value.
 
-        The resulting array may be out of order.
-        To get the proper ordering, use indices() and
-        unindices().
+        Returns:
+          A tuple (indices, probs)
         """
-        if self._used < self._capacity:
-            return self._buffer[:self._used]
-        return self._buffer
+        assert self._used >= num_values
+        res = []
+        probs = []
+        bin_probs = self._bin_sums / np.sum(self._bin_sums)
+        while len(res) < num_values:
+            bin_idx = np.random.choice(len(self._bin_sums), p=bin_probs)
+            bin_values = self._bin(bin_idx)
+            sub_probs = bin_values / np.sum(bin_values)
+            sub_idx = np.random.choice(len(bin_values), p=sub_probs)
+            idx = bin_idx * self._bin_size + sub_idx
+            if idx not in res:
+                res.append(idx)
+                probs.append(bin_probs[bin_idx] * sub_probs[sub_idx])
+        return (np.array(list(res)) - self._start) % self._capacity, np.array(probs)
 
-    def indices(self, values_indices):
-        """
-        Convert indices into values() into indices in the
-        actual buffer.
-        """
-        if self._start == 0:
-            return values_indices
-        return (values_indices - self._start) % self._capacity
+    def set_value(self, idx, value):
+        """Set the value at the given index."""
+        idx = (idx + self._start) % self._capacity
+        self._buffer[idx] = value
 
-    def unindices(self, indices):
-        """Perform the inverse of indices()."""
-        if self._start == 0:
-            return indices
-        return (indices + self._start) % self._capacity
+    def _set_idx(self, idx, value):
+        bin_idx = idx // self._bin_size
+        self._buffer[idx] = value
+        self._bin_sums[bin_idx] = np.sum(self._bin(bin_idx))
 
-    def max(self):
-        """Get the maximum value in the buffer."""
-        return np.max(self.values)
+    def _bin(self, bin_idx):
+        if bin_idx == len(self._bin_sums) - 1:
+            return self._buffer[self._bin_size * bin_idx:]
+        return self._buffer[self._bin_size * bin_idx : self._bin_size * (bin_idx + 1)]

@@ -44,7 +44,7 @@ class PrioritizedReplayTest(unittest.TestCase):
             sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1, 'idx': i}
             buf.add_sample(sample, init_weight=i)
         sampled_idxs = []
-        for _ in range(50000):
+        for i in range(50000):
             samples = buf.sample(3)
             sampled_idxs.append(samples[0]['idx'])
         counts = Counter(sampled_idxs)
@@ -65,7 +65,7 @@ class PrioritizedReplayTest(unittest.TestCase):
             sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1, 'idx': i}
             buf.add_sample(sample, init_weight=i)
         sampled_weights = [0.0] * 10
-        for _ in range(50000):
+        for i in range(50000):
             samples = buf.sample(10)
             for sample in samples:
                 sampled_weights[sample['idx']] += sample['weight']

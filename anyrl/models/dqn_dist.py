@@ -39,7 +39,7 @@ class DistQNetwork(TFQNetwork):
           dense: the dense layer for use throughout the
             network.
         """
-        super(DistQNetwork).__init__(self, session, num_actions, obs_vectorizer, name)
+        super(DistQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
         self.dueling = dueling
         self.dense = dense
         self.dist = ActionDist(num_atoms, min_val, max_val)
@@ -119,7 +119,7 @@ class DistQNetwork(TFQNetwork):
             return tf.nn.log_softmax(actions)
         values = tf.expand_dims(self.dense(feature_batch, self.dist.num_atoms), axis=1)
         actions -= tf.reduce_mean(actions, axis=1, keep_dims=True)
-        return values + actions
+        return tf.nn.log_softmax(values + actions)
 
     # pylint: disable=W0613
     def step_feed_dict(self, observations, states):

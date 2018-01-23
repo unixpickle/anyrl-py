@@ -56,6 +56,7 @@ class TestActionDist(unittest.TestCase):
                                           tf.constant(discounts, dtype=tf.float64))
                 self.assertEqual(result.shape, np.array(new_probs).shape)
                 self.assertTrue(np.allclose(np.exp(sess.run(result)), new_probs))
+                self.assertFalse((np.isnan(sess.run(result))).any())
 
 if __name__ == '__main__':
     unittest.main()

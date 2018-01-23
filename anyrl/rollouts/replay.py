@@ -142,20 +142,20 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         self.default_init_weight = default_init_weight
         self.epsilon = epsilon
         self.transitions = []
-        self.errors = []
+        self.errors = FloatBuffer(capacity)
 
     @property
     def size(self):
         return len(self.transitions)
 
     def sample(self, num_samples):
-        probs = np.power(np.array(self.errors), self.alpha).astype('float64')
+        probs = np.power(self.errors.values, self.alpha).astype('float64')
         probs /= np.sum(probs)
         sampled_indices = np.random.choice(len(probs), size=num_samples, replace=False, p=probs)
         importance_weights = np.power(probs[sampled_indices] * self.size, -self.beta)
         importance_weights /= np.amax(importance_weights)
         samples = []
-        for i, weight in zip(sampled_indices, importance_weights):
+        for i, weight in zip(self.errors.indices(sampled_indices), importance_weights):
             sample = self.transitions[i].copy()
             sample['weight'] = weight
             sample['id'] = i
@@ -168,10 +168,61 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             self.errors.append(self.default_init_weight)
         else:
             self.errors.append(init_weight + self.epsilon)
-        while self.size > self.capacity:
+        while len(self.transitions) > self.capacity:
             del self.transitions[0]
-            del self.errors[0]
 
     def update_weights(self, samples, new_weights):
         for sample, weight in zip(samples, new_weights):
-            self.errors[sample['id']] = weight + self.epsilon
+            self.errors.values[self.errors.unindices(sample['id'])] = weight + self.epsilon
+
+class FloatBuffer:
+    """A ring-buffer of floating point values."""
+    def __init__(self, capacity, dtype='float64'):
+        self._capacity = capacity
+        self._start = 0
+        self._used = 0
+        self._buffer = np.zeros((capacity,), dtype=dtype)
+
+    def append(self, value):
+        """
+        Add a value to the end of the buffer.
+
+        If the buffer is full, the first value is removed.
+        """
+        self._buffer[(self._start + self._used) % self._capacity] = value
+        if self._used < self._capacity:
+            self._used += 1
+        else:
+            self._start = (self._start + 1) % self._capacity
+
+    @property
+    def values(self):
+        """
+        Get a slice into the values in the buffer.
+
+        The resulting array may be out of order.
+        To get the proper ordering, use indices() and
+        unindices().
+        """
+        if self._used < self._capacity:
+            return self._buffer[:self._used]
+        return self._buffer
+
+    def indices(self, values_indices):
+        """
+        Convert indices into values() into indices in the
+        actual buffer.
+        """
+        if self._start == 0:
+            return values_indices
+        return (values_indices - self._start) % self._capacity
+
+    def unindices(self, indices):
+        """Perform the inverse of indices()."""
+        if self._start == 0:
+            return indices
+        return (indices + self._start) % self._capacity
+
+    def max(self):
+        """Get the maximum value in the buffer."""
+        return np.max(self.values)

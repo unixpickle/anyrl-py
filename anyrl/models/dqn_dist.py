@@ -239,7 +239,10 @@ class ActionDist:
         return new_probs
 
 def _add_log_probs(probs1, probs2):
-    return tf.reduce_logsumexp(tf.stack([probs1, probs2]), axis=0)
+    # tf.where() fixes a bug on TF <1.4.0.
+    return tf.where(tf.is_inf(probs1),
+                    probs2,
+                    tf.reduce_logsumexp(tf.stack([probs1, probs2]), axis=0))
 
 def _kl_divergence(dists1, dists2):
     return tf.reduce_sum(tf.exp(dists1) * (dists1 - dists2), axis=-1)

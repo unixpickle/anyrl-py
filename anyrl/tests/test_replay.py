@@ -18,6 +18,7 @@ class PrioritizedReplayTest(unittest.TestCase):
         Test the buffer when it's configured to sample
         uniformly.
         """
+        np.random.seed(1337)
         buf = PrioritizedReplayBuffer(capacity=10, alpha=0, beta=1)
         for i in range(10):
             sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1, 'idx': i}
@@ -37,6 +38,7 @@ class PrioritizedReplayTest(unittest.TestCase):
         """
         Test the buffer in a simple prioritized setting.
         """
+        np.random.seed(1337)
         buf = PrioritizedReplayBuffer(capacity=10, alpha=1.5, beta=1, epsilon=0.5)
         for i in range(10):
             sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1, 'idx': i}
@@ -57,6 +59,7 @@ class PrioritizedReplayTest(unittest.TestCase):
         """
         Test importance sampling with beta=1.
         """
+        np.random.seed(1337)
         buf = PrioritizedReplayBuffer(capacity=10, alpha=1.5, beta=1, epsilon=0.5)
         for i in range(10):
             sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1, 'idx': i}

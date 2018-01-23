@@ -117,7 +117,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
     error).
     """
     # pylint: disable=R0913
-    def __init__(self, capacity, alpha, beta, default_init_weight=1e5, epsilon=0):
+    def __init__(self, capacity, alpha, beta, first_max=1, epsilon=0):
         """
         Create a prioritized replay buffer.
 
@@ -131,19 +131,19 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             importance sampling. A value of 1 yields
             unbiased sampling. A value of 0 yields no
             importance sampling.
-          default_init_weight: the initial weight for new
-            samples when add_sample() is called without an
-            init_weight argument.
+          first_max: the initial weight for new samples
+            when no init_weight is specified and the
+            buffer is completely empty.
           epsilon: a value which is added to every error
             term before the error term is used.
         """
         self.capacity = capacity
         self.alpha = alpha
         self.beta = beta
-        self.default_init_weight = default_init_weight
         self.epsilon = epsilon
         self.transitions = []
         self.errors = FloatBuffer(capacity)
+        self._max_weight_arg = first_max
 
     @property
     def size(self):
@@ -162,9 +162,17 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         return samples
 
     def add_sample(self, sample, init_weight=None):
+        """
+        Add a sample to the buffer.
+
+        When new samples are added without an explicit
+        initial weight, the maximum weight argument ever
+        seen is used. When the buffer is empty, first_max
+        is used.
+        """
         self.transitions.append(sample)
         if init_weight is None:
-            self.errors.append(self._process_weight(self.default_init_weight))
+            self.errors.append(self._process_weight(self._max_weight_arg))
         else:
             self.errors.append(self._process_weight(init_weight))
         while len(self.transitions) > self.capacity:
@@ -175,6 +183,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             self.errors.set_value(sample['id'], self._process_weight(weight))
 
     def _process_weight(self, weight):
+        self._max_weight_arg = max(self._max_weight_arg, weight)
         return (weight + self.epsilon) ** self.alpha
 
 class FloatBuffer:

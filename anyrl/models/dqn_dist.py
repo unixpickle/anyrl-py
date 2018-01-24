@@ -99,7 +99,8 @@ class DistQNetwork(TFQNetwork):
                                     axis=1, output_type=tf.int32)
         with tf.variable_scope(target_net.name, reuse=True):
             target_preds = target_net.value_func(target_net.base(new_obses))
-            target_preds = tf.where(terminals, tf.zeros_like(target_preds) - log(self.num_actions),
+            target_preds = tf.where(terminals,
+                                    tf.zeros_like(target_preds) - log(self.dist.num_atoms),
                                     target_preds)
         target_dists = self.dist.add_rewards(take_vector_elems(target_preds, max_actions),
                                              rews, discounts)

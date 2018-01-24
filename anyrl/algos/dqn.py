@@ -2,6 +2,8 @@
 The core implementation of deep Q-learning.
 """
 
+import time
+
 import tensorflow as tf
 
 # pylint: disable=R0902,R0903
@@ -94,7 +96,8 @@ class DQN:
               batch_size=32,
               min_buffer_size=20000,
               tf_schedules=(),
-              handle_ep=lambda steps, rew: None):
+              handle_ep=lambda steps, rew: None,
+              timeout=None):
         """
         Run an automated training loop.
 
@@ -117,12 +120,17 @@ class DQN:
             updated with the number of steps taken.
           handle_ep: called with information about every
             completed episode.
+          timeout: if set, this is a number of seconds
+            after which the training loop should exit.
         """
         sess = self.online_net.session
         sess.run(self.update_target)
         steps_taken = 0
         next_target_update = target_interval
+        start_time = time.time()
         while steps_taken < num_steps:
+            if timeout is not None and time.time() - start_time > timeout:
+                return
             transitions = player.play()
             for trans in transitions:
                 if trans['is_last']:

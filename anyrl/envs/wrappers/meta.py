@@ -2,6 +2,8 @@
 Wrappers for meta-learning.
 """
 
+import random
+
 import gym
 import gym.spaces as spaces
 import numpy as np
@@ -83,6 +85,47 @@ class SwitchableEnv(gym.Env):
 
     # pylint: disable=W0221
     def _reset(self, **kwargs):
+        return self.env.reset(**kwargs)
+
+    def _step(self, action):
+        return self.env.step(action)
+
+    def _render(self, mode='human', close=False):
+        return self.env.render(mode=mode, close=close)
+
+    def _seed(self, seed=None):
+        return self.env.seed(seed=seed)
+
+class JointEnv(gym.Env):
+    """
+    An environment that samples a new sub-environment at
+    every episode boundary.
+
+    This can be used for joint-training.
+    """
+    def __init__(self, env_fns):
+        """
+        Create a joint environment.
+
+        Args:
+          env_fns: a sequence of callables that construct
+            new environments. All environments must have
+            the same spaces.
+        """
+        self.env_fns = env_fns
+        self.env = None
+        env = env_fns[0]()
+        try:
+            self.action_space = env.action_space
+            self.observation_space = env.observation_space
+        finally:
+            env.close()
+
+    # pylint: disable=W0221
+    def _reset(self, **kwargs):
+        if self.env is not None:
+            self.env.close()
+        self.env = random.choice(self.env_fns)()
         return self.env.reset(**kwargs)
 
     def _step(self, action):

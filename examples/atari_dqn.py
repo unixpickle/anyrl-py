@@ -61,6 +61,8 @@ def main():
                   min_buffer_size=args.min_buffer_size,
                   handle_ep=_handle_ep)
 
+    env.close()
+
 def make_single_env(game):
     """Make a preprocessed gym.Env."""
     env = gym.make(game + '-v0')

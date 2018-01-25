@@ -44,5 +44,7 @@ def main():
                   min_buffer_size=200,
                   handle_ep_rew=lambda rew: print('got reward: ' + str(rew)))
 
+    env.close()
+
 if __name__ == '__main__':
     main()

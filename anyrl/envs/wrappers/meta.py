@@ -132,7 +132,11 @@ class JointEnv(gym.Env):
         return self.env.step(action)
 
     def _render(self, mode='human', close=False):
+        if self.env is None:
+            return
         return self.env.render(mode=mode, close=close)
 
     def _seed(self, seed=None):
+        if self.env is None:
+            return
         return self.env.seed(seed=seed)

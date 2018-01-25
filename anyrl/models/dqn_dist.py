@@ -10,7 +10,7 @@ import tensorflow as tf
 
 from .base import TFQNetwork
 from .dqn_scalar import noisy_net_dense
-from .util import nature_cnn, simple_mlp, take_vector_elems, put_vector_elems
+from .util import nature_cnn, simple_mlp, take_vector_elems
 
 # pylint: disable=R0913
 
@@ -103,7 +103,7 @@ class DistQNetwork(TFQNetwork):
                                     tf.zeros_like(target_preds) - log(self.dist.num_atoms),
                                     target_preds)
         discounts = tf.where(terminals, tf.zeros_like(discounts), discounts)
-        target_dists = self.dist.add_rewards(take_vector_elems(target_preds, max_actions),
+        target_dists = self.dist.add_rewards(tf.exp(take_vector_elems(target_preds, max_actions)),
                                              rews, discounts)
         with tf.variable_scope(self.name, reuse=True):
             online_preds = self.value_func(self.base(obses))
@@ -232,7 +232,7 @@ class ActionDist:
         probs = tf.exp(log_probs)
         return tf.reduce_sum(probs * tf.constant(self.atom_values(), dtype=probs.dtype), axis=-1)
 
-    def add_rewards(self, log_probs, rewards, discounts):
+    def add_rewards(self, probs, rewards, discounts):
         """
         Compute new distributions after adding rewards to
         old distributions.
@@ -246,30 +246,30 @@ class ActionDist:
         Returns:
           A new batch of log probability vectors.
         """
-        minus_inf = tf.zeros_like(log_probs) - tf.constant(np.inf, dtype=log_probs.dtype)
-        new_probs = minus_inf
-        for i, atom_rew in enumerate(self.atom_values()):
-            old_probs = log_probs[:, i]
-            # If the position is exactly 0, rounding up
-            # and subtracting 1 would cause problems.
-            new_idxs = ((rewards + discounts * atom_rew) - self.min_val) / self._delta
-            new_idxs = tf.clip_by_value(new_idxs, 1e-18, float(self.num_atoms - 1))
-            index1 = tf.cast(tf.ceil(new_idxs) - 1, tf.int32)
-            frac1 = tf.abs(tf.ceil(new_idxs) - new_idxs)
-            for indices, frac in [(index1, frac1), (index1 + 1, 1 - frac1)]:
-                prob_offset = put_vector_elems(indices, old_probs - 1 + tf.log(frac),
-                                               self.num_atoms)
-                prob_offset = tf.where(tf.equal(prob_offset, 0), minus_inf, prob_offset + 1)
-                new_probs = _add_log_probs(new_probs, prob_offset)
-        return new_probs
+        atom_rews = tf.tile(tf.constant([self.atom_values()], dtype=probs.dtype),
+                            tf.stack([tf.shape(rewards)[0], 1]))
 
-def _add_log_probs(probs1, probs2):
-    # tf.where() fixes a bug on TF <1.4.0.
-    return tf.where(tf.is_inf(probs1),
-                    probs2,
-                    tf.reduce_logsumexp(tf.stack([probs1, probs2]), axis=0))
+        fuzzy_idxs = tf.expand_dims(rewards, axis=1) + tf.expand_dims(discounts, axis=1) * atom_rews
+        fuzzy_idxs = (fuzzy_idxs - self.min_val) / self._delta
 
-def _kl_divergence(dists1, dists2):
-    probs = tf.exp(dists1)
-    masked_diff = tf.where(tf.equal(probs, 0), tf.zeros_like(dists1), dists1 - dists2)
+        # If the position were exactly 0, rounding up
+        # and subtracting 1 would cause problems.
+        fuzzy_idxs = tf.clip_by_value(fuzzy_idxs, 1e-18, float(self.num_atoms - 1))
+
+        indices_1 = tf.cast(tf.ceil(fuzzy_idxs) - 1, tf.int32)
+        fracs_1 = tf.abs(tf.ceil(fuzzy_idxs) - fuzzy_idxs)
+        indices_2 = indices_1 + 1
+        fracs_2 = 1 - fracs_1
+
+        res = tf.zeros_like(probs)
+        for indices, fracs in [(indices_1, fracs_1), (indices_2, fracs_2)]:
+            index_matrix = tf.expand_dims(tf.range(tf.shape(indices)[0], dtype=tf.int32), axis=1)
+            index_matrix = tf.tile(index_matrix, (1, self.num_atoms))
+            scatter_indices = tf.stack([index_matrix, indices], axis=-1)
+            res = res + tf.scatter_nd(scatter_indices, probs * fracs, tf.shape(res))
+
+        return res
+
+def _kl_divergence(probs, log_probs):
+    masked_diff = tf.where(tf.equal(probs, 0), tf.zeros_like(probs), tf.log(probs) - log_probs)
     return tf.reduce_sum(probs * masked_diff, axis=-1)

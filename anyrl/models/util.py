@@ -124,22 +124,3 @@ def take_vector_elems(vectors, indices):
       A Tensor with `batch` entries, one for each vector.
     """
     return tf.gather_nd(vectors, tf.stack([tf.range(tf.shape(vectors)[0]), indices], axis=1))
-
-def put_vector_elems(indices, new_values, num_dims):
-    """
-    Perform the inverse of take_vector_elems, padding the
-    resulting Tensor with 0's where no elements were put.
-
-    Args:
-      indices: an int32 Tensor with `batch` entries.
-      new_values: a Tensor with `batch` entries, one for
-        each vector.
-      num_dims: the inner-dimenion, i.e. the upper bound
-        for indices.
-
-    Returns:
-      A [batch x num_dims] Tensor.
-    """
-    batch = tf.shape(indices)[0]
-    return tf.scatter_nd(tf.stack([tf.range(batch), indices], axis=1), new_values,
-                         tf.stack([batch, num_dims]))

@@ -51,11 +51,11 @@ class TestActionDist(unittest.TestCase):
     def _test_add(self, dist, old_probs, rewards, discounts, new_probs):
         with tf.Graph().as_default():
             with tf.Session() as sess:
-                result = dist.add_rewards(tf.constant(np.log(old_probs), dtype=tf.float64),
+                result = dist.add_rewards(tf.constant(old_probs, dtype=tf.float64),
                                           tf.constant(rewards, dtype=tf.float64),
                                           tf.constant(discounts, dtype=tf.float64))
                 self.assertEqual(result.shape, np.array(new_probs).shape)
-                self.assertTrue(np.allclose(np.exp(sess.run(result)), new_probs))
+                self.assertTrue(np.allclose(sess.run(result), new_probs))
                 self.assertFalse((np.isnan(sess.run(result))).any())
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ def main():
                   target_interval=200,
                   batch_size=64,
                   min_buffer_size=200,
-                  handle_ep_rew=lambda rew: print('got reward: ' + str(rew)))
+                  handle_ep=lambda _, rew: print('got reward: ' + str(rew)))
 
     env.close()
 

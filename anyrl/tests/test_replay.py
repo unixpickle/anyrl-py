@@ -45,8 +45,8 @@ class PrioritizedReplayTest(unittest.TestCase):
             buf.add_sample(sample, init_weight=i)
         sampled_idxs = []
         for i in range(50000):
-            samples = buf.sample(3)
-            sampled_idxs.append(samples[0]['idx'])
+            for sample in buf.sample(3):
+                sampled_idxs.append(sample['idx'])
         counts = Counter(sampled_idxs)
         probs = np.power(np.arange(10).astype('float64') + 0.5, 1.5)
         probs /= np.sum(probs)

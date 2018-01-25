@@ -28,10 +28,11 @@ class ReplayBuffer(ABC):
         """
         Sample a batch of experience from the buffer.
 
+        The samples may be drawn in any manner, with or
+        without replacement.
+
         Args:
           num_samples: the number of steps to sample.
-            There must be at least num_samples entries in
-            the buffer.
 
         Returns:
           A sequence of num_samples transition dicts.
@@ -97,7 +98,7 @@ class UniformReplayBuffer(ReplayBuffer):
         return len(self.transitions)
 
     def sample(self, num_samples):
-        res = [x.copy() for x in random.sample(self.transitions, num_samples)]
+        res = [random.choice(self.transitions).copy() for _ in range(num_samples)]
         for transition in res:
             transition['weight'] = 1
         return res
@@ -235,9 +236,8 @@ class FloatBuffer:
             sub_probs = bin_values / np.sum(bin_values)
             sub_idx = np.random.choice(len(bin_values), p=sub_probs)
             idx = bin_idx * self._bin_size + sub_idx
-            if idx not in res:
-                res.append(idx)
-                probs.append(bin_probs[bin_idx] * sub_probs[sub_idx])
+            res.append(idx)
+            probs.append(bin_probs[bin_idx] * sub_probs[sub_idx])
         return (np.array(list(res)) - self._start) % self._capacity, np.array(probs)
 
     def set_value(self, idx, value):

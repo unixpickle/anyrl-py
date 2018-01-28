@@ -3,6 +3,7 @@ Distributional Q-learning models.
 """
 
 from abc import abstractmethod
+from functools import partial
 from math import log
 
 import numpy as np
@@ -14,7 +15,13 @@ from .util import nature_cnn, simple_mlp, take_vector_elems
 
 # pylint: disable=R0913
 
-def rainbow_models(session, num_actions, obs_vectorizer, num_atoms=51, min_val=-10, max_val=10):
+def rainbow_models(session,
+                   num_actions,
+                   obs_vectorizer,
+                   num_atoms=51,
+                   min_val=-10,
+                   max_val=10,
+                   sigma0=0.5):
     """
     Create the models used for Rainbow
     (https://arxiv.org/abs/1710.02298).
@@ -27,13 +34,14 @@ def rainbow_models(session, num_actions, obs_vectorizer, num_atoms=51, min_val=-
       num_atoms: number of distribution atoms.
       min_val: minimum atom value.
       max_val: maximum atom value.
+      sigma0: initial Noisy Net noise.
 
     Returns:
       A tuple (online, target).
     """
     maker = lambda name: NatureDistQNetwork(session, num_actions, obs_vectorizer, name,
                                             num_atoms, min_val, max_val, dueling=True,
-                                            dense=noisy_net_dense)
+                                            dense=partial(noisy_net_dense, sigma0=sigma0))
     return maker('online'), maker('target')
 
 class DistQNetwork(TFQNetwork):

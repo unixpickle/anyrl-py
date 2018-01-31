@@ -59,7 +59,7 @@ class PPO(A2C):
     # pylint: disable=W0221
     def optimize(self, learning_rate=1e-3):
         trainer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-        return trainer.minimize(-self.objective)
+        return trainer.minimize(-self.objective, var_list=self.variables)
 
     # pylint: disable=R0913
     def run_optimize(self, optimize_op, rollouts, batch_size=None, num_iter=12,

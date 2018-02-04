@@ -151,7 +151,7 @@ class DistQNetwork(TFQNetwork):
         if not self.dueling:
             return tf.nn.log_softmax(actions)
         values = tf.expand_dims(self.dense(feature_batch, self.dist.num_atoms), axis=1)
-        actions -= tf.reduce_mean(actions, axis=1, keep_dims=True)
+        actions -= tf.reduce_mean(actions, axis=1, keepdims=True)
         return tf.nn.log_softmax(values + actions)
 
     # pylint: disable=W0613

@@ -94,7 +94,7 @@ class ScalarQNetwork(TFQNetwork):
             return self.dense(feature_batch, self.num_actions)
         values = self.dense(feature_batch, 1)
         actions = self.dense(feature_batch, self.num_actions)
-        actions -= tf.reduce_mean(actions, axis=1, keep_dims=True)
+        actions -= tf.reduce_mean(actions, axis=1, keepdims=True)
         return values + actions
 
     # pylint: disable=W0613

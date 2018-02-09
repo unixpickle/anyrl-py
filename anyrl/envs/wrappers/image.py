@@ -103,8 +103,7 @@ class FrameStackEnv(gym.Wrapper):
         self._history = [obs] * self._num_images
         if self.concat:
             return np.concatenate(self._history, axis=-1)
-        else:
-            return self._history.copy()
+        return self._history.copy()
 
     def _step(self, action):
         obs, rew, done, info = super(FrameStackEnv, self)._step(action)
@@ -112,8 +111,7 @@ class FrameStackEnv(gym.Wrapper):
         self._history = self._history[1:]
         if self.concat:
             return np.concatenate(self._history, axis=-1), rew, done, info
-        else:
-            return self._history.copy(), rew, done, info
+        return self._history.copy(), rew, done, info
 
 class MaxEnv(gym.Wrapper):
     """

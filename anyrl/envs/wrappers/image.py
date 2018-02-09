@@ -7,6 +7,8 @@ import numpy as np
 
 from anyrl.spaces import StackedBoxSpace
 
+# pylint: disable=E0202
+
 class DownsampleEnv(gym.ObservationWrapper):
     """
     An environment that downsamples its image inputs.
@@ -23,10 +25,10 @@ class DownsampleEnv(gym.ObservationWrapper):
         super(DownsampleEnv, self).__init__(env)
         self._rate = rate
         old_space = env.observation_space
-        self.observation_space = gym.spaces.Box(self._observation(old_space.low),
-                                                self._observation(old_space.high))
+        self.observation_space = gym.spaces.Box(self.observation(old_space.low),
+                                                self.observation(old_space.high))
 
-    def _observation(self, observation):
+    def observation(self, observation):
         observation = observation[:1 + ((observation.shape[0] - 1) // self._rate) * self._rate,
                                   :1 + ((observation.shape[1] - 1) // self._rate) * self._rate]
         return observation[::self._rate, ::self._rate]
@@ -50,10 +52,10 @@ class GrayscaleEnv(gym.ObservationWrapper):
         old_space = env.observation_space
         self._integers = integers
         self._keep_depth = keep_depth
-        self.observation_space = gym.spaces.Box(self._observation(old_space.low),
-                                                self._observation(old_space.high))
+        self.observation_space = gym.spaces.Box(self.observation(old_space.low),
+                                                self.observation(old_space.high))
 
-    def _observation(self, observation):
+    def observation(self, observation):
         if self._integers:
             observation = observation // 3
         else:
@@ -98,15 +100,15 @@ class FrameStackEnv(gym.Wrapper):
         self._num_images = num_images
         self._history = []
 
-    def _reset(self, **kwargs):
-        obs = super(FrameStackEnv, self)._reset(**kwargs)
+    def reset(self, **kwargs):
+        obs = self.env.reset(**kwargs)
         self._history = [obs] * self._num_images
         if self.concat:
             return np.concatenate(self._history, axis=-1)
         return self._history.copy()
 
-    def _step(self, action):
-        obs, rew, done, info = super(FrameStackEnv, self)._step(action)
+    def step(self, action):
+        obs, rew, done, info = self.env.step(action)
         self._history.append(obs)
         self._history = self._history[1:]
         if self.concat:
@@ -123,13 +125,13 @@ class MaxEnv(gym.Wrapper):
         self._num_images = num_images
         self._history = []
 
-    def _reset(self, **kwargs):
-        obs = super(MaxEnv, self)._reset(**kwargs)
+    def reset(self, **kwargs):
+        obs = self.env.reset(**kwargs)
         self._history = [obs]
         return np.max(self._history, axis=0)
 
-    def _step(self, action):
-        obs, rew, done, info = super(MaxEnv, self)._step(action)
+    def step(self, action):
+        obs, rew, done, info = self.env.step(action)
         self._history.append(obs)
         self._history = self._history[-self._num_images:]
         return np.max(self._history, axis=0), rew, done, info
@@ -159,8 +161,8 @@ class ResizeImageEnv(gym.ObservationWrapper):
             method = tf.image.ResizeMethod.AREA
         self._resized = tf.image.resize_images(self._ph, size, method=method)
         old_space = env.observation_space
-        self.observation_space = gym.spaces.Box(self._observation(old_space.low),
-                                                self._observation(old_space.high))
+        self.observation_space = gym.spaces.Box(self.observation(old_space.low),
+                                                self.observation(old_space.high))
 
-    def _observation(self, observation):
+    def observation(self, observation):
         return self._sess.run(self._resized, feed_dict={self._ph: observation})

@@ -27,10 +27,10 @@ class ObservationPadEnv(gym.ObservationWrapper):
         self._padded_shape = padded_shape
         self._center = center
         old_space = self.observation_space
-        self.observation_space = gym.spaces.Box(low=self._observation(old_space.low),
-                                                high=self._observation(old_space.high))
+        self.observation_space = gym.spaces.Box(low=self.observation(old_space.low),
+                                                high=self.observation(old_space.high))
 
-    def _observation(self, observation):
+    def observation(self, observation):
         """
         Pad the observation.
         """

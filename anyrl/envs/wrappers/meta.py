@@ -8,6 +8,8 @@ import gym
 import gym.spaces as spaces
 import numpy as np
 
+# pylint: disable=E0202,W0221
+
 class RL2Env(gym.Wrapper):
     """
     A wrapper which augments the observation space to
@@ -43,13 +45,12 @@ class RL2Env(gym.Wrapper):
         self.warmup_eps = warmup_eps
         self._done_eps = 0
 
-    # pylint: disable=W0221
-    def _reset(self, **kwargs):
+    def reset(self, **kwargs):
         self._done_eps = 0
         obs = self.env.reset(**kwargs)
         return (obs, self.first_action, np.array([0.0]), np.array([0]))
 
-    def _step(self, action):
+    def step(self, action):
         obs, rew, done, info = self.env.step(action)
         aug_obs = (obs, action, np.array([rew]), np.array([int(done)]))
         if self._done_eps < self.warmup_eps:
@@ -83,17 +84,16 @@ class SwitchableEnv(gym.Env):
         """
         self.env = new_env
 
-    # pylint: disable=W0221
-    def _reset(self, **kwargs):
+    def reset(self, **kwargs):
         return self.env.reset(**kwargs)
 
-    def _step(self, action):
+    def step(self, action):
         return self.env.step(action)
 
-    def _render(self, mode='human', close=False):
-        return self.env.render(mode=mode, close=close)
+    def render(self, mode='human'):
+        return self.env.render(mode=mode)
 
-    def _seed(self, seed=None):
+    def seed(self, seed=None):
         return self.env.seed(seed=seed)
 
 class JointEnv(gym.Env):
@@ -121,22 +121,21 @@ class JointEnv(gym.Env):
         finally:
             env.close()
 
-    # pylint: disable=W0221
-    def _reset(self, **kwargs):
+    def reset(self, **kwargs):
         if self.env is not None:
             self.env.close()
         self.env = random.choice(self.env_fns)()
         return self.env.reset(**kwargs)
 
-    def _step(self, action):
+    def step(self, action):
         return self.env.step(action)
 
-    def _render(self, mode='human', close=False):
+    def render(self, mode='human'):
         if self.env is None:
             return
-        return self.env.render(mode=mode, close=close)
+        return self.env.render(mode=mode)
 
-    def _seed(self, seed=None):
+    def seed(self, seed=None):
         if self.env is None:
             return
         return self.env.seed(seed=seed)

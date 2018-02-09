@@ -8,6 +8,8 @@ import time
 import gym
 import pandas
 
+# pylint: disable=E0202
+
 class LoggedEnv(gym.Wrapper):
     """
     An environment that logs episodes to a file.
@@ -43,7 +45,12 @@ class LoggedEnv(gym.Wrapper):
         self._cur_timesteps = 0
         self._cur_reward = 0
 
-    def _step(self, action):
+    def reset(self, **kwargs):
+        self._cur_timesteps = 0
+        self._cur_reward = 0
+        return self.env.reset(**kwargs)
+
+    def step(self, action):
         obs, rew, done, info = self.env.step(action)
         self._cur_reward += rew
         self._cur_timesteps += 1
@@ -53,7 +60,7 @@ class LoggedEnv(gym.Wrapper):
             self._cur_reward = 0
         return obs, rew, done, info
 
-    def _close(self):
+    def close(self):
         self.env.close()
         self._file.close()
 

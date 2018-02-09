@@ -46,7 +46,6 @@ Here is the current TODO list, organized by sub-module:
   * PPO: allow clipping for value function
 * `spaces`
   * Dict
-  * Support new Gym APIs
 * `tests`
   * Benchmarks for rollouts
   * Benchmarks for training

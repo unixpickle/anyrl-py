@@ -23,7 +23,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.11.14',
+    version='0.11.15',
 
     description='A library for Reinforcement Learning',
     long_description=LONG_DESCRIPTION,
@@ -76,7 +76,7 @@ setup(
     install_requires=[
         'numpy>=1.0.0,<2.0.0',
         'cloudpickle>=0.4.0',
-        'gym>=0.9.2,<0.10.0',
+        'gym>=0.9.6,<0.10.0',
         'pandas>=0.20.0,<0.21.0'
     ],
 

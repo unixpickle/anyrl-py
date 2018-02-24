@@ -368,7 +368,7 @@ class TestTuple(unittest.TestCase):
         Basic tests for MultiDiscrete, which is internally
         implemented using a tuple.
         """
-        space = gym.spaces.MultiDiscrete([[1, 3], [-1, 5]])
+        space = gym.spaces.MultiDiscrete([2, 2])
         dist = gym_space_distribution(space)
         tester = DistributionTester(self, dist)
         tester.test_all()

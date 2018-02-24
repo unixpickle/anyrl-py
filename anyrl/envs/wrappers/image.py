@@ -26,7 +26,8 @@ class DownsampleEnv(gym.ObservationWrapper):
         self._rate = rate
         old_space = env.observation_space
         self.observation_space = gym.spaces.Box(self.observation(old_space.low),
-                                                self.observation(old_space.high))
+                                                self.observation(old_space.high),
+                                                dtype=old_space.dtype)
 
     def observation(self, observation):
         observation = observation[:1 + ((observation.shape[0] - 1) // self._rate) * self._rate,
@@ -53,7 +54,8 @@ class GrayscaleEnv(gym.ObservationWrapper):
         self._integers = integers
         self._keep_depth = keep_depth
         self.observation_space = gym.spaces.Box(self.observation(old_space.low),
-                                                self.observation(old_space.high))
+                                                self.observation(old_space.high),
+                                                dtype=old_space.dtype)
 
     def observation(self, observation):
         if self._integers:
@@ -94,7 +96,8 @@ class FrameStackEnv(gym.Wrapper):
         old_space = env.observation_space
         if concat:
             self.observation_space = gym.spaces.Box(np.repeat(old_space.low, num_images, axis=-1),
-                                                    np.repeat(old_space.high, num_images, axis=-1))
+                                                    np.repeat(old_space.high, num_images, axis=-1),
+                                                    dtype=old_space.dtype)
         else:
             self.observation_space = StackedBoxSpace(old_space, num_images)
         self._num_images = num_images
@@ -162,7 +165,8 @@ class ResizeImageEnv(gym.ObservationWrapper):
         self._resized = tf.image.resize_images(self._ph, size, method=method)
         old_space = env.observation_space
         self.observation_space = gym.spaces.Box(self.observation(old_space.low),
-                                                self.observation(old_space.high))
+                                                self.observation(old_space.high),
+                                                dtype=old_space.dtype)
 
     def observation(self, observation):
         return self._sess.run(self._resized, feed_dict={self._ph: observation})

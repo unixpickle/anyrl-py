@@ -28,7 +28,8 @@ class ObservationPadEnv(gym.ObservationWrapper):
         self._center = center
         old_space = self.observation_space
         self.observation_space = gym.spaces.Box(low=self.observation(old_space.low),
-                                                high=self.observation(old_space.high))
+                                                high=self.observation(old_space.high),
+                                                dtype=old_space.dtype)
 
     def observation(self, observation):
         """

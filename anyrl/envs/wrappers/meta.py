@@ -38,7 +38,7 @@ class RL2Env(gym.Wrapper):
         self.observation_space = spaces.Tuple([
             env.observation_space,
             env.action_space,
-            spaces.Box(low=-np.inf, high=np.inf, shape=(1,)),
+            spaces.Box(low=-np.inf, high=np.inf, shape=(1,), dtype='float'),
             spaces.MultiBinary(1)
         ])
         self.num_eps = num_eps

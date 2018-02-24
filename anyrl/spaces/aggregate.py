@@ -12,8 +12,9 @@ class TupleDistribution(Distribution):
     A distribution that consists of an ordered list of
     sub-distributions.
     """
-    def __init__(self, sub_dists):
+    def __init__(self, sub_dists, to_sample=lambda x: x):
         self.tuple = tuple(sub_dists)
+        self.to_sample = to_sample
 
     @property
     def out_shape(self):
@@ -33,12 +34,12 @@ class TupleDistribution(Distribution):
     def sample(self, param_batch):
         per_dist = self.unpack_params(np.array(param_batch))
         samples = [d.sample(p) for d, p in zip(self.tuple, per_dist)]
-        return list(zip(*samples))
+        return self.to_sample(list(zip(*samples)))
 
     def mode(self, param_batch):
         per_dist = self.unpack_params(np.array(param_batch))
         modes = [d.mode(p) for d, p in zip(self.tuple, per_dist)]
-        return list(zip(*modes))
+        return self.to_sample(list(zip(*modes)))
 
     def log_prob(self, param_batch, sample_vecs):
         per_dist = self.unpack_params(param_batch)

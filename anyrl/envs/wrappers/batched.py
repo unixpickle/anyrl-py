@@ -66,7 +66,8 @@ class BatchedFrameStack(BatchedWrapper):
             old = self.observation_space
             if concat:
                 self.observation_space = gym.spaces.Box(np.repeat(old.low, num_images, axis=-1),
-                                                        np.repeat(old.high, num_images, axis=-1))
+                                                        np.repeat(old.high, num_images, axis=-1),
+                                                        dtype=old.dtype)
             else:
                 self.observation_space = StackedBoxSpace(old, num_images)
         self._num_images = num_images

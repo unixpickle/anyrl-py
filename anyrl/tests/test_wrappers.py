@@ -307,12 +307,12 @@ class ShapeEnv(gym.Env):
     """
     def __init__(self, low, high):
         super(ShapeEnv, self).__init__()
-        self.observation_space = gym.spaces.Box(low, high)
+        self.observation_space = gym.spaces.Box(low, high, dtype=low.dtype)
 
-    def _reset(self):
+    def reset(self):
         return self.observation_space.sample()
 
-    def _step(self, action):
+    def step(self, action):
         return self.observation_space.sample(), 0, False, {}
 
 if __name__ == '__main__':

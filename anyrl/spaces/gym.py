@@ -4,6 +4,7 @@ Conversions to and from Gym spaces.
 
 import gym
 import gym.spaces as spaces
+import numpy as np
 
 from .aggregate import TupleDistribution
 from .binary import MultiBernoulli
@@ -67,9 +68,8 @@ def gym_space_distribution(space):
         sub_dists = tuple(gym_space_distribution(s) for s in space.spaces)
         return TupleDistribution(sub_dists)
     elif isinstance(space, spaces.MultiDiscrete):
-        discretes = tuple(CategoricalSoftmax(high-low+1, low=low)
-                          for low, high in zip(space.low, space.high))
-        return TupleDistribution(discretes)
+        discretes = tuple(CategoricalSoftmax(n) for n in space.nvec)
+        return TupleDistribution(discretes, to_sample=lambda x: np.array(x, dtype=space.dtype))
     raise UnsupportedGymSpace(space)
 
 def gym_space_vectorizer(space):

@@ -21,10 +21,10 @@ class SimpleEnv(gym.Env):
         self._max_steps = seed + 1
         self._cur_obs = None
         self._cur_step = 0
-        self.action_space = gym.spaces.Box(0, 0xff, shape=shape)
+        self.action_space = gym.spaces.Box(0, 0xff, shape=shape, dtype=dtype)
         self.observation_space = self.action_space
 
-    def _step(self, action):
+    def step(self, action):
         flat_act = np.array(action, dtype=self._dtype)
         self._cur_obs = self._cur_obs + np.roll(flat_act, 1)
         self._cur_step += 1
@@ -32,7 +32,7 @@ class SimpleEnv(gym.Env):
         reward = self._cur_step / self._max_steps
         return self._cur_obs, reward, done, {'foo': 'bar' + str(reward)}
 
-    def _reset(self):
+    def reset(self):
         self._cur_obs = self._start_obs
         self._cur_step = 0
         return self._cur_obs
@@ -102,14 +102,14 @@ class TupleCartPole(gym.Env):
         self.action_space = spaces.Tuple([spaces.Discrete(2), spaces.Discrete(3)])
         obs_space = self._inner_env.observation_space
         self.observation_space = spaces.Tuple([
-            spaces.Box(obs_space.low[:3], obs_space.high[:3]),
-            spaces.Box(obs_space.low[3:], obs_space.high[3:])
+            spaces.Box(obs_space.low[:3], obs_space.high[:3], dtype=obs_space.dtype),
+            spaces.Box(obs_space.low[3:], obs_space.high[3:], dtype=obs_space.dtype)
         ])
 
-    def _reset(self):
+    def reset(self):
         return self._split_obs(self._inner_env.reset())
 
-    def _step(self, action):
+    def step(self, action):
         obs, rew, done, info = self._inner_env.step(action[0])
         return self._split_obs(obs), rew, done, info
 

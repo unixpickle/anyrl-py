@@ -114,6 +114,7 @@ class JointEnv(gym.Env):
         """
         self.env_fns = env_fns
         self.env = None
+        self.env_idx = 0
         env = env_fns[0]()
         try:
             self.action_space = env.action_space
@@ -124,11 +125,15 @@ class JointEnv(gym.Env):
     def reset(self, **kwargs):
         if self.env is not None:
             self.env.close()
-        self.env = random.choice(self.env_fns)()
+        self.env_idx = random.randrange(len(self.env_fns))
+        self.env = self.env_fns[self.env_idx]()
         return self.env.reset(**kwargs)
 
     def step(self, action):
-        return self.env.step(action)
+        obs, rew, done, info = self.env.step(action)
+        info = info.copy()
+        info['env_idx'] = self.env_idx
+        return obs, rew, done, info
 
     def render(self, mode='human'):
         if self.env is None:

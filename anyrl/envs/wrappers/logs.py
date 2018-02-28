@@ -69,9 +69,9 @@ class LoggedEnv(gym.Wrapper):
             return
         import fcntl
         if locked:
-            fcntl.flock(self._file_desc, fcntl.LOCK_EX)
+            fcntl.lockf(self._file_desc, fcntl.LOCK_EX)
         else:
-            fcntl.flock(self._file_desc, fcntl.LOCK_UN)
+            fcntl.lockf(self._file_desc, fcntl.LOCK_UN)
 
     def _write_entry(self):
         """

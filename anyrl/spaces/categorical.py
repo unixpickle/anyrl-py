@@ -40,7 +40,10 @@ class CategoricalSoftmax(Distribution):
         return self.low + np.argmax(param_batch, axis=-1)
 
     def log_prob(self, param_batch, sample_vecs):
-        loss_func = tf.nn.softmax_cross_entropy_with_logits
+        if hasattr(tf.nn, 'softmax_cross_entropy_with_logits_v2'):
+            loss_func = tf.nn.softmax_cross_entropy_with_logits_v2
+        else:
+            loss_func = tf.nn.softmax_cross_entropy_with_logits
         return tf.negative(loss_func(labels=sample_vecs, logits=param_batch))
 
     def entropy(self, param_batch):

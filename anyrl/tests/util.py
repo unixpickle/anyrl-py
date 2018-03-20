@@ -37,6 +37,9 @@ class SimpleEnv(gym.Env):
         self._cur_step = 0
         return self._cur_obs
 
+    def render(self, mode='human'):
+        pass
+
 class SimpleModel(Model):
     """
     A stateful, deterministic model which is compatible
@@ -112,6 +115,9 @@ class TupleCartPole(gym.Env):
     def step(self, action):
         obs, rew, done, info = self._inner_env.step(action[0])
         return self._split_obs(obs), rew, done, info
+
+    def render(self, mode='human'):
+        pass
 
     # pylint: disable=R0201
     def _split_obs(self, obs):

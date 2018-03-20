@@ -315,5 +315,8 @@ class ShapeEnv(gym.Env):
     def step(self, action):
         return self.observation_space.sample(), 0, False, {}
 
+    def render(self, mode='human'):
+        pass
+
 if __name__ == '__main__':
     unittest.main()

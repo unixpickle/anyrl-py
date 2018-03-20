@@ -33,7 +33,6 @@ class LoggedEnv(gym.Wrapper):
         """
         super(LoggedEnv, self).__init__(env)
         self._start_time = time.time()
-        self._columns = ['r', 'l', 't']
         self._use_locking = use_locking
         self._file_desc = os.open(log_path, os.O_RDWR | os.O_CREAT)
         self._file = os.fdopen(self._file_desc, 'r+t')
@@ -77,11 +76,7 @@ class LoggedEnv(gym.Wrapper):
         """
         Write the latest episode record.
         """
-        info = {
-            'r': [self._cur_reward],
-            'l': [self._cur_timesteps],
-            't': [time.time() - self._start_time]
-        }
+        info = {k: [v] for k, v in self._episode_info().items()}
         data = pandas.DataFrame(info).to_csv(columns=self._columns, header=False, index=False)
         self._set_locked(True)
         try:
@@ -90,6 +85,16 @@ class LoggedEnv(gym.Wrapper):
             self._file.flush()
         finally:
             self._set_locked(False)
+
+    def _episode_info(self):
+        """
+        Get a dict of info about the latest episode.
+        """
+        return {
+            'r': self._cur_reward,
+            'l': self._cur_timesteps,
+            't': time.time() - self._start_time
+        }
 
     def _initialize_file(self):
         """
@@ -114,3 +119,10 @@ class LoggedEnv(gym.Wrapper):
         """
         self._file.write(','.join(self._columns) + '\n')
         self._file.flush()
+
+    @property
+    def _columns(self):
+        """
+        Get the columns for the CSV file.
+        """
+        return ['r', 'l', 't']

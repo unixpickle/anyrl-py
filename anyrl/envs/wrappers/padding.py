@@ -49,7 +49,7 @@ class ObservationPadEnv(gym.ObservationWrapper):
             pad_width = [(0, pad) for pad in total_pads]
         return np.pad(observation, pad_width, 'constant')
 
-class MultiBinaryPadEnv(gym.Wrapper):
+class MultiBinaryPadEnv(gym.ActionWrapper):
     """
     An environment that adds no-op actions to a
     multi-binary action space.
@@ -71,5 +71,10 @@ class MultiBinaryPadEnv(gym.Wrapper):
         self._num_actions = num_actions
         self.action_space = gym.spaces.MultiBinary(num_actions)
 
-    def _step(self, action):
-        return self.env.step(action[:self.env.action_space.n])
+    def action(self, action):
+        return action[:self.env.action_space.n]
+
+    def reverse_action(self, action):
+        res = np.array([self.action_space.n], dtype='bool')
+        res[:self.env.action_space.n] = action
+        return res

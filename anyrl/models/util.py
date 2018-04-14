@@ -81,6 +81,19 @@ def nature_cnn(obs_batch, dense=tf.layers.dense):
     flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
     return dense(flat_in, 512, **conv_kwargs)
 
+def nature_huber_loss(residuals):
+    """
+    Compute the Huber loss as used for Nature DQN.
+
+    Args:
+      residuals: a batch of TD errors.
+
+    Returns:
+      A batch of loss values.
+    """
+    abs = tf.abs(residuals)
+    return tf.where(abs < 1, 0.5 * tf.square(residuals), abs - 0.5)
+
 def product(vals):
     """
     Compute the product of values in a list-like object.

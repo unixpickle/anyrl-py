@@ -10,7 +10,7 @@ import numpy as np
 import tensorflow as tf
 
 from .base import TFQNetwork
-from .util import nature_cnn, simple_mlp, take_vector_elems
+from .util import nature_cnn, nature_huber_loss, simple_mlp, take_vector_elems
 
 # pylint: disable=R0913,R0903
 
@@ -23,10 +23,11 @@ class ScalarQNetwork(TFQNetwork):
     methods with specific neural network architectures.
     """
     def __init__(self, session, num_actions, obs_vectorizer, name,
-                 dueling=False, dense=tf.layers.dense):
+                 dueling=False, dense=tf.layers.dense, loss_fn=tf.square):
         super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
         self.dueling = dueling
         self.dense = dense
+        self.loss_fn = loss_fn
         old_vars = tf.trainable_variables()
         with tf.variable_scope(name):
             self.step_obs_ph = tf.placeholder(self.input_dtype,
@@ -62,7 +63,7 @@ class ScalarQNetwork(TFQNetwork):
         with tf.variable_scope(self.name, reuse=True):
             online_preds = self.value_func(self.base(obses))
             onlines = take_vector_elems(online_preds, actions)
-            return tf.square(onlines - tf.stop_gradient(targets))
+            return self.loss_fn(onlines - tf.stop_gradient(targets))
 
     @property
     def input_dtype(self):
@@ -115,7 +116,8 @@ class MLPQNetwork(ScalarQNetwork):
                  layer_sizes,
                  activation=tf.nn.relu,
                  dueling=False,
-                 dense=tf.layers.dense):
+                 dense=tf.layers.dense,
+                 loss_fn=tf.square):
         """
         Create an MLP model.
 
@@ -130,11 +132,12 @@ class MLPQNetwork(ScalarQNetwork):
           activation: the activation function.
           dueling: use a dueling architecture.
           dense: the dense layer function.
+          loss_fn: the target loss function.
         """
         self.layer_sizes = layer_sizes
         self.activation = activation
         super(MLPQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                          dueling=dueling, dense=dense)
+                                          dueling=dueling, dense=dense, loss_fn=loss_fn)
 
     def base(self, obs_batch):
         return simple_mlp(obs_batch, self.layer_sizes, self.activation, dense=self.dense)
@@ -150,12 +153,13 @@ class NatureQNetwork(ScalarQNetwork):
                  name,
                  dueling=False,
                  dense=tf.layers.dense,
+                 loss_fn=nature_huber_loss,
                  input_dtype=tf.uint8,
                  input_scale=1 / 0xff):
         self._input_dtype = input_dtype
         self.input_scale = input_scale
         super(NatureQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                             dueling=dueling, dense=dense)
+                                             dueling=dueling, dense=dense, loss_fn=loss_fn)
 
     @property
     def input_dtype(self):

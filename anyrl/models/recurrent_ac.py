@@ -8,7 +8,7 @@ from tensorflow.contrib.framework import nest # pylint: disable=E0611
 from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
 
 from .base import TFActorCritic
-from .util import mini_batches, product, mix_init_states
+from .util import mini_batches, product, mix_init_states, nature_cnn
 
 # pylint: disable=E1129
 
@@ -210,10 +210,10 @@ class RNNCellAC(RecurrentAC):
     """
     # pylint: disable=R0913
     # pylint: disable=R0914
-    def __init__(self, session, action_dist, obs_vectorizer, make_cell):
+    def __init__(self, session, action_dist, obs_vectorizer, make_cell, input_dtype=tf.float32):
         super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
         obs_seq_shape = (None, None) + obs_vectorizer.out_shape
-        self.obs_ph = tf.placeholder(tf.float32, obs_seq_shape)
+        self.obs_ph = tf.placeholder(input_dtype, obs_seq_shape)
         self.mask_ph = tf.placeholder(tf.float32, (None, None))
 
         with tf.variable_scope('cell_input'):
@@ -289,6 +289,33 @@ class RNNCellAC(RecurrentAC):
                               weights_initializer=zeros)
         shape = tf.shape(raw)
         return tf.reshape(raw, (shape[0], shape[1]))
+
+class CNNRNNCellAC(RNNCellAC):
+    """
+    An RNNCellAC that feeds inputs through a CNN.
+    """
+    # pylint: disable=R0913
+    def __init__(self, session, action_dist, obs_vectorizer, make_cell,
+                 input_scale=1/0xff, input_dtype=tf.uint8, cnn_fn=nature_cnn):
+        self.cnn_fn = cnn_fn
+        self.input_scale = input_scale
+        super(CNNRNNCellAC, self).__init__(session, action_dist, obs_vectorizer, make_cell,
+                                           input_dtype=input_dtype)
+
+    def cell_input_sequences(self):
+        """
+        Apply the CNN to get features for the RNN.
+        """
+        batch_size = tf.shape(self.obs_ph)[0]
+        seq_len = tf.shape(self.obs_ph)[1]
+        obs_shape = self.obs_vectorizer.out_shape
+
+        float_in = tf.cast(self.obs_ph, tf.float32) * self.input_scale
+        flat_batch = tf.reshape(float_in, (batch_size * seq_len,) + obs_shape)
+        feature_batch = self.cnn_fn(flat_batch)
+
+        seq_shape = (batch_size, seq_len, feature_batch.get_shape()[-1].value)
+        return tf.reshape(feature_batch, seq_shape)
 
 def _pad(unpadded, length, value=0):
     """

@@ -306,12 +306,15 @@ class CNNRNNCellAC(RNNCellAC):
         """
         Apply the CNN to get features for the RNN.
         """
-        batch_size = tf.shape(self.obs_ph)[0]
-        seq_len = tf.shape(self.obs_ph)[1]
-        obs_shape = self.obs_vectorizer.out_shape
+        return self._cnn_output_seq(self.obs_ph)
 
-        float_in = tf.cast(self.obs_ph, tf.float32) * self.input_scale
-        flat_batch = tf.reshape(float_in, (batch_size * seq_len,) + obs_shape)
+    def _cnn_output_seq(self, obs_seq):
+        batch_size = tf.shape(obs_seq)[0]
+        seq_len = tf.shape(obs_seq)[1]
+        obs_shape = [x.value for x in obs_seq.get_shape()[2:]]
+
+        float_in = tf.cast(obs_seq, tf.float32) * self.input_scale
+        flat_batch = tf.reshape(float_in, [batch_size * seq_len] + obs_shape)
         feature_batch = self.cnn_fn(flat_batch)
 
         seq_shape = (batch_size, seq_len, feature_batch.get_shape()[-1].value)

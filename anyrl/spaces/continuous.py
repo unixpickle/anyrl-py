@@ -69,7 +69,7 @@ class BoxGaussian(Distribution):
         log_stddevs = param_batch[..., 1]
         bias = (self.high + self.low) / 2
         scale = (self.high - self.low) / 2
-        return means + bias, log_stddevs + np.log(scale)
+        return means * scale + bias, log_stddevs + np.log(scale)
 
 class BoxBeta(Distribution):
     """

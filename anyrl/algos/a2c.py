@@ -91,6 +91,12 @@ class A2C:
         self.entropy = util.masked_mean(mask, entropies)
         self.objective = (entropy_reg * self.entropy - self.actor_loss -
                           vf_coeff * self.critic_loss)
+        self.explained_var = self._compute_explained_var(mask)
+
+    def _compute_explained_var(self, mask):
+        variance = (util.masked_mean(mask, tf.square(self._target_vals)) -
+                    tf.square(util.masked_mean(mask, self._target_vals)))
+        return 1 - (self.critic_loss / variance)
 
     # TODO: API that supports schedules and runs the
     # entire training loop for us.

@@ -44,6 +44,7 @@ class PPO(A2C):
         self.num_clipped = tf.cast(util.masked_sum(mask, clipped_samples), tf.int32)
         self.objective = (entropy_reg * self.entropy - self.actor_loss -
                           vf_coeff * self.critic_loss)
+        self.explained_var = self._compute_explained_var(mask)
 
     def feed_dict(self, rollouts, batch=None, advantages=None, targets=None):
         if batch is None:
@@ -75,7 +76,7 @@ class PPO(A2C):
         advantages = self.adv_est.advantages(rollouts)
         targets = self.adv_est.targets(rollouts)
         for batch in batches:
-            terms = (self.actor_loss, self.critic_loss, self.entropy,
+            terms = (self.actor_loss, self.explained_var, self.entropy,
                      self.num_clipped, optimize_op)
             feed_dict = self.feed_dict(rollouts, batch,
                                        advantages=advantages,
@@ -84,7 +85,7 @@ class PPO(A2C):
                 feed_dict.update(extra_feed_dict)
             terms = self.model.session.run(terms, feed_dict)
             if log_fn is not None:
-                log_fn('batch %d: actor=%f critic=%f entropy=%f clipped=%d' %
+                log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%d' %
                        (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
             batch_idx += 1
             if batch_idx == num_iter:

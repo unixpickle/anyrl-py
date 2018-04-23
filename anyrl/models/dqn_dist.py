@@ -30,7 +30,6 @@ def rainbow_models(session,
       session: the TF session.
       num_actions: size of action space.
       obs_vectorizer: observation vectorizer.
-      name: name for this model.
       num_atoms: number of distribution atoms.
       min_val: minimum atom value.
       max_val: maximum atom value.

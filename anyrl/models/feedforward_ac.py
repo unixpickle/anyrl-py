@@ -153,8 +153,6 @@ class CNN(FeedforwardAC):
         """
         super(CNN, self).__init__(session, action_dist, obs_vectorizer)
 
-        assert len(obs_vectorizer.out_shape) == 3
-
         in_batch_shape = (None,) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(input_dtype, shape=in_batch_shape)
         obs_batch = tf.cast(self.obs_ph, tf.float32) * input_scale

@@ -4,30 +4,24 @@ Test for learning algorithm utilities.
 
 # pylint: disable=E1129
 
-import unittest
-
 from anyrl.algos.util import masked_mean
 import numpy as np
 import tensorflow as tf
 
-class TestMask(unittest.TestCase):
+def test_masked_mean_basic():
     """
-    Test the masked_mean() API.
+    Test masking on a normal set of inputs.
     """
-    def test_basic(self):
-        """
-        Test on a normal set of inputs.
-        """
-        mean = _masked_mean([0, 1, 0, 1, 1], [2.5, 7, 3, 0.8, 0.9])
-        self.assertTrue(np.allclose(mean, np.mean([7, 0.8, 0.9])))
+    mean = _masked_mean([0, 1, 0, 1, 1], [2.5, 7, 3, 0.8, 0.9])
+    assert np.allclose(mean, np.mean([7, 0.8, 0.9]))
 
-    def test_unusual_values(self):
-        """
-        Test masking unusual values like nan.
-        """
-        mean = _masked_mean([0, 1, 0, 1, 1, 0],
-                            [np.inf, 7, np.nan, 0.8, 0.9, np.inf])
-        self.assertTrue(np.allclose(mean, np.mean([7, 0.8, 0.9])))
+def test_masked_mean_unusual_values():
+    """
+    Test masking unusual values like nan.
+    """
+    mean = _masked_mean([0, 1, 0, 1, 1, 0],
+                        [np.inf, 7, np.nan, 0.8, 0.9, np.inf])
+    assert np.allclose(mean, np.mean([7, 0.8, 0.9]))
 
 def _masked_mean(mask, values):
     """
@@ -40,6 +34,3 @@ def _masked_mean(mask, values):
             mean = masked_mean(mask_ph, values_ph)
             return sess.run(mean, feed_dict={mask_ph: np.array(mask),
                                              values_ph: np.array(values)})
-
-if __name__ == '__main__':
-    unittest.main()

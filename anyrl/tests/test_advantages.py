@@ -2,30 +2,24 @@
 Tests for advantage routines.
 """
 
-import unittest
-
 from anyrl.rollouts import Rollout
 from anyrl.algos.advantages import GAE
 
-class TestEstimators(unittest.TestCase):
+def test_gae():
     """
-    Test AdvantageEstimator implementations.
+    Test generalized advantage estimation.
     """
-    def test_gae(self):
-        """
-        Test generalized advantage estimation.
-        """
-        rollouts = [
-            _dummy_rollout([1, 0.5, 3], [0, -1.5, 2]),
-            _dummy_rollout([3, 2, -7], [1, 9])
-        ]
-        judger = GAE(lam=0.7, discount=0.9)
-        actual = judger.advantages(rollouts)
-        expected = [[-0.5059, 0.07, -1], [0.241, 0.7]]
-        for actual_seq, expected_seq in zip(actual, expected):
-            self.assertEqual(len(actual_seq), len(expected_seq))
-            for act, exp in zip(actual_seq, expected_seq):
-                self.assertTrue(abs(act-exp) < 1e-5)
+    rollouts = [
+        _dummy_rollout([1, 0.5, 3], [0, -1.5, 2]),
+        _dummy_rollout([3, 2, -7], [1, 9])
+    ]
+    judger = GAE(lam=0.7, discount=0.9)
+    actual = judger.advantages(rollouts)
+    expected = [[-0.5059, 0.07, -1], [0.241, 0.7]]
+    for actual_seq, expected_seq in zip(actual, expected):
+        assert len(actual_seq) == len(expected_seq)
+        for act, exp in zip(actual_seq, expected_seq):
+            assert abs(act-exp) < 1e-5
 
 def _dummy_rollout(pred_vals, rewards):
     """
@@ -37,6 +31,3 @@ def _dummy_rollout(pred_vals, rewards):
                    model_outs=model_outs,
                    rewards=rewards,
                    start_state=None)
-
-if __name__ == '__main__':
-    unittest.main()

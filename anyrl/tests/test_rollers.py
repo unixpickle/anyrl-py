@@ -2,221 +2,169 @@
 Test various Roller implementations.
 """
 
-import unittest
-
 from anyrl.envs import batched_gym_env
 from anyrl.rollouts import BasicRoller, TruncatedRoller, EpisodeRoller, Rollout
 from anyrl.tests import SimpleEnv, SimpleModel
 import numpy as np
+import pytest
 
-class TruncatedRollerTest(unittest.TestCase):
+@pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
+def test_trunc_basic_equivalence(stateful, state_tuple):
     """
-    Tests for TruncatedRoller.
+    Test that TruncatedRoller is equivalent to BasicRoller
+    for batches of one environment when the episodes end
+    cleanly.
     """
-    def test_basic_equivalence(self):
-        """
-        Test that TruncatedRoller is equivalent to a
-        BasicRoller when used with a single environment.
-        """
-        self._test_basic_equivalence_case(False, False)
-        self._test_basic_equivalence_case(True, False)
-        self._test_basic_equivalence_case(True, True)
+    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    env = env_fn()
+    model = SimpleModel(env.action_space.low.shape,
+                        stateful=stateful,
+                        state_tuple=state_tuple)
+    basic_roller = BasicRoller(env, model, min_episodes=5)
+    expected = basic_roller.rollouts()
+    total_timesteps = sum([x.num_steps for x in expected])
 
-    def test_truncation(self):
-        """
-        Test that sequence truncation works correctly for
-        a batch of one environment.
-        """
-        self._test_truncation_case(False, False)
-        self._test_truncation_case(True, False)
-        self._test_truncation_case(True, True)
+    batched_env = batched_gym_env([env_fn], sync=True)
+    trunc_roller = TruncatedRoller(batched_env, model, total_timesteps)
+    actual = trunc_roller.rollouts()
+    _compare_rollout_batch(actual, expected)
 
-    def test_batch_equivalence(self):
-        """
-        Test that doing things in batches is equivalent to
-        doing things one at a time.
-        """
-        self._test_batch_equivalence_case(False, False)
-        self._test_batch_equivalence_case(True, False)
-        self._test_batch_equivalence_case(True, True)
+@pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
+def test_truncation(stateful, state_tuple):
+    """
+    Test sequence truncation for TruncatedRoller with a
+    batch of one environment.
+    """
+    env_fn = lambda: SimpleEnv(7, (5, 3), 'uint8')
+    env = env_fn()
+    model = SimpleModel(env.action_space.low.shape,
+                        stateful=stateful,
+                        state_tuple=state_tuple)
+    basic_roller = BasicRoller(env, model, min_episodes=5)
+    expected = basic_roller.rollouts()
+    total_timesteps = sum([x.num_steps for x in expected])
 
-    def _test_basic_equivalence_case(self, stateful, state_tuple):
-        """
-        Test BasicRoller equivalence for a specific set of
-        model settings.
-        """
-        env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
-        env = env_fn()
-        model = SimpleModel(env.action_space.low.shape,
-                            stateful=stateful,
-                            state_tuple=state_tuple)
-        basic_roller = BasicRoller(env, model, min_episodes=5)
-        expected = basic_roller.rollouts()
-        total_timesteps = sum([x.num_steps for x in expected])
+    batched_env = batched_gym_env([env_fn], sync=True)
+    trunc_roller = TruncatedRoller(batched_env, model, total_timesteps // 2 + 1)
+    actual1 = trunc_roller.rollouts()
+    assert actual1[-1].trunc_end
+    actual2 = trunc_roller.rollouts()
+    expected1, expected2 = _artificial_truncation(expected,
+                                                  len(actual1) - 1,
+                                                  actual1[-1].num_steps)
+    assert len(actual2) == len(expected2) + 1
+    actual2 = actual2[:-1]
+    _compare_rollout_batch(actual1, expected1)
+    _compare_rollout_batch(actual2, expected2)
 
+@pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
+def test_trunc_batches(stateful, state_tuple):
+    """
+    Test that TruncatedRoller produces the same result for
+    batches as it does for individual environments.
+    """
+    env_fns = [lambda seed=x: SimpleEnv(seed, (5, 3), 'uint8') for x in range(15)]
+    model = SimpleModel((5, 3),
+                        stateful=stateful,
+                        state_tuple=state_tuple)
+
+    unbatched_rollouts = []
+    for env_fn in env_fns:
         batched_env = batched_gym_env([env_fn], sync=True)
-        trunc_roller = TruncatedRoller(batched_env, model, total_timesteps)
-        actual = trunc_roller.rollouts()
-        _compare_rollout_batch(self, actual, expected)
-
-    def _test_truncation_case(self, stateful, state_tuple):
-        """
-        Test rollout truncation and continuation for a
-        specific set of model parameters.
-        """
-        env_fn = lambda: SimpleEnv(7, (5, 3), 'uint8')
-        env = env_fn()
-        model = SimpleModel(env.action_space.low.shape,
-                            stateful=stateful,
-                            state_tuple=state_tuple)
-        basic_roller = BasicRoller(env, model, min_episodes=5)
-        expected = basic_roller.rollouts()
-        total_timesteps = sum([x.num_steps for x in expected])
-
-        batched_env = batched_gym_env([env_fn], sync=True)
-        trunc_roller = TruncatedRoller(batched_env, model, total_timesteps//2 + 1)
-        actual1 = trunc_roller.rollouts()
-        self.assertTrue(actual1[-1].trunc_end)
-        actual2 = trunc_roller.rollouts()
-        expected1, expected2 = _artificial_truncation(expected,
-                                                      len(actual1) - 1,
-                                                      actual1[-1].num_steps)
-        self.assertEqual(len(actual2), len(expected2)+1)
-        actual2 = actual2[:-1]
-        _compare_rollout_batch(self, actual1, expected1)
-        _compare_rollout_batch(self, actual2, expected2)
-
-    def _test_batch_equivalence_case(self, stateful, state_tuple):
-        """
-        Test that doing things in batches is consistent,
-        given the model parameters.
-        """
-        env_fns = [lambda seed=x: SimpleEnv(seed, (5, 3), 'uint8') for x in range(15)]
-        model = SimpleModel((5, 3),
-                            stateful=stateful,
-                            state_tuple=state_tuple)
-
-        unbatched_rollouts = []
-        for env_fn in env_fns:
-            batched_env = batched_gym_env([env_fn], sync=True)
-            trunc_roller = TruncatedRoller(batched_env, model, 17)
-            for _ in range(3):
-                unbatched_rollouts.extend(trunc_roller.rollouts())
-
-        batched_rollouts = []
-        batched_env = batched_gym_env(env_fns, num_sub_batches=3, sync=True)
         trunc_roller = TruncatedRoller(batched_env, model, 17)
         for _ in range(3):
-            batched_rollouts.extend(trunc_roller.rollouts())
+            unbatched_rollouts.extend(trunc_roller.rollouts())
 
-        _compare_rollout_batch(self, unbatched_rollouts, batched_rollouts,
-                               ordered=False)
+    batched_rollouts = []
+    batched_env = batched_gym_env(env_fns, num_sub_batches=3, sync=True)
+    trunc_roller = TruncatedRoller(batched_env, model, 17)
+    for _ in range(3):
+        batched_rollouts.extend(trunc_roller.rollouts())
 
-class EpisodeRollerTest(unittest.TestCase):
+    _compare_rollout_batch(unbatched_rollouts, batched_rollouts, ordered=False)
+
+@pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize('limits', [{'min_episodes': 5}, {'min_steps': 7}])
+def test_ep_basic_equivalence(stateful, state_tuple, limits):
     """
-    Tests for EpisodeRoller.
+    Test that EpisodeRoller is equivalent to a
+    BasicRoller when run on a single environment.
     """
-    def test_basic_equivalence(self):
-        """
-        Test that EpisodeRoller is equivalent to a
-        BasicRoller when run on a single environment.
-        """
-        state_opts = [(False, False), (True, False), (True, True)]
-        kwargs_opts = [{'min_episodes': 5}, {'min_steps': 7}]
-        for state_opt in state_opts:
-            for kwargs_opt in kwargs_opts:
-                self._test_basic_equivalence_case(*state_opt, **kwargs_opt)
+    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    env = env_fn()
+    model = SimpleModel(env.action_space.low.shape,
+                        stateful=stateful,
+                        state_tuple=state_tuple)
+    basic_roller = BasicRoller(env, model, **limits)
+    expected = basic_roller.rollouts()
 
-    def test_batch_equivalence(self):
-        """
-        Test that EpisodeRoller is equivalent to a
-        BasicRoller when run on a batch of envs.
-        """
-        state_opts = [(False, False), (True, False), (True, True)]
-        kwargs_opts = [{'min_episodes': 5}, {'min_steps': 7}]
-        for state_opt in state_opts:
-            for kwargs_opt in kwargs_opts:
-                self._test_batch_equivalence_case(*state_opt, **kwargs_opt)
+    batched_env = batched_gym_env([env_fn], sync=True)
+    ep_roller = EpisodeRoller(batched_env, model, **limits)
+    actual = ep_roller.rollouts()
+    _compare_rollout_batch(actual, expected)
 
-    def test_multiple_batches(self):
-        """
-        Make sure calling rollouts multiple times works.
-        """
-        env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
-        env = env_fn()
-        try:
-            model = SimpleModel(env.action_space.low.shape)
-        finally:
-            env.close()
-        batched_env = batched_gym_env([env_fn], sync=True)
-        try:
-            ep_roller = EpisodeRoller(batched_env, model, min_episodes=5, min_steps=7)
-            first = ep_roller.rollouts()
-            for _ in range(3):
-                _compare_rollout_batch(self, first, ep_roller.rollouts())
-        finally:
-            batched_env.close()
+@pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize('limits', [{'min_episodes': 5}, {'min_steps': 7}])
+def test_ep_batches(stateful, state_tuple, limits):
+    """
+    Test that EpisodeRoller is equivalent to a
+    BasicRoller when run on a batch of envs.
+    """
+    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    model = SimpleModel((4, 5),
+                        stateful=stateful,
+                        state_tuple=state_tuple)
 
-    def _test_basic_equivalence_case(self, stateful, state_tuple,
-                                     **roller_kwargs):
-        """
-        Test BasicRoller equivalence for a single env in a
-        specific case.
-        """
-        env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
-        env = env_fn()
-        model = SimpleModel(env.action_space.low.shape,
-                            stateful=stateful,
-                            state_tuple=state_tuple)
-        basic_roller = BasicRoller(env, model, **roller_kwargs)
-        expected = basic_roller.rollouts()
+    batched_env = batched_gym_env([env_fn]*21, num_sub_batches=7, sync=True)
+    ep_roller = EpisodeRoller(batched_env, model, **limits)
+    actual = ep_roller.rollouts()
 
-        batched_env = batched_gym_env([env_fn], sync=True)
-        ep_roller = EpisodeRoller(batched_env, model, **roller_kwargs)
-        actual = ep_roller.rollouts()
-        _compare_rollout_batch(self, actual, expected)
+    total_steps = sum([r.num_steps for r in actual])
+    assert len(actual) >= ep_roller.min_episodes
+    assert total_steps >= ep_roller.min_steps
 
-    def _test_batch_equivalence_case(self, stateful, state_tuple,
-                                     **roller_kwargs):
-        """
-        Test BasicRoller equivalence when using a batch of
-        environments.
-        """
-        env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
-        model = SimpleModel((4, 5),
-                            stateful=stateful,
-                            state_tuple=state_tuple)
+    if 'min_steps' not in limits:
+        num_eps = ep_roller.min_episodes + batched_env.num_envs - 1
+        assert len(actual) == num_eps
 
-        batched_env = batched_gym_env([env_fn]*21, num_sub_batches=7, sync=True)
-        ep_roller = EpisodeRoller(batched_env, model, **roller_kwargs)
-        actual = ep_roller.rollouts()
+    basic_roller = BasicRoller(env_fn(), model, min_episodes=len(actual))
+    expected = basic_roller.rollouts()
 
-        total_steps = sum([r.num_steps for r in actual])
-        self.assertTrue(len(actual) >= ep_roller.min_episodes)
-        self.assertTrue(total_steps >= ep_roller.min_steps)
+    _compare_rollout_batch(actual, expected)
 
-        if 'min_steps' not in roller_kwargs:
-            num_eps = ep_roller.min_episodes + batched_env.num_envs - 1
-            self.assertTrue(len(actual) == num_eps)
+def test_ep_multiple_batches():
+    """
+    Make sure calling EpisodeRoller.rollouts()
+    multiple times works.
+    """
+    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    env = env_fn()
+    try:
+        model = SimpleModel(env.action_space.low.shape)
+    finally:
+        env.close()
+    batched_env = batched_gym_env([env_fn], sync=True)
+    try:
+        ep_roller = EpisodeRoller(batched_env, model, min_episodes=5, min_steps=7)
+        first = ep_roller.rollouts()
+        for _ in range(3):
+            _compare_rollout_batch(first, ep_roller.rollouts())
+    finally:
+        batched_env.close()
 
-        basic_roller = BasicRoller(env_fn(), model, min_episodes=len(actual))
-        expected = basic_roller.rollouts()
-
-        _compare_rollout_batch(self, actual, expected)
-
-def _compare_rollout_batch(test, rs1, rs2, ordered=True):
+def _compare_rollout_batch(rs1, rs2, ordered=True):
     """
     Assert that batches of rollouts are the same.
     """
-    test.assertEqual(len(rs1), len(rs2))
+    assert len(rs1) == len(rs2)
     if ordered:
         for rollout1, rollout2 in zip(rs1, rs2):
-            test.assertEqual(_rollout_hash(rollout1), _rollout_hash(rollout2))
+            assert _rollout_hash(rollout1) == _rollout_hash(rollout2)
     else:
         hashes1 = [_rollout_hash(r) for r in rs1]
         hashes2 = [_rollout_hash(r) for r in rs2]
         for hash1 in hashes1:
-            test.assertTrue(hash1 in hashes2)
+            assert hash1 in hashes2
             hashes2.remove(hash1)
 
 def _rollout_hash(rollout):
@@ -265,6 +213,3 @@ def _artificial_truncation(rollouts, rollout_idx, timestep_idx):
                     prev_reward=left.total_reward,
                     infos=to_split.infos[timestep_idx:])
     return rollouts[:rollout_idx]+[left], [right]+rollouts[rollout_idx+1:]
-
-if __name__ == '__main__':
-    unittest.main()

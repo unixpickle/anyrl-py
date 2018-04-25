@@ -3,7 +3,6 @@ Tests for environment wrappers.
 """
 
 import os
-import shutil
 import tempfile
 
 import gym
@@ -220,9 +219,7 @@ def test_logged_single_env():
     """
     Test LoggedEnv for a single environment.
     """
-    # TODO: use context manager here.
-    dirpath = tempfile.mkdtemp()
-    try:
+    with tempfile.TemporaryDirectory() as dirpath:
         log_file = os.path.join(dirpath, 'monitor.csv')
         env = LoggedEnv(SimpleEnv(2, (3,), 'float32'), log_file)
         for _ in range(4):
@@ -234,16 +231,12 @@ def test_logged_single_env():
             log_contents = pandas.read_csv(log_file)
             assert list(log_contents['r']) == [2] * 4
             assert list(log_contents['l']) == [3] * 4
-    finally:
-        shutil.rmtree(dirpath)
 
 def test_multi_env():
     """
     Test monitoring for concurrent environments.
     """
-    # TODO: use context manager here.
-    dirpath = tempfile.mkdtemp()
-    try:
+    with tempfile.TemporaryDirectory() as dirpath:
         log_file = os.path.join(dirpath, 'monitor.csv')
         env1 = LoggedEnv(SimpleEnv(2, (3,), 'float32'), log_file, use_locking=True)
         env2 = LoggedEnv(SimpleEnv(3, (3,), 'float32'), log_file, use_locking=True)
@@ -261,8 +254,6 @@ def test_multi_env():
             log_contents = pandas.read_csv(log_file)
             assert list(log_contents['r']) == [2, 2.5, 2, 2.5, 2, 2, 2.5]
             assert list(log_contents['l']) == [3, 4, 3, 4, 3, 3, 4]
-    finally:
-        shutil.rmtree(dirpath)
 
 class ShapeEnv(gym.Env):
     """

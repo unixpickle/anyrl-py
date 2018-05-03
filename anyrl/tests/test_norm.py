@@ -4,7 +4,22 @@ Test reward normalizers.
 
 import numpy as np
 
-from anyrl.rollouts.norm import OnlineAverage
+from anyrl.algos import GAE
+from anyrl.rollouts import Rollout
+from anyrl.rollouts.norm import RewardNormalizer, OnlineAverage
+
+def test_advantage_norm():
+    """
+    Test advantage normalization when discount != 0.
+    """
+    rollout = Rollout(observations=[None] * 7,
+                      model_outs=[{'values': [0]}] * 6 + [{'values': [3.0]}],
+                      rewards=[1, 2, 0, 2, 1, -3],
+                      start_state=None)
+    factor = np.sqrt(np.mean(np.square(GAE(lam=1, discount=0.7).advantages([rollout])[0])))
+    normalizer = RewardNormalizer(update_rate=None, discount=0.7, epsilon=0)
+    normed = normalizer.update([rollout])
+    assert np.allclose(normed[0].rewards, np.array(rollout.rewards) / factor)
 
 def test_running_average():
     """

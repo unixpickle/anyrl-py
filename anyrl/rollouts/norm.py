@@ -12,7 +12,7 @@ class RewardNormalizer:
     Normalize rewards in rollouts with a gradually
     updating divisor.
     """
-    def __init__(self, update_rate=0.05, epsilon=1e-5):
+    def __init__(self, update_rate=0.05, discount=0.0, epsilon=1e-5):
         """
         Create a reward normalizer.
 
@@ -20,9 +20,14 @@ class RewardNormalizer:
           update_rate: the speed at which the normalizing
             coefficient updates (0 through 1). Set to None
             to use a running average over all rewards.
+          discount: the discount factor to use. Using 0
+            means that rewards themselves are normalized.
+            Using a larger value means that a geometric
+            sum over rewards is normalized.
           epsilon: used to avoid dividing by 0
         """
         self._average = OnlineAverage(rate=update_rate)
+        self._discount = discount
         self._epsilon = epsilon
         self._coeff = None
 
@@ -31,7 +36,7 @@ class RewardNormalizer:
         Update the statistics using the rollouts and
         return a normalized copy of the rollouts.
         """
-        squares = [rew**2 for r in rollouts for rew in r.rewards]
+        squares = [x**2 for x in self._advantages(rollouts)]
         self._average.update(squares)
         return [self._normalized_rollout(r) for r in rollouts]
 
@@ -43,6 +48,21 @@ class RewardNormalizer:
         rollout = rollout.copy()
         rollout.rewards = [r*scale for r in rollout.rewards]
         return rollout
+
+    def _advantages(self, rollouts):
+        if self._discount == 0.0:
+            return [rew for r in rollouts for rew in r.rewards]
+        result = []
+        for rollout in rollouts:
+            if rollout.trunc_end and 'values' in rollout.model_outs[-1]:
+                accumulator = rollout.model_outs[-1]['values'][0]
+            else:
+                accumulator = 0
+            for reward in rollout.rewards[::-1]:
+                accumulator *= self._discount
+                accumulator += reward
+                result.append(accumulator)
+        return result
 
 class OnlineAverage:
     """

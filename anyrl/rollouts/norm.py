@@ -12,7 +12,7 @@ class RewardNormalizer:
     Normalize rewards in rollouts with a gradually
     updating divisor.
     """
-    def __init__(self, update_rate=0.05, discount=0.0, epsilon=1e-5):
+    def __init__(self, update_rate=0.05, discount=0.0, scale=1.0, epsilon=1e-5):
         """
         Create a reward normalizer.
 
@@ -24,12 +24,14 @@ class RewardNormalizer:
             means that rewards themselves are normalized.
             Using a larger value means that a geometric
             sum over rewards is normalized.
+          scale: a scalar to multiply rewards by after
+            normalizing.
           epsilon: used to avoid dividing by 0
         """
         self._average = OnlineAverage(rate=update_rate)
         self._discount = discount
+        self._scale = scale
         self._epsilon = epsilon
-        self._coeff = None
 
     def update(self, rollouts):
         """
@@ -44,7 +46,7 @@ class RewardNormalizer:
         """
         Normalize the rollout.
         """
-        scale = 1 / (self._epsilon + sqrt(self._average.value))
+        scale = self._scale / (self._epsilon + sqrt(self._average.value))
         rollout = rollout.copy()
         rollout.rewards = [r*scale for r in rollout.rewards]
         return rollout

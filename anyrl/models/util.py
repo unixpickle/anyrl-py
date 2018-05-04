@@ -91,8 +91,9 @@ def nature_huber_loss(residuals):
     Returns:
       A batch of loss values.
     """
-    abs = tf.abs(residuals)
-    return tf.where(abs < 1, 0.5 * tf.square(residuals), abs - 0.5)
+    absolute = tf.abs(residuals)
+    return tf.where(absolute < 1, 0.5 * tf.square(residuals), absolute - 0.5)
+
 
 def product(vals):
     """

@@ -4,6 +4,7 @@ Abstractions for probability distributions.
 
 from abc import ABC, abstractmethod, abstractproperty
 
+
 class Vectorizer(ABC):
     """
     A way to convert action or observation space elements
@@ -23,6 +24,7 @@ class Vectorizer(ABC):
         list-like object of tensors.
         """
         pass
+
 
 class Distribution(Vectorizer):
     """

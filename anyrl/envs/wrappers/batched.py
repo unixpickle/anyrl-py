@@ -20,11 +20,13 @@ import numpy as np
 from anyrl.spaces import StackedBoxSpace
 from ..base import BatchedEnv
 
+
 class BatchedWrapper(BatchedEnv):
     """
     A BatchedEnv that, by default, forwards all calls to a
     wrapped BatchedEnv.
     """
+
     def __init__(self, env):
         self.env = env
         if hasattr(env, 'observation_space'):
@@ -55,10 +57,12 @@ class BatchedWrapper(BatchedEnv):
     def close(self):
         self.env.close()
 
+
 class BatchedFrameStack(BatchedWrapper):
     """
     The batched analog of FrameStackEnv.
     """
+
     def __init__(self, env, num_images=2, concat=True):
         super(BatchedFrameStack, self).__init__(env)
         self.concat = concat

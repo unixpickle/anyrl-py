@@ -8,6 +8,7 @@ from anyrl.algos import GAE
 from anyrl.rollouts import Rollout
 from anyrl.rollouts.norm import RewardNormalizer, OnlineAverage
 
+
 def test_advantage_norm():
     """
     Test advantage normalization when discount != 0.
@@ -21,6 +22,7 @@ def test_advantage_norm():
     normed = normalizer.update([rollout])
     assert np.allclose(normed[0].rewards, np.array(rollout.rewards) / factor)
 
+
 def test_running_average():
     """
     Test a running, unbiased average.
@@ -30,6 +32,7 @@ def test_running_average():
     for subset in [values[:3], values[3:9], values[9:14], values[14:]]:
         avg.update(subset)
     assert np.allclose(avg.value, np.mean(values))
+
 
 def test_moving_average():
     """

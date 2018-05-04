@@ -5,12 +5,14 @@ Wrappers for padding spaces.
 import gym
 import numpy as np
 
+
 class ObservationPadEnv(gym.ObservationWrapper):
     """
     An environment that zero-pads the observation.
 
     Supports any Box observation space.
     """
+
     def __init__(self, env, padded_shape, center=True):
         """
         Create a padded environment.
@@ -49,6 +51,7 @@ class ObservationPadEnv(gym.ObservationWrapper):
             pad_width = [(0, pad) for pad in total_pads]
         return np.pad(observation, pad_width, 'constant')
 
+
 class MultiBinaryPadEnv(gym.ActionWrapper):
     """
     An environment that adds no-op actions to a
@@ -57,6 +60,7 @@ class MultiBinaryPadEnv(gym.ActionWrapper):
     This is useful for unifying several different
     environments with different controls.
     """
+
     def __init__(self, env, num_actions):
         """
         Create a padded environment.

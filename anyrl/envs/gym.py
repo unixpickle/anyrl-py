@@ -10,6 +10,7 @@ import numpy as np
 
 from .base import AsyncEnv, BatchedEnv, BatchedAsyncEnv
 
+
 def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1, sync=False):
     """
     Create a BatchedEnv that controls a set of Gym
@@ -36,7 +37,7 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1, sync=Fal
     sub_batches = []
     batch_size = len(env_fns) // num_sub_batches
     for i in range(num_sub_batches):
-        batch_fns = env_fns[i*batch_size : (i+1)*batch_size]
+        batch_fns = env_fns[i*batch_size: (i+1)*batch_size]
         if sync:
             envs = [fn() for fn in batch_fns]
         else:
@@ -46,6 +47,7 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1, sync=Fal
         return BatchedGymEnv(sub_batches)
     return BatchedAsyncEnv(sub_batches)
 
+
 class AsyncGymEnv(AsyncEnv):
     """
     An AsyncEnv that controls a Gym environment in a
@@ -54,6 +56,7 @@ class AsyncGymEnv(AsyncEnv):
     On top of the AsyncEnv interface, the resulting object
     has observation_space and action_space attributes.
     """
+
     def __init__(self, make_env, observation_space):
         self.observation_space = observation_space
         if isinstance(observation_space, gym.spaces.Box):
@@ -183,11 +186,13 @@ class AsyncGymEnv(AsyncEnv):
         np.copyto(dst_np, obs)
         return None
 
+
 class BatchedGymEnv(BatchedEnv):
     """
     A BatchedEnv that wraps a bunch of existing Gym
     environments and runs them synchronously.
     """
+
     def __init__(self, envs):
         self.action_space = envs[0][0].action_space
         self.observation_space = envs[0][0].observation_space

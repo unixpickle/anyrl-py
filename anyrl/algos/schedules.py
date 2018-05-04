@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 
 import tensorflow as tf
 
+
 class TFSchedule(ABC):
     """
     An abstract scheduled value for TensorFlow graphs.
@@ -21,6 +22,7 @@ class TFSchedule(ABC):
       add_op: an Op which adds add_ph to time. It will
         never execute before self.value in the graph.
     """
+
     def __init__(self, dtype=tf.float32):
         time = tf.Variable(0, dtype=dtype, name='ScheduleCounter', trainable=False)
         self.value = self.compute_schedule(time)
@@ -47,11 +49,13 @@ class TFSchedule(ABC):
         """
         pass
 
+
 class LinearTFSchedule(TFSchedule):
     """
     A schedule that linearly interpolates between a start
     and an end value.
     """
+
     def __init__(self, duration=1.0, start_value=1.0, end_value=0.0, dtype=tf.float64):
         """
         Create a linear schedule.
@@ -71,12 +75,13 @@ class LinearTFSchedule(TFSchedule):
         frac_done = tf.clip_by_value(cur_time/self._duration, 0, 1)
         return (1-frac_done)*self._start_value + frac_done*self._end_value
 
-# pylint: disable=R0903
+
 class TFScheduleValue:
     """
     A wrapper around a TFSchedule that supports conversion
     to float via the float() built-in.
     """
+
     def __init__(self, sess, schedule):
         self.session = sess
         self.schedule = schedule

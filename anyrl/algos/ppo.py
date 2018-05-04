@@ -7,7 +7,7 @@ import tensorflow as tf
 from .a2c import A2C
 from . import util
 
-# pylint: disable=R0902
+
 class PPO(A2C):
     """
     Train TensorFlow actor-critic models using PPO.
@@ -18,6 +18,7 @@ class PPO(A2C):
     For more on PPO, see:
     https://arxiv.org/abs/1707.06347
     """
+
     def __init__(self,
                  model,
                  epsilon=0.2,
@@ -62,7 +63,6 @@ class PPO(A2C):
         trainer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         return trainer.minimize(-self.objective, var_list=self.variables)
 
-    # pylint: disable=R0913
     def run_optimize(self, optimize_op, rollouts, batch_size=None, num_iter=12,
                      log_fn=None, extra_feed_dict=None):
         """
@@ -94,6 +94,7 @@ class PPO(A2C):
     # TODO: API that supports schedules and runs the
     # entire training loop for us.
 
+
 def clipped_objective(new_log_probs, old_log_probs, advs, epsilon):
     """
     Compute the component-wise clipped PPO objective.
@@ -101,6 +102,7 @@ def clipped_objective(new_log_probs, old_log_probs, advs, epsilon):
     prob_ratio = tf.exp(new_log_probs - old_log_probs)
     clipped_ratio = tf.clip_by_value(prob_ratio, 1-epsilon, 1+epsilon)
     return tf.minimum(advs*clipped_ratio, advs*prob_ratio)
+
 
 def _clipped_samples(new_log_probs, old_log_probs, advs, epsilon):
     """

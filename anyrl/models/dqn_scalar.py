@@ -12,7 +12,6 @@ import tensorflow as tf
 from .base import TFQNetwork
 from .util import nature_cnn, nature_huber_loss, simple_mlp, take_vector_elems
 
-# pylint: disable=R0913,R0903
 
 class ScalarQNetwork(TFQNetwork):
     """
@@ -22,6 +21,7 @@ class ScalarQNetwork(TFQNetwork):
     Subclasses should override the base() and value_func()
     methods with specific neural network architectures.
     """
+
     def __init__(self, session, num_actions, obs_vectorizer, name,
                  dueling=False, dense=tf.layers.dense, loss_fn=tf.square):
         super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
@@ -103,11 +103,12 @@ class ScalarQNetwork(TFQNetwork):
         """Produce a feed_dict for taking a step."""
         return {self.step_obs_ph: self.obs_vectorizer.to_vecs(observations)}
 
+
 class MLPQNetwork(ScalarQNetwork):
     """
     A multi-layer perceptron Q-network.
     """
-    # pylint: disable=R0913,R0914
+
     def __init__(self,
                  session,
                  num_actions,
@@ -142,10 +143,12 @@ class MLPQNetwork(ScalarQNetwork):
     def base(self, obs_batch):
         return simple_mlp(obs_batch, self.layer_sizes, self.activation, dense=self.dense)
 
+
 class NatureQNetwork(ScalarQNetwork):
     """
     A Q-network model based on the Nature DQN paper.
     """
+
     def __init__(self,
                  session,
                  num_actions,
@@ -169,6 +172,7 @@ class NatureQNetwork(ScalarQNetwork):
         obs_batch = tf.cast(obs_batch, tf.float32) * self.input_scale
         return nature_cnn(obs_batch, dense=self.dense)
 
+
 class EpsGreedyQNetwork(TFQNetwork):
     """
     A wrapper around a Q-network that adds epsilon-greedy
@@ -177,6 +181,7 @@ class EpsGreedyQNetwork(TFQNetwork):
     The epsilon parameter can be any object that supports
     float() conversion, including TFScheduleValue.
     """
+
     def __init__(self, model, epsilon):
         super(EpsGreedyQNetwork, self).__init__(model.session, model.num_actions,
                                                 model.obs_vectorizer, model.name)
@@ -210,6 +215,7 @@ class EpsGreedyQNetwork(TFQNetwork):
     def input_dtype(self):
         return self.model.input_dtype
 
+
 def noisy_net_dense(inputs,
                     units,
                     activation=None,
@@ -234,8 +240,7 @@ def noisy_net_dense(inputs,
     """
     num_inputs = inputs.get_shape()[-1].value
     stddev = 1 / sqrt(num_inputs)
-    if activation is None:
-        activation = lambda x: x
+    activation = activation if activation is not None else (lambda x: x)
     if kernel_initializer is None:
         kernel_initializer = tf.truncated_normal_initializer(stddev=stddev)
     with tf.variable_scope(None, default_name=(name or 'noisy_layer'), reuse=reuse):
@@ -257,10 +262,12 @@ def noisy_net_dense(inputs,
         return activation(tf.matmul(inputs, weight_mean + weight_stddev * weight_noise) +
                           bias_mean + bias_stddev * bias_noise)
 
+
 def _factorized_noise(inputs, outputs):
     noise1 = _signed_sqrt(tf.random_normal((inputs, 1)))
     noise2 = _signed_sqrt(tf.random_normal((1, outputs)))
     return tf.matmul(noise1, noise2)
+
 
 def _signed_sqrt(values):
     return tf.sqrt(tf.abs(values)) * tf.sign(values)

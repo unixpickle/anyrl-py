@@ -6,12 +6,12 @@ import time
 
 import tensorflow as tf
 
-# pylint: disable=R0902,R0903
 
 class DQN:
     """
     Train TFQNetwork models using Q-learning.
     """
+
     def __init__(self, online_net, target_net, discount=0.99):
         """
         Create a Q-learning session.
@@ -86,7 +86,6 @@ class DQN:
         optim = tf.train.AdamOptimizer(learning_rate=learning_rate, epsilon=epsilon, **adam_kwargs)
         return optim.minimize(self.loss)
 
-    # pylint: disable=R0913,R0914
     def train(self,
               num_steps,
               player,

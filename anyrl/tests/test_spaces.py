@@ -7,6 +7,7 @@ import numpy as np
 
 from anyrl.spaces import StackedBoxSpace
 
+
 def test_stacked_box_space_json():
     """
     Test JSON conversions for StackedBoxSpace.

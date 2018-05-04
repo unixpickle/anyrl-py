@@ -4,15 +4,15 @@ Stateful neural network models.
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.framework import nest # pylint: disable=E0611
-from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
+from tensorflow.contrib.framework import nest  # pylint: disable=E0611
+from tensorflow.contrib.layers import fully_connected  # pylint: disable=E0611
 
 from .base import TFActorCritic
 from .util import mini_batches, product, mix_init_states, nature_cnn
 
 # pylint: disable=E1129
 
-# pylint: disable=R0902
+
 class RecurrentAC(TFActorCritic):
     """
     A base class for any stateful actor-critic model.
@@ -37,6 +37,7 @@ class RecurrentAC(TFActorCritic):
         shape (None, None).
       states_out: resulting RNN states
     """
+
     def __init__(self, session, action_dist, obs_vectorizer):
         """
         Construct a recurrent model.
@@ -134,7 +135,6 @@ class RecurrentAC(TFActorCritic):
                 tf.reshape(self.critic_out, critic_shape),
                 tf.reshape(self.mask_ph, critic_shape))
 
-    # pylint: disable=R0914
     def batches(self, rollouts, batch_size=None):
         sizes = [r.num_steps for r in rollouts]
         for rollout_indices in mini_batches(sizes, batch_size):
@@ -200,6 +200,7 @@ class RecurrentAC(TFActorCritic):
             first_states = [r.start_state[0] for r in rollouts]
             feed_dict[self.first_state_ph] = first_states
 
+
 class RNNCellAC(RecurrentAC):
     """
     A recurrent actor-critic that uses a TensorFlow
@@ -208,8 +209,7 @@ class RNNCellAC(RecurrentAC):
     For RNNCells with nested tuple states, the tuple is
     flattened.
     """
-    # pylint: disable=R0913
-    # pylint: disable=R0914
+
     def __init__(self, session, action_dist, obs_vectorizer, make_cell, input_dtype=tf.float32):
         super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
         obs_seq_shape = (None, None) + obs_vectorizer.out_shape
@@ -275,7 +275,6 @@ class RNNCellAC(RecurrentAC):
                      self.action_dist.param_shape)
         return tf.reshape(actor_out_seq, new_shape)
 
-    # pylint: disable=R0201
     def critic(self, cell_outputs):
         """
         Transform the cell outputs into value predictions.
@@ -290,11 +289,12 @@ class RNNCellAC(RecurrentAC):
         shape = tf.shape(raw)
         return tf.reshape(raw, (shape[0], shape[1]))
 
+
 class CNNRNNCellAC(RNNCellAC):
     """
     An RNNCellAC that feeds inputs through a CNN.
     """
-    # pylint: disable=R0913
+
     def __init__(self, session, action_dist, obs_vectorizer, make_cell,
                  input_scale=1/0xff, input_dtype=tf.uint8, cnn_fn=nature_cnn):
         self.cnn_fn = cnn_fn
@@ -320,11 +320,13 @@ class CNNRNNCellAC(RNNCellAC):
         seq_shape = (batch_size, seq_len, feature_batch.get_shape()[-1].value)
         return tf.reshape(feature_batch, seq_shape)
 
+
 def _pad(unpadded, length, value=0):
     """
     Pad the list with the given value.
     """
     return unpadded + [value] * (length - len(unpadded))
+
 
 def _add_outer_none(shape):
     """

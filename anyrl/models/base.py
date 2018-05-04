@@ -4,6 +4,7 @@ Abstractions for RL policies and value functions.
 
 from abc import ABC, abstractmethod, abstractproperty
 
+
 class Model(ABC):
     """
     An abstract RL policy and (optional) value function.
@@ -45,6 +46,7 @@ class Model(ABC):
         """
         pass
 
+
 class TFActorCritic(Model):
     """
     An actor-critic model which is differentiable via
@@ -54,6 +56,7 @@ class TFActorCritic(Model):
     observation vectorizer, which can be accessed via
     model.action_dist and model.obs_vectorizer.
     """
+
     def __init__(self, session, action_dist, obs_vectorizer):
         self.session = session
         self.action_dist = action_dist
@@ -102,6 +105,7 @@ class TFActorCritic(Model):
         """
         pass
 
+
 class TFQNetwork(Model):
     """
     A Q-network model which is differentiable via
@@ -124,7 +128,7 @@ class TFQNetwork(Model):
     transition_loss() reuse the variables that were made
     at construction time.
     """
-    # pylint: disable=R0913
+
     def __init__(self, session, num_actions, obs_vectorizer, name):
         """
         Construct a Q-network.
@@ -143,7 +147,6 @@ class TFQNetwork(Model):
         self.name = name
         self.variables = []
 
-    # pylint: disable=R0913
     @abstractmethod
     def transition_loss(self, target_net, obses, actions, rews, new_obses, terminals, discounts):
         """

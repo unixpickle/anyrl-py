@@ -7,7 +7,7 @@ import time
 
 from .rollout import empty_rollout
 
-# pylint: disable=R0903
+
 class Roller(ABC):
     """
     An object that gathers rollouts by running a model.
@@ -19,10 +19,12 @@ class Roller(ABC):
         """
         pass
 
+
 class BasicRoller(Roller):
     """
     Gathers episode rollouts from a Gym environment.
     """
+
     def __init__(self, env, model, min_episodes=1, min_steps=1):
         self.env = env
         self.model = model
@@ -55,11 +57,13 @@ class BasicRoller(Roller):
             episodes.append(rollout)
         return episodes
 
+
 class TruncatedRoller(Roller):
     """
     Gathers a fixed number of timesteps from each
     environment in a BatchedEnv.
     """
+
     def __init__(self, batched_env, model, num_timesteps):
         self.batched_env = batched_env
         self.model = model
@@ -125,7 +129,6 @@ class TruncatedRoller(Roller):
             rollouts.append(rollout_batch)
         return rollouts
 
-    # pylint: disable=R0914
     def _step(self, completed, running, final_step=False):
         """
         Wait for the previous batched step to complete (or
@@ -177,7 +180,6 @@ class TruncatedRoller(Roller):
         rollout = empty_rollout(start_state)
         running[batch_idx][env_idx] = rollout
 
-    # pylint: disable=R0201
     def _add_truncated(self, completed, running):
         """
         Add partial but non-empty rollouts to completed.
@@ -187,6 +189,7 @@ class TruncatedRoller(Roller):
                 if rollout.num_steps > 0:
                     rollout.end_time = time.time()
                     completed.append(rollout)
+
 
 class EpisodeRoller(TruncatedRoller):
     """
@@ -198,6 +201,7 @@ class EpisodeRoller(TruncatedRoller):
     As a result, it must gather at least as many episodes
     as there are environments in batched_env.
     """
+
     def __init__(self, batched_env, model, min_episodes=1, min_steps=1):
         self.min_episodes = min_episodes
         self.min_steps = min_steps
@@ -253,6 +257,7 @@ class EpisodeRoller(TruncatedRoller):
         """
         return any([any(masks) for masks in self._env_mask])
 
+
 def _reduce_states(state_batch, env_idx):
     """
     Reduce a batch of states to a batch of one state.
@@ -261,7 +266,8 @@ def _reduce_states(state_batch, env_idx):
         return None
     elif isinstance(state_batch, tuple):
         return tuple(_reduce_states(s, env_idx) for s in state_batch)
-    return state_batch[env_idx : env_idx+1].copy()
+    return state_batch[env_idx: env_idx+1].copy()
+
 
 def _inject_state(state_batch, state, env_idx):
     """
@@ -272,7 +278,8 @@ def _inject_state(state_batch, state, env_idx):
     elif isinstance(state_batch, tuple):
         return tuple(_inject_state(sb, s, env_idx)
                      for sb, s in zip(state_batch, state))
-    state_batch[env_idx : env_idx+1] = state
+    state_batch[env_idx: env_idx+1] = state
+
 
 def _reduce_model_outs(model_outs, env_idx):
     """
@@ -287,5 +294,5 @@ def _reduce_model_outs(model_outs, env_idx):
         elif isinstance(val, tuple):
             out[key] = _reduce_states(val, env_idx)
         else:
-            out[key] = val[env_idx : env_idx+1].copy()
+            out[key] = val[env_idx: env_idx+1].copy()
     return out

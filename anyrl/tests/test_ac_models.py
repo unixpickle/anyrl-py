@@ -16,11 +16,13 @@ from anyrl.rollouts import BasicRoller
 from anyrl.spaces import gym_space_distribution, gym_space_vectorizer
 from anyrl.tests import TupleCartPole
 
+
 def test_mlp():
     """
     Test an MLP model.
     """
     run_ac_test(partial(MLP, layer_sizes=[32]))
+
 
 def test_lstm():
     """
@@ -28,12 +30,16 @@ def test_lstm():
     """
     run_ac_test(partial(RNNCellAC, make_cell=lambda: LSTMCell(32)))
 
+
 def test_multi_rnn():
     """
     Test a stacked LSTM with nested tuple state.
     """
-    make_cell = lambda: MultiRNNCell([LSTMCell(16), LSTMCell(32)])
+    def make_cell():
+        return MultiRNNCell([LSTMCell(16), LSTMCell(32)])
+
     run_ac_test(partial(RNNCellAC, make_cell=make_cell))
+
 
 def run_ac_test(maker):
     """
@@ -49,10 +55,12 @@ def run_ac_test(maker):
     obs_vectorizer = gym_space_vectorizer(observation_space)
     ModelTester(lambda sess: maker(sess, action_dist, obs_vectorizer)).test_all()
 
+
 class ModelTester:
     """
     Tests for a TFActorCritic model.
     """
+
     def __init__(self, model_maker, add_noise=True):
         self.graph = tf.Graph()
         with self.graph.as_default():
@@ -170,6 +178,7 @@ class ModelTester:
             rollout.observations = rollout.observations[1:]
             rollout.infos = rollout.infos[1:]
         return rollouts
+
 
 def _state_shape_uid(states):
     """

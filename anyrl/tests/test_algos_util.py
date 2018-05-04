@@ -8,12 +8,14 @@ from anyrl.algos.util import masked_mean
 import numpy as np
 import tensorflow as tf
 
+
 def test_masked_mean_basic():
     """
     Test masking on a normal set of inputs.
     """
     mean = _masked_mean([0, 1, 0, 1, 1], [2.5, 7, 3, 0.8, 0.9])
     assert np.allclose(mean, np.mean([7, 0.8, 0.9]))
+
 
 def test_masked_mean_unusual_values():
     """
@@ -22,6 +24,7 @@ def test_masked_mean_unusual_values():
     mean = _masked_mean([0, 1, 0, 1, 1, 0],
                         [np.inf, 7, np.nan, 0.8, 0.9, np.inf])
     assert np.allclose(mean, np.mean([7, 0.8, 0.9]))
+
 
 def _masked_mean(mask, values):
     """

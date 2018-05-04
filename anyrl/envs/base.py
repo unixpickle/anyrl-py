@@ -4,6 +4,7 @@ Ways of running gym environments.
 
 from abc import ABC, abstractmethod, abstractproperty
 
+
 class AsyncEnv(ABC):
     """
     An asynchronous environment.
@@ -65,6 +66,7 @@ class AsyncEnv(ABC):
         Waits for any pending operations to complete.
         """
         pass
+
 
 class BatchedEnv(ABC):
     """
@@ -162,6 +164,7 @@ class BatchedEnv(ABC):
         """
         pass
 
+
 class BatchedAsyncEnv(BatchedEnv):
     """
     A BatchedEnv that controls AsyncEnvs.
@@ -170,8 +173,8 @@ class BatchedAsyncEnv(BatchedEnv):
     observation_space attribute, those attributes are
     copied.
     """
+
     def __init__(self, sub_batches):
-        # pylint: disable=C1801
         assert len(sub_batches) > 0
         first_len = len(sub_batches[0])
         assert all([len(x) == first_len for x in sub_batches])

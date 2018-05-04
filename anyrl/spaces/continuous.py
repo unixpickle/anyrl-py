@@ -9,11 +9,13 @@ import tensorflow as tf
 
 from .base import Distribution, Vectorizer
 
+
 class BoxGaussian(Distribution):
     """
     A probability distribution over continuous variables,
     parameterized as a diagonal gaussian.
     """
+
     def __init__(self, low, high):
         self.low = low
         self.high = high
@@ -71,6 +73,7 @@ class BoxGaussian(Distribution):
         scale = (self.high - self.low) / 2
         return means * scale + bias, log_stddevs + np.log(scale)
 
+
 class BoxBeta(Distribution):
     """
     A probability distribution over continuous variables,
@@ -80,6 +83,7 @@ class BoxBeta(Distribution):
     By default, inputs to the distribution are fed through
     `1 + softplus` to ensure that they are valid.
     """
+
     def __init__(self, low, high, softplus=True):
         self.low = low
         self.high = high
@@ -137,11 +141,13 @@ class BoxBeta(Distribution):
             return 1 + np.where(non_linear, softplus, inputs)
         return 1 + tf.nn.softplus(inputs)
 
+
 class BoxStacker(Vectorizer):
     """
     An observation vectorizer that concatenates lists of
     numpy arrays along the inner-most direction.
     """
+
     def __init__(self, box_shape, num_dimensions):
         self._out_shape = tuple(box_shape[:-1]) + (box_shape[-1] * num_dimensions,)
 
@@ -151,6 +157,7 @@ class BoxStacker(Vectorizer):
 
     def to_vecs(self, space_elements):
         return [np.concatenate(x, axis=-1) for x in space_elements]
+
 
 def _reduce_sums(batch):
     """

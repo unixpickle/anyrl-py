@@ -17,6 +17,7 @@ from anyrl.envs.wrappers import (RL2Env, DownsampleEnv, GrayscaleEnv, FrameStack
                                  LoggedEnv)
 from anyrl.tests import SimpleEnv
 
+
 def test_rl2_num_eps():
     """
     Test that RL^2 meta-episodes contain the right number
@@ -37,6 +38,7 @@ def test_rl2_num_eps():
         else:
             assert not done
 
+
 def test_rl2_rewards():
     """
     Test that rewards in RL^2 are masked properly.
@@ -56,6 +58,7 @@ def test_rl2_rewards():
         if done:
             break
 
+
 def test_downsample_rate_1():
     """
     Test DownsampleEnv with rate=1.
@@ -65,6 +68,7 @@ def test_downsample_rate_1():
     env = DownsampleEnv(ShapeEnv(low, high), 1)
     assert (env.observation_space.low == low).all()
     assert (env.observation_space.high == high).all()
+
 
 def test_downsample_rate_2():
     """
@@ -84,6 +88,7 @@ def test_downsample_rate_2():
     assert (env.observation_space.low == np.array([[1, 3], [9, 7]])).all()
     assert (env.observation_space.high == np.array([[9, 11], [16, 15]])).all()
 
+
 def test_grayscale_integers():
     """
     Tests GrayscaleEnv for integer observations.
@@ -94,6 +99,7 @@ def test_grayscale_integers():
     assert env.observation_space.shape == (1, 2, 1)
     assert (env.observation_space.low == np.array([[[0], [26]]])).all()
     assert (env.observation_space.high == np.array([[[95], [255]]])).all()
+
 
 def test_stack_3():
     """
@@ -112,6 +118,7 @@ def test_stack_3():
     assert (obs1[:, :, 2:] == obs2[:, :, :4]).all()
     assert (obs2[:, :, 2:] == obs3[:, :, :4]).all()
 
+
 def test_stack_3_no_concat():
     """
     Test FrameStackEnv for 3 frames with no concatenation.
@@ -125,6 +132,7 @@ def test_stack_3_no_concat():
     obs2, _, _, _, = env.step(0)
     assert np.allclose(obs2[0], obs1[0])
     assert not np.allclose(obs2[-1], obs1[0])
+
 
 def test_max_2():
     """
@@ -149,6 +157,7 @@ def test_max_2():
     assert (max4 == np.max([frame3, frame4], axis=0)).all()
     assert (max5 == np.max([frame4, frame5], axis=0)).all()
 
+
 def test_resize_even():
     """
     Test ResizeImageEnv for an even number of pixels.
@@ -160,6 +169,7 @@ def test_resize_even():
         tf.image.resize_images(frame, [5, 4], method=tf.image.ResizeMethod.AREA))
     assert actual.shape == (5, 4, 3)
     assert np.allclose(actual, expected)
+
 
 @pytest.mark.parametrize('concat', [False, True])
 def test_batched_stack(concat):
@@ -189,6 +199,7 @@ def test_batched_stack(concat):
             assert np.array(rews1 == rews2).all()
             assert np.array(dones1 == dones2).all()
 
+
 def test_obs_pad_centered():
     """
     Test ObservationPadEnv with centered padding.
@@ -202,6 +213,7 @@ def test_obs_pad_centered():
     assert np.allclose(padded.observation_space.high,
                        np.array([[0, 12, 21, 15, 0], [0, 31, 14, 10, 0], [0]*5]))
 
+
 def test_obs_pad_uncentered():
     """
     Test ObservationPadEnv with uncentered padding.
@@ -214,6 +226,7 @@ def test_obs_pad_uncentered():
                        np.array([[1, 2, 5, 0, 0], [3, 4, 0, 0, 0], [0]*5]))
     assert np.allclose(padded.observation_space.high,
                        np.array([[12, 21, 15, 0, 0], [31, 14, 10, 0, 0], [0]*5]))
+
 
 def test_logged_single_env():
     """
@@ -231,6 +244,7 @@ def test_logged_single_env():
             log_contents = pandas.read_csv(log_file)
             assert list(log_contents['r']) == [2] * 4
             assert list(log_contents['l']) == [3] * 4
+
 
 def test_multi_env():
     """
@@ -255,10 +269,12 @@ def test_multi_env():
             assert list(log_contents['r']) == [2, 2.5, 2, 2.5, 2, 2, 2.5]
             assert list(log_contents['l']) == [3, 4, 3, 4, 3, 3, 4]
 
+
 class ShapeEnv(gym.Env):
     """
     An environment with a pre-defined observation shape.
     """
+
     def __init__(self, low, high):
         super(ShapeEnv, self).__init__()
         self.observation_space = gym.spaces.Box(low, high, dtype=low.dtype)

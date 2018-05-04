@@ -9,6 +9,7 @@ import tensorflow as tf
 
 from anyrl.algos import LinearTFSchedule
 
+
 def test_linear_tf_schedule():
     """
     Test values throughout a LinearTFSchedule.

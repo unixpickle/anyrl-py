@@ -7,11 +7,13 @@ import tensorflow as tf
 
 from .base import Distribution
 
+
 class TupleDistribution(Distribution):
     """
     A distribution that consists of an ordered list of
     sub-distributions.
     """
+
     def __init__(self, sub_dists, to_sample=lambda x: x):
         self.tuple = tuple(sub_dists)
         self.to_sample = to_sample
@@ -77,6 +79,7 @@ class TupleDistribution(Distribution):
         Takes either a numpy array or a TF tensor.
         """
         return _unpack(param_batch, [d.param_shape for d in self.tuple])
+
 
 def _unpack(vecs, shapes):
     """

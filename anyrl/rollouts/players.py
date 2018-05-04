@@ -9,7 +9,6 @@ import time
 
 from .rollers import _reduce_states, _inject_state, _reduce_model_outs
 
-# pylint: disable=R0902,R0903
 
 class Player(ABC):
     """
@@ -63,11 +62,13 @@ class Player(ABC):
         """
         pass
 
+
 class BasicPlayer(Player):
     """
     A Player that uses a single Gym environment to gather
     sequential batches of 1-step transitions.
     """
+
     def __init__(self, env, model, batch_size=1):
         self.env = env
         self.model = model
@@ -111,12 +112,13 @@ class BasicPlayer(Player):
         self._episode_step += 1
         return res
 
+
 class NStepPlayer(Player):
     """
     A Player that wraps another Player and uses n-step
     transitions instead of 1-step transitions.
     """
-    # pylint: disable=R0913
+
     def __init__(self, player, num_steps):
         self.player = player
         self.num_steps = num_steps
@@ -163,10 +165,12 @@ class NStepPlayer(Player):
         del history[0]
         return res
 
+
 class BatchedPlayer(Player):
     """
     A Player that uses a BatchedEnv to gather transitions.
     """
+
     def __init__(self, batched_env, model, num_timesteps=1):
         self.batched_env = batched_env
         self.model = model

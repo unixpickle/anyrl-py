@@ -30,6 +30,22 @@ For example, anyrl decouples rollouts from the learning algorithm (when possible
 
 This project relies on TensorFlow for models and training algorithms. However, anyrl APIs are framework-agnostic when possible. For example, the rollout API can be used with any policy, whether it's a TensorFlow neural network or a native-Python decision forest.
 
+# Style
+
+I use `autopep8` and `pylint`. Here is the command you can use to run autopep8:
+
+```
+autopep8 --recursive --in-place --max-line-length 100 .
+```
+
+I recommend the following lines in your pylintrc:
+
+```
+ignored-modules=numpy,mpi4py
+
+disable=C,R
+```
+
 # TODO
 
 Here is the current TODO list, organized by sub-module:

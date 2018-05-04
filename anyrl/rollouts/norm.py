@@ -6,12 +6,13 @@ from math import sqrt
 
 import numpy as np
 
-# pylint: disable=R0903
+
 class RewardNormalizer:
     """
     Normalize rewards in rollouts with a gradually
     updating divisor.
     """
+
     def __init__(self, update_rate=0.05, discount=0.0, scale=1.0, epsilon=1e-5):
         """
         Create a reward normalizer.
@@ -66,6 +67,7 @@ class RewardNormalizer:
                 result.append(accumulator)
         return result
 
+
 class OnlineAverage:
     """
     A moving or running average.
@@ -77,6 +79,7 @@ class OnlineAverage:
     Moving averages are biased towards newer values,
     updating in a way that forgets the distant past.
     """
+
     def __init__(self, rate=None):
         """
         Create a new OnlineAverage.

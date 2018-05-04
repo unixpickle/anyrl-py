@@ -9,6 +9,7 @@ from anyrl.models.dqn_dist import ActionDist
 
 # pylint: disable=E1129
 
+
 def test_mean():
     """Test action mean calculations."""
     with tf.Graph().as_default():
@@ -22,6 +23,7 @@ def test_mean():
             actual = sess.run(dist.mean(log_probs))
             assert actual.shape == expected.shape
             assert np.allclose(actual, expected)
+
 
 def test_add_rewards():
     """Test distribution shifting and projecting."""
@@ -41,7 +43,7 @@ def test_add_rewards():
               [0.5, 0.25],
               [[0, 0.1, 0.475, 0.425], [0, 0.45, 0.55, 0]])
 
-# pylint: disable=R0913
+
 def _test_add(dist, old_probs, rewards, discounts, new_probs):
     with tf.Graph().as_default():
         with tf.Session() as sess:

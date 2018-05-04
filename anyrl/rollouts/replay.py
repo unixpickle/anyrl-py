@@ -8,6 +8,7 @@ import random
 
 import numpy as np
 
+
 class ReplayBuffer(ABC):
     """
     A generic experience replay buffer.
@@ -82,6 +83,7 @@ class ReplayBuffer(ABC):
         """
         pass
 
+
 class UniformReplayBuffer(ReplayBuffer):
     """
     The simplest possible replay buffer.
@@ -89,6 +91,7 @@ class UniformReplayBuffer(ReplayBuffer):
     Samples are drawn uniformly, and the buffer is kept to
     a certain size by pruning the oldest samples.
     """
+
     def __init__(self, capacity):
         self.capacity = capacity
         self.transitions = []
@@ -108,6 +111,7 @@ class UniformReplayBuffer(ReplayBuffer):
         while len(self.transitions) > self.capacity:
             del self.transitions[0]
 
+
 class PrioritizedReplayBuffer(ReplayBuffer):
     """
     A prioritized replay buffer with loss-proportional
@@ -117,7 +121,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
     are assumed to be error terms (e.g. the absolute TD
     error).
     """
-    # pylint: disable=R0913
+
     def __init__(self, capacity, alpha, beta, first_max=1, epsilon=0):
         """
         Create a prioritized replay buffer.
@@ -192,8 +196,10 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         self._max_weight_arg = max(self._max_weight_arg, weight)
         return (weight + self.epsilon) ** self.alpha
 
+
 class FloatBuffer:
     """A ring-buffer of floating point values."""
+
     def __init__(self, capacity, dtype='float64'):
         self._capacity = capacity
         self._start = 0
@@ -270,7 +276,7 @@ class FloatBuffer:
     def _bin(self, bin_idx):
         if bin_idx == len(self._bin_sums) - 1:
             return self._buffer[self._bin_size * bin_idx:]
-        return self._buffer[self._bin_size * bin_idx : self._bin_size * (bin_idx + 1)]
+        return self._buffer[self._bin_size * bin_idx: self._bin_size * (bin_idx + 1)]
 
     def _recompute_min(self):
         if self._used < self._capacity:

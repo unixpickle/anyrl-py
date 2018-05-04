@@ -11,15 +11,18 @@ from .binary import MultiBernoulli
 from .categorical import CategoricalSoftmax
 from .continuous import BoxGaussian, BoxStacker
 
+
 class UnsupportedGymSpace(Exception):
     """
     Thrown when a Gym space cannot be used as an action
     space.
     """
+
     def __init__(self, space):
         msg = 'unsupported Gym space: ' + str(space)
         super(UnsupportedGymSpace, self).__init__(msg)
         self.space = space
+
 
 class StackedBoxSpace(gym.Space):
     """
@@ -30,6 +33,7 @@ class StackedBoxSpace(gym.Space):
     vectorizer can concatenate the frames right when
     turning them into vectors for a model.
     """
+
     def __init__(self, box, count):
         self.box = box
         self.count = count
@@ -51,6 +55,7 @@ class StackedBoxSpace(gym.Space):
     def __repr__(self):
         return "StackedBox" + str(self.box.shape)
 
+
 def gym_space_distribution(space):
     """
     Create a Distribution from a gym.Space.
@@ -71,6 +76,7 @@ def gym_space_distribution(space):
         discretes = tuple(CategoricalSoftmax(n) for n in space.nvec)
         return TupleDistribution(discretes, to_sample=lambda x: np.array(x, dtype=space.dtype))
     raise UnsupportedGymSpace(space)
+
 
 def gym_space_vectorizer(space):
     """

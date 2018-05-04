@@ -4,12 +4,13 @@ Stateless neural network models.
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.layers import fully_connected # pylint: disable=E0611
+from tensorflow.contrib.layers import fully_connected  # pylint: disable=E0611
 
 from .base import TFActorCritic
 from .util import mini_batches, nature_cnn, product, simple_mlp
 
 # pylint: disable=E1129
+
 
 class FeedforwardAC(TFActorCritic):
     """
@@ -21,6 +22,7 @@ class FeedforwardAC(TFActorCritic):
       critic_out: critic output batch. Should be of shape
         (None,).
     """
+
     def __init__(self, session, action_dist, obs_vectorizer):
         """
         Construct a feed-forward model.
@@ -77,11 +79,12 @@ class FeedforwardAC(TFActorCritic):
                 }
             }
 
+
 class MLP(FeedforwardAC):
     """
     A multi-layer perceptron actor-critic model.
     """
-    # pylint: disable=R0913,R0914
+
     def __init__(self,
                  session,
                  action_dist,
@@ -123,6 +126,7 @@ class MLP(FeedforwardAC):
                                          weights_initializer=critic_init)
             self.critic_out = tf.reshape(critic_out, (tf.shape(critic_out)[0],))
 
+
 class CNN(FeedforwardAC):
     """
     A convolutional actor-critic model.
@@ -130,7 +134,7 @@ class CNN(FeedforwardAC):
     Based on:
     https://github.com/openai/baselines/blob/699919f1cf2527b184f4445a3758a773f333a1ba/baselines/a2c/policies.py#L91
     """
-    # pylint: disable=R0913
+
     def __init__(self,
                  session,
                  action_dist,
@@ -164,7 +168,6 @@ class CNN(FeedforwardAC):
         with tf.variable_scope('critic'):
             self.critic_out = self.critic(self.base_out, critic_init)
 
-    # pylint: disable=R0201
     def base(self, obs_batch):
         """
         Apply the shared part of the model.
@@ -192,6 +195,7 @@ class CNN(FeedforwardAC):
                                      activation_fn=None,
                                      weights_initializer=initializer)
         return tf.reshape(critic_out, (tf.shape(critic_out)[0],))
+
 
 def _frames_from_rollouts(rollouts):
     """

@@ -7,11 +7,13 @@ import tensorflow as tf
 
 from .base import Distribution
 
+
 class CategoricalSoftmax(Distribution):
     """
     A probability distribution that uses softmax to decide
     between a discrete number of options.
     """
+
     def __init__(self, num_options, low=0):
         self.num_options = num_options
         self.low = low
@@ -57,6 +59,7 @@ class CategoricalSoftmax(Distribution):
         probs = tf.exp(log_probs_1)
         return tf.reduce_sum(probs * (log_probs_1 - log_probs_2), axis=-1)
 
+
 class NaturalSoftmax(CategoricalSoftmax):
     """
     A softmax distribution with natural gradients through
@@ -66,6 +69,7 @@ class NaturalSoftmax(CategoricalSoftmax):
     However, the gradient through log_prob is artificially
     filled in as the natural gradient.
     """
+
     def __init__(self, num_options, low=0, epsilon=1e-4):
         super(NaturalSoftmax, self).__init__(num_options, low=low)
         self.epsilon = epsilon
@@ -78,6 +82,7 @@ class NaturalSoftmax(CategoricalSoftmax):
         natural_grads -= self.num_options * natural_grads * sample_vecs
         dots = tf.reduce_sum(param_batch*tf.stop_gradient(natural_grads), axis=-1)
         return tf.stop_gradient(log_probs) + dots - tf.stop_gradient(dots)
+
 
 def softmax(param_batch):
     """

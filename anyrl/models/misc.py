@@ -4,11 +4,13 @@ Miscellaneous models.
 
 from .base import Model
 
+
 class RandomAgent(Model):
     """
     A Model that takes random actions using a sampling
     function.
     """
+
     def __init__(self, sample_fn):
         self.sample_fn = sample_fn
 

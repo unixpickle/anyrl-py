@@ -7,6 +7,7 @@ import math
 import numpy as np
 import tensorflow as tf
 
+
 def mini_batches(size_per_index, batch_size=None):
     """
     Generate mini-batches of size batch_size.
@@ -29,6 +30,7 @@ def mini_batches(size_per_index, batch_size=None):
             cur_indices = []
             cur_size = 0
 
+
 def _infinite_random_shuffle(num_elements):
     """
     Continually permute the elements and yield all of the
@@ -37,6 +39,7 @@ def _infinite_random_shuffle(num_elements):
     while True:
         for elem in np.random.permutation(num_elements):
             yield elem
+
 
 def mix_init_states(is_init, init_states, start_states):
     """
@@ -51,6 +54,7 @@ def mix_init_states(is_init, init_states, start_states):
     batch_size = tf.shape(start_states)[0]
     return tf.where(is_init, _batchify(batch_size, init_states), start_states)
 
+
 def _batchify(batch_size, tensor):
     """
     Repeat a tensor the given number of times in the outer
@@ -60,6 +64,7 @@ def _batchify(batch_size, tensor):
     ones = tf.ones(tensor.shape.ndims, dtype=tf.int32)
     repeat_count = tf.concat([[batch_size], ones], axis=0)
     return tf.tile(batchable, repeat_count)
+
 
 def nature_cnn(obs_batch, dense=tf.layers.dense):
     """
@@ -80,6 +85,7 @@ def nature_cnn(obs_batch, dense=tf.layers.dense):
     flat_size = product([x.value for x in cnn_3.get_shape()[1:]])
     flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
     return dense(flat_in, 512, **conv_kwargs)
+
 
 def nature_huber_loss(residuals):
     """
@@ -104,6 +110,7 @@ def product(vals):
         prod *= val
     return prod
 
+
 def simple_mlp(inputs, layer_sizes, activation, dense=tf.layers.dense):
     """
     Apply a simple multi-layer perceptron model to the
@@ -124,6 +131,7 @@ def simple_mlp(inputs, layer_sizes, activation, dense=tf.layers.dense):
         with tf.variable_scope(None, default_name='layer_' + str(layer_idx)):
             layer_in = dense(layer_in, out_size, activation=activation)
     return layer_in
+
 
 def take_vector_elems(vectors, indices):
     """

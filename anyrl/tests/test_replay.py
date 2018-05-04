@@ -8,6 +8,7 @@ import numpy as np
 
 from anyrl.rollouts import PrioritizedReplayBuffer
 
+
 def test_prioritized_uniform():
     """
     Test PrioritizedReplayBuffer when it's configured
@@ -28,6 +29,7 @@ def test_prioritized_uniform():
         frac = counts[i] / len(sampled_idxs)
         assert frac > 0.09
         assert frac < 0.11
+
 
 def test_prioritized_sampling():
     """
@@ -51,6 +53,7 @@ def test_prioritized_sampling():
         assert frac > prob - 0.01
         assert frac < prob + 0.01
 
+
 def test_simple_importance_sampling():
     """
     Test importance sampling for PrioritizedReplayBuffer
@@ -70,6 +73,7 @@ def test_simple_importance_sampling():
         for sample in samples:
             assert np.allclose(weights[sample['idx']], sample['weight'])
 
+
 def test_online_updates():
     """
     Test importance sampling for PrioritizedReplayBuffer
@@ -77,8 +81,10 @@ def test_online_updates():
     """
     buf = PrioritizedReplayBuffer(capacity=10, alpha=1.5, beta=0.5, epsilon=0.5)
     weights = []
+
     def _random_weight():
         return np.abs(np.random.normal())
+
     def _add_sample():
         sample = {'obs': 0, 'action': 0, 'reward': 0, 'new_obs': 0, 'steps': 1}
         weight = _random_weight()

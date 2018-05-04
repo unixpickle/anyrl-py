@@ -10,6 +10,7 @@ from anyrl.spaces import gym_space_distribution, gym_space_vectorizer
 import gym
 import tensorflow as tf
 
+
 def main():
     """
     Entry-point for the program.
@@ -18,6 +19,7 @@ def main():
         # pylint: disable=E1129
         with tf.Graph().as_default():
             run_algorithm(algo)
+
 
 def run_algorithm(algo_name):
     """
@@ -43,6 +45,7 @@ def run_algorithm(algo_name):
             print('batch %d: mean=%f' % (i, mean_total_reward(rollouts)))
             inner_loop(rollouts)
 
+
 def algorithm_inner_loop(name, model):
     """
     Generate a function which runs a round of training on
@@ -58,6 +61,7 @@ def algorithm_inner_loop(name, model):
         ppo = PPO(model)
         optimizer = ppo.optimize(learning_rate=1e-3)
         return lambda rollouts: ppo.run_optimize(optimizer, rollouts, log_fn=print)
+
 
 if __name__ == '__main__':
     main()

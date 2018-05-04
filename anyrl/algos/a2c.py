@@ -7,7 +7,7 @@ import tensorflow as tf
 from .advantages import GAE
 from . import util
 
-# pylint: disable=R0902
+
 class A2C:
     """
     Train TensorFlow actor-critic models using A2C.
@@ -18,7 +18,7 @@ class A2C:
     Thanks to:
     https://github.com/openai/baselines/blob/699919f1cf2527b184f4445a3758a773f333a1ba/baselines/a2c/a2c.py
     """
-    # pylint: disable=R0913
+
     def __init__(self,
                  model,
                  vf_coeff=0.5,

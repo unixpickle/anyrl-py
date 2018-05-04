@@ -10,6 +10,7 @@ import numpy as np
 
 # pylint: disable=E0202,W0221
 
+
 class RL2Env(gym.Wrapper):
     """
     A wrapper which augments the observation space to
@@ -20,6 +21,7 @@ class RL2Env(gym.Wrapper):
 
     See: https://arxiv.org/abs/1611.02779.
     """
+
     def __init__(self, env, first_action, num_eps=1, warmup_eps=0):
         """
         Parameters:
@@ -62,6 +64,7 @@ class RL2Env(gym.Wrapper):
                 aug_obs = (self.env.reset(),) + aug_obs[1:]
         return aug_obs, rew, done, info
 
+
 class SwitchableEnv(gym.Env):
     """
     An environment that proxies calls to another
@@ -70,6 +73,7 @@ class SwitchableEnv(gym.Env):
     This is useful in conjunction with RL2Env to swap out
     the environment after every meta-episode.
     """
+
     def __init__(self, first_env):
         self.env = first_env
         self.action_space = first_env.action_space
@@ -96,6 +100,7 @@ class SwitchableEnv(gym.Env):
     def seed(self, seed=None):
         return self.env.seed(seed=seed)
 
+
 class JointEnv(gym.Env):
     """
     An environment that samples a new sub-environment at
@@ -103,6 +108,7 @@ class JointEnv(gym.Env):
 
     This can be used for joint-training.
     """
+
     def __init__(self, env_fns):
         """
         Create a joint environment.

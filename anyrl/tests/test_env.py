@@ -42,6 +42,7 @@ def test_dummy_equiv_dtype(dtype):
         dummy.close()
         real.close()
 
+
 def _assert_resets_equal(env1, env2):
     # Non-overlapping resets.
     for i in range(env1.num_sub_batches):
@@ -56,10 +57,12 @@ def _assert_resets_equal(env1, env2):
     for i in range(env1.num_sub_batches):
         _assert_reset_waits_equal(env1, env2, i)
 
+
 def _assert_reset_waits_equal(env1, env2, sub_batch):
     out1 = np.array(env1.reset_wait(sub_batch=sub_batch))
     out2 = np.array(env2.reset_wait(sub_batch=sub_batch))
     assert (out1 == out2).all()
+
 
 def _assert_steps_equal(actions, env1, env2):
     # Non-overlapping steps.
@@ -75,12 +78,14 @@ def _assert_steps_equal(actions, env1, env2):
     for i in range(env1.num_sub_batches):
         _assert_step_waits_equal(env1, env2, i)
 
+
 def _assert_step_waits_equal(env1, env2, sub_batch):
     outs1 = env1.step_wait(sub_batch=sub_batch)
     outs2 = env2.step_wait(sub_batch=sub_batch)
     for out1, out2 in zip(outs1[:3], outs2[:3]):
         assert (np.array(out1) == np.array(out2)).all()
     assert outs1[3] == outs2[3]
+
 
 def test_env_exit():
     """
@@ -92,12 +97,13 @@ def test_env_exit():
         return
     pytest.fail('should have gotten exception')
 
+
 def test_env_exception():
     """
     Test an environment that throws.
     """
     try:
-        def raiser(): # pylint: disable=C0111
+        def raiser():
             raise ValueError('hello world')
         AsyncGymEnv(raiser, None)
     except RuntimeError:

@@ -18,6 +18,7 @@ BATCH_SIZE = 64
 EPSILON = 0.1
 LEARNING_RATE = 0.001
 
+
 def main():
     """
     Entry-point for the program.
@@ -25,9 +26,12 @@ def main():
     env = gym.make('CartPole-v0')
 
     with tf.Session() as sess:
-        make_net = lambda name: MLPQNetwork(
-            sess, env.action_space.n, gym_space_vectorizer(env.observation_space), name,
-            layer_sizes=[32])
+        def make_net(name):
+            return MLPQNetwork(sess,
+                               env.action_space.n,
+                               gym_space_vectorizer(env.observation_space),
+                               name,
+                               layer_sizes=[32])
         dqn = DQN(make_net('online'), make_net('target'))
         player = BasicPlayer(env, EpsGreedyQNetwork(dqn.online_net, EPSILON),
                              batch_size=STEPS_PER_UPDATE)
@@ -45,6 +49,7 @@ def main():
                   handle_ep=lambda _, rew: print('got reward: ' + str(rew)))
 
     env.close()
+
 
 if __name__ == '__main__':
     main()

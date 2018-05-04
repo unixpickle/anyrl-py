@@ -10,6 +10,7 @@ import pandas
 
 # pylint: disable=E0202
 
+
 class LoggedEnv(gym.Wrapper):
     """
     An environment that logs episodes to a file.
@@ -19,6 +20,7 @@ class LoggedEnv(gym.Wrapper):
       l: episode length (timesteps)
       t: timestamp of episode end, relative to log start.
     """
+
     def __init__(self, env, log_path, use_locking=False):
         """
         Create a logged environment.
@@ -106,7 +108,6 @@ class LoggedEnv(gym.Wrapper):
         if self._file.tell() > 0:
             self._file.seek(0, os.SEEK_SET)
             contents = pandas.read_csv(self._file)
-            # pylint: disable=C1801
             if len(contents) > 0:
                 self._start_time = time.time() - max(contents['t'])
         else:

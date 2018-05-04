@@ -4,6 +4,7 @@ Advantage estimation routines.
 
 from abc import ABC, abstractmethod
 
+
 class AdvantageEstimator(ABC):
     """
     A technique for using a value function to estimate
@@ -31,10 +32,12 @@ class AdvantageEstimator(ABC):
                 res[rollout_idx][timestep] += value_out
         return res
 
+
 class GAE(AdvantageEstimator):
     """
     An implementation of Generalized Advantage Estimation.
     """
+
     def __init__(self, lam, discount, target_lam=None):
         self.lam = lam
         self.discount = discount

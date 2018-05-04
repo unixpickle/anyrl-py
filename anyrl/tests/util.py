@@ -8,11 +8,13 @@ import numpy as np
 
 from anyrl.models import Model
 
+
 class SimpleEnv(gym.Env):
     """
     An environment with a pre-determined observation space
     and RNG seed.
     """
+
     def __init__(self, seed, shape, dtype):
         np.random.seed(seed)
         self._dtype = dtype
@@ -40,11 +42,13 @@ class SimpleEnv(gym.Env):
     def render(self, mode='human'):
         pass
 
+
 class SimpleModel(Model):
     """
     A stateful, deterministic model which is compatible
     with a SimpleEnv.
     """
+
     def __init__(self, shape, stateful=False, state_tuple=True):
         self.shape = shape
         self._stateful = stateful
@@ -93,6 +97,7 @@ class SimpleModel(Model):
             'states': new_states
         }
 
+
 class TupleCartPole(gym.Env):
     """
     A version of Gym's CartPole-v0 with tuple spaces.
@@ -100,6 +105,7 @@ class TupleCartPole(gym.Env):
     Intended to stress test models against weird kinds of
     spaces.
     """
+
     def __init__(self):
         self._inner_env = gym.make('CartPole-v0')
         self.action_space = spaces.Tuple([spaces.Discrete(2), spaces.Discrete(3)])
@@ -119,7 +125,6 @@ class TupleCartPole(gym.Env):
     def render(self, mode='human'):
         pass
 
-    # pylint: disable=R0201
     def _split_obs(self, obs):
         obs = np.array(obs)
         return (obs[:3], obs[3:])

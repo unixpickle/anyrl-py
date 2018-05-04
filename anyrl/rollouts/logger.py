@@ -7,6 +7,7 @@ import time
 
 import pandas
 
+
 class EpisodeLogger:
     """
     A handle to an episode log file.
@@ -16,12 +17,12 @@ class EpisodeLogger:
       l: episode length (timesteps)
       t: timestamp of episode end, relative to log start.
     """
+
     def __init__(self, log_path):
         self._start_time = time.time()
         self._columns = ['r', 'l', 't']
         if os.path.isfile(log_path):
             contents = pandas.read_csv(log_path)
-            # pylint: disable=C1801
             if len(contents) > 0:
                 self._start_time = time.time() - max(contents['t'])
             self._out_file = open(log_path, 'a')
@@ -40,7 +41,6 @@ class EpisodeLogger:
             data['r'].append(rollout.total_reward)
             data['l'].append(rollout.total_steps)
             data['t'].append(rollout.end_time - self._start_time)
-        # pylint: disable=C1801
         if not data['r']:
             return
         self.write_frame(pandas.DataFrame(data))

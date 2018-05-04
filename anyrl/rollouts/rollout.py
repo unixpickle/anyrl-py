@@ -3,6 +3,7 @@ Types and functions for manipulating (partial) rollouts in
 RL environments.
 """
 
+
 def empty_rollout(start_state, prev_steps=0, prev_reward=0):
     """
     Create a Rollout with no timesteps.
@@ -11,7 +12,7 @@ def empty_rollout(start_state, prev_steps=0, prev_reward=0):
                    start_state=start_state, prev_steps=prev_steps,
                    prev_reward=prev_reward)
 
-# pylint: disable=R0902
+
 class Rollout:
     """
     A sequence of observations, actions, and rewards that
@@ -33,7 +34,7 @@ class Rollout:
     Rollouts may also have an end_time, which is a UNIX
     timestamp of when the rollout was done being made.
     """
-    # pylint: disable=R0913
+
     def __init__(self, observations, model_outs, rewards, start_state,
                  prev_steps=0, prev_reward=0, infos=None, end_time=0):
         assert len(observations) == len(model_outs)

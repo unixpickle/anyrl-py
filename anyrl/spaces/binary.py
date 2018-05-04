@@ -7,12 +7,14 @@ import tensorflow as tf
 
 from .base import Distribution
 
+
 class MultiBernoulli(Distribution):
     """
     A multi-dimensional binary distribution parameterized
     as Bernoulli distributions with probabilities from
     sigmoids.
     """
+
     def __init__(self, num_bits):
         self.num_bits = num_bits
 

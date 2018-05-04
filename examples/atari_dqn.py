@@ -21,6 +21,7 @@ import tensorflow as tf
 
 REWARD_HISTORY = 10
 
+
 def main():
     """
     Entry-point for the program.
@@ -33,9 +34,12 @@ def main():
     env = BatchedFrameStack(env, num_images=4, concat=False)
 
     with tf.Session() as sess:
-        make_net = lambda name: NatureQNetwork(
-            sess, env.action_space.n, gym_space_vectorizer(env.observation_space), name,
-            dueling=True)
+        def make_net(name):
+            return NatureQNetwork(sess,
+                                  env.action_space.n,
+                                  gym_space_vectorizer(env.observation_space),
+                                  name,
+                                  dueling=True)
         dqn = DQN(make_net('online'), make_net('target'))
         player = BatchedPlayer(env, EpsGreedyQNetwork(dqn.online_net, args.epsilon))
         optimize = dqn.optimize(learning_rate=args.lr)
@@ -44,6 +48,7 @@ def main():
 
         reward_hist = []
         total_steps = 0
+
         def _handle_ep(steps, rew):
             nonlocal total_steps
             total_steps += steps
@@ -63,10 +68,12 @@ def main():
 
     env.close()
 
+
 def make_single_env(game):
     """Make a preprocessed gym.Env."""
     env = gym.make(game + '-v0')
     return GrayscaleEnv(DownsampleEnv(env, 2))
+
 
 def _parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -80,6 +87,7 @@ def _parse_args():
     parser.add_argument('--epsilon', help='initial epsilon', type=float, default=0.1)
     parser.add_argument('game', help='game name', default='Pong')
     return parser.parse_args()
+
 
 if __name__ == '__main__':
     main()

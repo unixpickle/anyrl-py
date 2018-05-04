@@ -13,7 +13,6 @@ from .base import TFQNetwork
 from .dqn_scalar import noisy_net_dense
 from .util import nature_cnn, simple_mlp, take_vector_elems
 
-# pylint: disable=R0913
 
 def rainbow_models(session,
                    num_actions,
@@ -38,10 +37,12 @@ def rainbow_models(session,
     Returns:
       A tuple (online, target).
     """
-    maker = lambda name: NatureDistQNetwork(session, num_actions, obs_vectorizer, name,
-                                            num_atoms, min_val, max_val, dueling=True,
-                                            dense=partial(noisy_net_dense, sigma0=sigma0))
+    def maker(name):
+        return NatureDistQNetwork(session, num_actions, obs_vectorizer, name,
+                                  num_atoms, min_val, max_val, dueling=True,
+                                  dense=partial(noisy_net_dense, sigma0=sigma0))
     return maker('online'), maker('target')
+
 
 class DistQNetwork(TFQNetwork):
     """
@@ -51,6 +52,7 @@ class DistQNetwork(TFQNetwork):
     Subclasses should override the base() and value_func()
     methods with specific neural network architectures.
     """
+
     def __init__(self, session, num_actions, obs_vectorizer, name, num_atoms, min_val, max_val,
                  dueling=False, dense=tf.layers.dense):
         """
@@ -158,13 +160,14 @@ class DistQNetwork(TFQNetwork):
         """Produce a feed_dict for taking a step."""
         return {self.step_obs_ph: self.obs_vectorizer.to_vecs(observations)}
 
+
 class MLPDistQNetwork(DistQNetwork):
     """
     A multi-layer perceptron distributional Q-network.
 
     This is the distributional equivalent of MLPQNetwork.
     """
-    # pylint: disable=R0913,R0914
+
     def __init__(self,
                  session,
                  num_actions,
@@ -185,6 +188,7 @@ class MLPDistQNetwork(DistQNetwork):
     def base(self, obs_batch):
         return simple_mlp(obs_batch, self.layer_sizes, self.activation, dense=self.dense)
 
+
 class NatureDistQNetwork(DistQNetwork):
     """
     A distributional Q-network model based on the Nature
@@ -192,6 +196,7 @@ class NatureDistQNetwork(DistQNetwork):
 
     This is the distributional equivalent of NatureQNetwork.
     """
+
     def __init__(self,
                  session,
                  num_actions,
@@ -218,10 +223,12 @@ class NatureDistQNetwork(DistQNetwork):
         obs_batch = tf.cast(obs_batch, tf.float32) * self.input_scale
         return nature_cnn(obs_batch, dense=self.dense)
 
+
 class ActionDist:
     """
     A discrete reward distribution.
     """
+
     def __init__(self, num_atoms, min_val, max_val):
         assert num_atoms >= 2
         assert max_val > min_val
@@ -276,6 +283,7 @@ class ActionDist:
             res = res + tf.scatter_nd(scatter_indices, probs * fracs, tf.shape(res))
 
         return res
+
 
 def _kl_divergence(probs, log_probs):
     masked_diff = tf.where(tf.equal(probs, 0), tf.zeros_like(probs), tf.log(probs) - log_probs)

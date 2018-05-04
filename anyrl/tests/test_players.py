@@ -8,13 +8,20 @@ from anyrl.envs import batched_gym_env
 from anyrl.rollouts import BasicPlayer, NStepPlayer, BatchedPlayer
 from anyrl.tests.util import SimpleEnv, SimpleModel
 
+
 def test_nstep_one_step():
     """
     Test an NStepPlayer in the trivial, 1-step case.
     """
-    make_env = lambda: SimpleEnv(15, (1, 2, 3), 'float32')
-    make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
-    make_basic = lambda: BasicPlayer(make_env(), make_agent(), batch_size=3)
+    def make_env():
+        return SimpleEnv(15, (1, 2, 3), 'float32')
+
+    def make_agent():
+        return SimpleModel((1, 2, 3), stateful=True)
+
+    def make_basic():
+        return BasicPlayer(make_env(), make_agent(), batch_size=3)
+
     player1 = make_basic()
     player2 = NStepPlayer(make_basic(), 1)
     for _ in range(100):
@@ -24,13 +31,20 @@ def test_nstep_one_step():
         for trans1, trans2 in zip(transes1, transes2):
             assert _transitions_equal(trans1, trans2)
 
+
 def test_nstep_multi_step():
     """
     Test an NStepPlayer in the multi-step case.
     """
-    make_env = lambda: SimpleEnv(9, (1, 2, 3), 'float32')
-    make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
-    make_basic = lambda: BasicPlayer(make_env(), make_agent(), batch_size=1)
+    def make_env():
+        return SimpleEnv(9, (1, 2, 3), 'float32')
+
+    def make_agent():
+        return SimpleModel((1, 2, 3), stateful=True)
+
+    def make_basic():
+        return BasicPlayer(make_env(), make_agent(), batch_size=1)
+
     player1 = make_basic()
     player2 = NStepPlayer(make_basic(), 3)
     raw_trans = [t for _ in range(40) for t in player1.play()]
@@ -48,13 +62,18 @@ def test_nstep_multi_step():
         else:
             assert multi['episode_id'] != raw['episode_id']
 
+
 def test_nstep_batch_invariance():
     """
     Test that the batch size of the underlying
     Player doesn't affect the NStepPlayer.
     """
-    make_env = lambda: SimpleEnv(9, (1, 2, 3), 'float32')
-    make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
+    def make_env():
+        return SimpleEnv(9, (1, 2, 3), 'float32')
+
+    def make_agent():
+        return SimpleModel((1, 2, 3), stateful=True)
+
     def _gather_transitions(batch_size):
         player = NStepPlayer(BasicPlayer(make_env(), make_agent(), batch_size=batch_size), 3)
         transitions = []
@@ -69,12 +88,17 @@ def test_nstep_batch_invariance():
         for trans1, trans2 in zip(expected, actual):
             assert _transitions_equal(trans1, trans2)
 
+
 def test_single_batch():
     """
     Test BatchedPlayer when the batch size is 1.
     """
-    make_env = lambda: SimpleEnv(9, (1, 2, 3), 'float32')
-    make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
+    def make_env():
+        return SimpleEnv(9, (1, 2, 3), 'float32')
+
+    def make_agent():
+        return SimpleModel((1, 2, 3), stateful=True)
+
     basic_player = BasicPlayer(make_env(), make_agent(), 3)
     batched_player = BatchedPlayer(batched_gym_env([make_env]), make_agent(), 3)
     for _ in range(50):
@@ -84,14 +108,18 @@ def test_single_batch():
         for trans1, trans2 in zip(transes1, transes2):
             assert _transitions_equal(trans1, trans2)
 
+
 def test_mixed_batch():
     """
     Test a batch with a bunch of different
     environments.
     """
     env_fns = [lambda s=seed: SimpleEnv(s, (1, 2, 3), 'float32')
-               for seed in [3, 3, 3, 3, 3, 3]] #[5, 8, 1, 9, 3, 2]]
-    make_agent = lambda: SimpleModel((1, 2, 3), stateful=True)
+               for seed in [3, 3, 3, 3, 3, 3]]  # [5, 8, 1, 9, 3, 2]]
+
+    def make_agent():
+        return SimpleModel((1, 2, 3), stateful=True)
+
     for num_sub in [1, 2, 3]:
         batched_player = BatchedPlayer(batched_gym_env(env_fns, num_sub_batches=num_sub),
                                        make_agent(), 3)
@@ -111,11 +139,13 @@ def test_mixed_batch():
                     break
             assert found
 
+
 def _separate_episodes(transes):
     res = []
     for ep_id in set([t['episode_id'] for t in transes]):
         res.append([t for t in transes if t['episode_id'] == ep_id])
     return res
+
 
 def _episodes_equivalent(transes1, transes2):
     if len(transes1) != len(transes2):
@@ -124,6 +154,7 @@ def _episodes_equivalent(transes1, transes2):
         if not _transitions_equal(trans1, trans2, ignore_id=True):
             return False
     return True
+
 
 def _transitions_equal(trans1, trans2, ignore_id=False):
     for key in ['episode_step', 'total_reward', 'is_last', 'rewards']:
@@ -141,6 +172,7 @@ def _transitions_equal(trans1, trans2, ignore_id=False):
     if not np.allclose(trans1['obs'], trans2['obs']):
         return False
     return True
+
 
 def _states_equal(states1, states2):
     if isinstance(states1, tuple):

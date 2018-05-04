@@ -8,6 +8,7 @@ from anyrl.tests import SimpleEnv, SimpleModel
 import numpy as np
 import pytest
 
+
 @pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
 def test_trunc_basic_equivalence(stateful, state_tuple):
     """
@@ -15,7 +16,9 @@ def test_trunc_basic_equivalence(stateful, state_tuple):
     for batches of one environment when the episodes end
     cleanly.
     """
-    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    def env_fn():
+        return SimpleEnv(3, (4, 5), 'uint8')
+
     env = env_fn()
     model = SimpleModel(env.action_space.low.shape,
                         stateful=stateful,
@@ -29,13 +32,16 @@ def test_trunc_basic_equivalence(stateful, state_tuple):
     actual = trunc_roller.rollouts()
     _compare_rollout_batch(actual, expected)
 
+
 @pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
 def test_truncation(stateful, state_tuple):
     """
     Test sequence truncation for TruncatedRoller with a
     batch of one environment.
     """
-    env_fn = lambda: SimpleEnv(7, (5, 3), 'uint8')
+    def env_fn():
+        return SimpleEnv(7, (5, 3), 'uint8')
+
     env = env_fn()
     model = SimpleModel(env.action_space.low.shape,
                         stateful=stateful,
@@ -56,6 +62,7 @@ def test_truncation(stateful, state_tuple):
     actual2 = actual2[:-1]
     _compare_rollout_batch(actual1, expected1)
     _compare_rollout_batch(actual2, expected2)
+
 
 @pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
 def test_trunc_batches(stateful, state_tuple):
@@ -83,6 +90,7 @@ def test_trunc_batches(stateful, state_tuple):
 
     _compare_rollout_batch(unbatched_rollouts, batched_rollouts, ordered=False)
 
+
 @pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
 @pytest.mark.parametrize('limits', [{'min_episodes': 5}, {'min_steps': 7}])
 def test_ep_basic_equivalence(stateful, state_tuple, limits):
@@ -90,7 +98,9 @@ def test_ep_basic_equivalence(stateful, state_tuple, limits):
     Test that EpisodeRoller is equivalent to a
     BasicRoller when run on a single environment.
     """
-    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    def env_fn():
+        return SimpleEnv(3, (4, 5), 'uint8')
+
     env = env_fn()
     model = SimpleModel(env.action_space.low.shape,
                         stateful=stateful,
@@ -103,6 +113,7 @@ def test_ep_basic_equivalence(stateful, state_tuple, limits):
     actual = ep_roller.rollouts()
     _compare_rollout_batch(actual, expected)
 
+
 @pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
 @pytest.mark.parametrize('limits', [{'min_episodes': 5}, {'min_steps': 7}])
 def test_ep_batches(stateful, state_tuple, limits):
@@ -110,7 +121,9 @@ def test_ep_batches(stateful, state_tuple, limits):
     Test that EpisodeRoller is equivalent to a
     BasicRoller when run on a batch of envs.
     """
-    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    def env_fn():
+        return SimpleEnv(3, (4, 5), 'uint8')
+
     model = SimpleModel((4, 5),
                         stateful=stateful,
                         state_tuple=state_tuple)
@@ -132,12 +145,15 @@ def test_ep_batches(stateful, state_tuple, limits):
 
     _compare_rollout_batch(actual, expected)
 
+
 def test_ep_multiple_batches():
     """
     Make sure calling EpisodeRoller.rollouts()
     multiple times works.
     """
-    env_fn = lambda: SimpleEnv(3, (4, 5), 'uint8')
+    def env_fn():
+        return SimpleEnv(3, (4, 5), 'uint8')
+
     env = env_fn()
     try:
         model = SimpleModel(env.action_space.low.shape)
@@ -151,6 +167,7 @@ def test_ep_multiple_batches():
             _compare_rollout_batch(first, ep_roller.rollouts())
     finally:
         batched_env.close()
+
 
 def _compare_rollout_batch(rs1, rs2, ordered=True):
     """
@@ -166,6 +183,7 @@ def _compare_rollout_batch(rs1, rs2, ordered=True):
         for hash1 in hashes1:
             assert hash1 in hashes2
             hashes2.remove(hash1)
+
 
 def _rollout_hash(rollout):
     """
@@ -190,6 +208,7 @@ def _rollout_hash(rollout):
             res += key
             res += str(out[key])
     return res
+
 
 def _artificial_truncation(rollouts, rollout_idx, timestep_idx):
     """

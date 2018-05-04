@@ -8,10 +8,12 @@ import tensorflow as tf
 
 # pylint: disable=E1101
 
+
 class MPIOptimizer:
     """
     Wraps a TensorFlow optimizer to use MPI allreduce.
     """
+
     def __init__(self, optimizer, loss, var_list=None):
         old_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
         self.grads = [pair for pair in optimizer.compute_gradients(loss, var_list=var_list)
@@ -90,7 +92,7 @@ class MPIOptimizer:
             else:
                 sess.run(tf.assign(var, MPI.COMM_WORLD.bcast(None)))
 
-# pylint: disable=R0913
+
 def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
             extra_feed_dict=None):
     """

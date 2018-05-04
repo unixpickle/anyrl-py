@@ -16,6 +16,7 @@ import gym
 from mpi4py import MPI
 import tensorflow as tf
 
+
 def run_ppo():
     """
     Run a training worker.
@@ -43,6 +44,7 @@ def run_ppo():
             print('batch %d: rank=%d mean=%f' % (i, MPI.COMM_WORLD.Get_rank(),
                                                  mean_total_reward(rollouts)))
             mpi_ppo(ppo, optimizer, rollouts, log_fn=print)
+
 
 if __name__ == '__main__':
     run_ppo()

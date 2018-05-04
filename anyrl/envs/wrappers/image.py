@@ -9,10 +9,12 @@ from anyrl.spaces import StackedBoxSpace
 
 # pylint: disable=E0202
 
+
 class DownsampleEnv(gym.ObservationWrapper):
     """
     An environment that downsamples its image inputs.
     """
+
     def __init__(self, env, rate):
         """
         Create a downsampling wrapper.
@@ -34,10 +36,12 @@ class DownsampleEnv(gym.ObservationWrapper):
                                   :1 + ((observation.shape[1] - 1) // self._rate) * self._rate]
         return observation[::self._rate, ::self._rate]
 
+
 class GrayscaleEnv(gym.ObservationWrapper):
     """
     An environment that turns RGB images into grayscale.
     """
+
     def __init__(self, env, keep_depth=True, integers=True):
         """
         Create a grayscaling wrapper.
@@ -64,6 +68,7 @@ class GrayscaleEnv(gym.ObservationWrapper):
             observation = observation / 3
         return np.sum(observation, axis=-1, keepdims=self._keep_depth, dtype=observation.dtype)
 
+
 class FrameStackEnv(gym.Wrapper):
     """
     An environment that stacks images.
@@ -77,6 +82,7 @@ class FrameStackEnv(gym.Wrapper):
     At the beginning of an episode, the first observation
     is repeated in order to complete the stack.
     """
+
     def __init__(self, env, num_images=2, concat=True):
         """
         Create a frame stacking environment.
@@ -118,11 +124,13 @@ class FrameStackEnv(gym.Wrapper):
             return np.concatenate(self._history, axis=-1), rew, done, info
         return self._history.copy(), rew, done, info
 
+
 class MaxEnv(gym.Wrapper):
     """
     An environment that takes the component-wise maximum
     over the last few observations.
     """
+
     def __init__(self, env, num_images=2):
         super(MaxEnv, self).__init__(env)
         self._num_images = num_images
@@ -139,12 +147,14 @@ class MaxEnv(gym.Wrapper):
         self._history = self._history[-self._num_images:]
         return np.max(self._history, axis=0), rew, done, info
 
+
 class ResizeImageEnv(gym.ObservationWrapper):
     """
     An environment that resizes observation images.
 
     This lazily imports TensorFlow when initialized.
     """
+
     def __init__(self, env, size=(84, 84), method=None):
         """
         Create a resizing wrapper.

@@ -5,6 +5,7 @@ Tests for advantage routines.
 from anyrl.rollouts import Rollout
 from anyrl.algos.advantages import GAE
 
+
 def test_gae():
     """
     Test generalized advantage estimation.
@@ -20,6 +21,7 @@ def test_gae():
         assert len(actual_seq) == len(expected_seq)
         for act, exp in zip(actual_seq, expected_seq):
             assert abs(act-exp) < 1e-5
+
 
 def _dummy_rollout(pred_vals, rewards):
     """

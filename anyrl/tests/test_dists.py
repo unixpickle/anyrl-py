@@ -16,6 +16,7 @@ from anyrl.spaces import (CategoricalSoftmax, NaturalSoftmax, BoxGaussian, BoxBe
 # Number of times to run sample-based tests.
 NUM_SAMPLE_TRIES = 3
 
+
 def test_cat_softmax_log_prob(dist_maker=CategoricalSoftmax):
     """
     Test log probabilities on a known case for softmax.
@@ -34,6 +35,7 @@ def test_cat_softmax_log_prob(dist_maker=CategoricalSoftmax):
             diff = np.amax(expected - np.exp(log_probs))
             assert diff < 1e-4
 
+
 def test_cat_softmax_generic():
     """
     Run generic tests for CategoricalSoftmax.
@@ -41,6 +43,7 @@ def test_cat_softmax_generic():
     dist = CategoricalSoftmax(7, low=2)
     tester = DistributionTester(dist)
     tester.test_all()
+
 
 def test_nat_softmax_log_prob():
     """
@@ -55,6 +58,7 @@ def test_nat_softmax_log_prob():
             actual = sess.run(dist.log_prob(params, sampled))
             expected = sess.run(CategoricalSoftmax(7).log_prob(params, sampled))
             assert np.allclose(actual, expected)
+
 
 def test_nat_softmax_determinism():
     """
@@ -71,6 +75,7 @@ def test_nat_softmax_determinism():
             first = sess.run(batched_grad)
             for _ in range(10):
                 assert np.allclose(first, sess.run(batched_grad))
+
 
 def test_nat_softmax_gradient():
     """
@@ -95,6 +100,7 @@ def test_nat_softmax_gradient():
                 actual = sess.run(tf.gradients(dist.log_prob(params, samples), params)[0][0])
                 assert np.allclose(actual, expected)
 
+
 def test_nat_softmax_batched():
     """
     Test that batched gradients from NaturalSoftmax
@@ -117,6 +123,7 @@ def test_nat_softmax_batched():
             assert batched.shape == single.shape
             assert np.allclose(batched, single)
 
+
 def test_box_gaussian_generic():
     """
     Run generic tests for BoxGaussian.
@@ -125,6 +132,7 @@ def test_box_gaussian_generic():
                        np.array([[5, 7.1, 3], [2, 3.1, 4]]))
     tester = DistributionTester(dist)
     tester.test_all()
+
 
 def test_box_beta_generic_simple():
     """
@@ -135,6 +143,7 @@ def test_box_beta_generic_simple():
     tester = DistributionTester(dist)
     tester.test_all()
 
+
 def test_box_beta_generic():
     """
     Run generic tests for BoxBeta.
@@ -143,6 +152,7 @@ def test_box_beta_generic():
                    np.array([[5, 7.1, 3], [2, 3.1, 4]]))
     tester = DistributionTester(dist, batch_size=400000)
     tester.test_all()
+
 
 def test_box_beta_log_prob_simple():
     """
@@ -154,6 +164,7 @@ def test_box_beta_log_prob_simple():
             actual = sess.run(dist.log_prob(np.array([[0.5, 0.5]]), np.array([0.5])))
             expected = np.array([_beta_log_prob(0.5, 0.5, 0.5)])
             assert np.allclose(actual, expected, atol=1e-4)
+
 
 def test_box_beta_log_prob():
     """
@@ -168,6 +179,7 @@ def test_box_beta_log_prob():
                                  _beta_log_prob(0.3, 0.7, 0.3) - np.log(5)])
             assert np.allclose(actual, expected, atol=1e-4)
 
+
 def _beta_log_prob(alpha, beta, value):
     with tf.Graph().as_default():
         with tf.Session() as sess:
@@ -177,6 +189,7 @@ def _beta_log_prob(alpha, beta, value):
     log_num = np.log((value ** (alpha - 1)) * ((1 - value) ** (beta - 1)))
     return log_num - log_denom
 
+
 def test_multi_bernoulli_generic():
     """
     Run generic tests for MultiBernoulli.
@@ -184,6 +197,7 @@ def test_multi_bernoulli_generic():
     dist = MultiBernoulli(3)
     tester = DistributionTester(dist)
     tester.test_all()
+
 
 def test_tuple_unpack_shape():
     """
@@ -200,6 +214,7 @@ def test_tuple_unpack_shape():
     assert np.array(unpacked[0]).shape == (2, 3)
     assert np.array(unpacked[1]).shape == (2, 2, 3)
 
+
 def test_tuple_generic():
     """
     Run generic tests for TupleDistribution.
@@ -209,6 +224,7 @@ def test_tuple_generic():
     dist = TupleDistribution((MultiBernoulli(3), box_dist))
     tester = DistributionTester(dist)
     tester.test_all()
+
 
 def test_multi_discrete():
     """
@@ -221,10 +237,12 @@ def test_multi_discrete():
     for sample in dist.sample(np.zeros((50,) + dist.param_shape)):
         assert space.contains(sample)
 
+
 class DistributionTester:
     """
     Various generic tests for Distributions.
     """
+
     def __init__(self, dist, batch_size=200000, prec=3e-2):
         self.prec = prec
         self.dist = dist
@@ -281,7 +299,7 @@ class DistributionTester:
         log_probs = self.dist.log_prob(param_placeholder, sample_placeholder)
         entropy = tf.reduce_mean(self.dist.entropy(param_placeholder))
         for i in range(NUM_SAMPLE_TRIES):
-            params = self._random_params(use_numpy=(i%2 == 0))
+            params = self._random_params(use_numpy=(i % 2 == 0))
             samples = self.dist.sample(params)
             feed_dict = {
                 param_placeholder: params,
@@ -306,7 +324,7 @@ class DistributionTester:
         real_kl = tf.reduce_mean(self.dist.kl_divergence(param_1_placeholder,
                                                          param_2_placeholder))
         for i in range(NUM_SAMPLE_TRIES):
-            params = self._random_params(use_numpy=(i%2 == 0))
+            params = self._random_params(use_numpy=(i % 2 == 0))
             samples = self.dist.sample(params)
             feed_dict = {
                 param_1_placeholder: params,

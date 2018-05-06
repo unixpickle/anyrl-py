@@ -54,8 +54,6 @@ Here is the current TODO list, organized by sub-module:
   * Unify CNN and MLP models with a single base class.
   * Unshared actor-critics for TRPO and the like.
 * `rollouts`
-  * Maybe: way to not record states in `model_outs` (memory saving)
-  * Normalization based on advantage magnitudes.
   * Optimize for sub-batches in `BatchedPlayer`.
 * `algos`
   * TRPO

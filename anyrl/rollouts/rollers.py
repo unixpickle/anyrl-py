@@ -64,10 +64,22 @@ class TruncatedRoller(Roller):
     environment in a BatchedEnv.
     """
 
-    def __init__(self, batched_env, model, num_timesteps):
+    def __init__(self, batched_env, model, num_timesteps, drop_states=False):
+        """
+        Create a new TruncatedRoller.
+
+        Args:
+          batched_env: a BatchedEnv to interact with.
+          model: a Model to use for interaction.
+          num_timesteps: the number of timesteps to run
+            each sub-environment for.
+          drop_states: if True, set model_outs['states']
+            to None in the rollouts to save memory.
+        """
         self.batched_env = batched_env
         self.model = model
         self.num_timesteps = num_timesteps
+        self.drop_states = drop_states
 
         # These end up being batches of sub-batches.
         # Each sub-batch corresponds to a sub-batch of
@@ -155,7 +167,7 @@ class TruncatedRoller(Roller):
             states = self._last_states[batch_idx]
             model_outs = self.model.step(obses, states)
             for env_idx, (obs, rollout) in enumerate(zip(obses, running[batch_idx])):
-                reduced_out = _reduce_model_outs(model_outs, env_idx)
+                reduced_out = self._reduce_model_outs(model_outs, env_idx)
                 rollout.observations.append(obs)
                 rollout.model_outs.append(reduced_out)
 
@@ -190,6 +202,15 @@ class TruncatedRoller(Roller):
                     rollout.end_time = time.time()
                     completed.append(rollout)
 
+    def _reduce_model_outs(self, model_outs, env_idx):
+        """
+        Reduce the model_outs to be put into a Rollout.
+        """
+        res = _reduce_model_outs(model_outs, env_idx)
+        if self.drop_states:
+            res['states'] = None
+        return res
+
 
 class EpisodeRoller(TruncatedRoller):
     """
@@ -202,7 +223,20 @@ class EpisodeRoller(TruncatedRoller):
     as there are environments in batched_env.
     """
 
-    def __init__(self, batched_env, model, min_episodes=1, min_steps=1):
+    def __init__(self, batched_env, model, min_episodes=1, min_steps=1, drop_states=False):
+        """
+        Create a new EpisodeRoller.
+
+        Args:
+          batched_env: a BatchedEnv to interact with.
+          model: a Model to use for interaction.
+          min_episodes: the minimum number of episodes to
+            rollout.
+          min_steps: the minimum number of timesteps to
+            rollout, across all environments.
+          drop_states: if True, set model_outs['states']
+            to None in the rollouts to save memory.
+        """
         self.min_episodes = min_episodes
         self.min_steps = min_steps
 
@@ -212,7 +246,7 @@ class EpisodeRoller(TruncatedRoller):
         # episode.
         self._env_mask = None
 
-        super(EpisodeRoller, self).__init__(batched_env, model, 0)
+        super(EpisodeRoller, self).__init__(batched_env, model, 0, drop_states=drop_states)
 
     def reset(self):
         super(EpisodeRoller, self).reset()

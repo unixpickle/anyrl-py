@@ -91,6 +91,30 @@ def test_trunc_batches(stateful, state_tuple):
     _compare_rollout_batch(unbatched_rollouts, batched_rollouts, ordered=False)
 
 
+def test_trunc_drop_states():
+    """
+    Test TruncatedRoller with drop_states=True.
+    """
+    env_fns = [lambda seed=x: SimpleEnv(seed, (5, 3), 'uint8') for x in range(15)]
+    model = SimpleModel((5, 3), stateful=True, state_tuple=True)
+
+    expected_rollouts = []
+    batched_env = batched_gym_env(env_fns, num_sub_batches=3, sync=True)
+    trunc_roller = TruncatedRoller(batched_env, model, 17)
+    for _ in range(3):
+        expected_rollouts.extend(trunc_roller.rollouts())
+    for rollout in expected_rollouts:
+        for model_out in rollout.model_outs:
+            model_out['states'] = None
+
+    actual_rollouts = []
+    trunc_roller = TruncatedRoller(batched_env, model, 17, drop_states=True)
+    for _ in range(3):
+        actual_rollouts.extend(trunc_roller.rollouts())
+
+    _compare_rollout_batch(actual_rollouts, expected_rollouts)
+
+
 @pytest.mark.parametrize('stateful,state_tuple', [(False, False), (True, False), (True, True)])
 @pytest.mark.parametrize('limits', [{'min_episodes': 5}, {'min_steps': 7}])
 def test_ep_basic_equivalence(stateful, state_tuple, limits):

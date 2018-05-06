@@ -99,11 +99,19 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
     Run the PPO inner loop with an MPI optimizer.
 
     If log_fn is set, logging is done on rank 0.
+
+    Returns:
+      A list of tuples, where each tuple is:
+        (actor_loss, explained, entropy, clipped).
+
+      The returned list of tuples correspond to each
+        iteration of training.
     """
     batch_idx = 0
     batches = ppo.model.batches(rollouts, batch_size=batch_size)
     advantages = ppo.adv_est.advantages(rollouts)
     targets = ppo.adv_est.targets(rollouts)
+    result = []
     for batch in batches:
         feed_dict = ppo.feed_dict(rollouts, batch,
                                   advantages=advantages,
@@ -117,6 +125,8 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
         if log_fn and MPI.COMM_WORLD.Get_rank() == 0:
             log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%d' %
                    (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
+        result.append(terms)
         batch_idx += 1
         if batch_idx == num_iter:
             break
+    return result

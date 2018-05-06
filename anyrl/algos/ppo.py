@@ -70,11 +70,19 @@ class PPO(A2C):
 
         If log_fn is set, intermediate progress is logged
         by calling log_fn with string log messages.
+
+        Returns:
+          A list of tuples, where each tuple is:
+            (actor_loss, explained, entropy, clipped).
+
+          The returned list of tuples correspond to each
+            iteration of training.
         """
         batch_idx = 0
         batches = self.model.batches(rollouts, batch_size=batch_size)
         advantages = self.adv_est.advantages(rollouts)
         targets = self.adv_est.targets(rollouts)
+        result = []
         for batch in batches:
             terms = (self.actor_loss, self.explained_var, self.entropy,
                      self.num_clipped, optimize_op)
@@ -87,9 +95,11 @@ class PPO(A2C):
             if log_fn is not None:
                 log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%d' %
                        (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
+            result.append(terms[:4])
             batch_idx += 1
             if batch_idx == num_iter:
                 break
+        return result
 
     # TODO: API that supports schedules and runs the
     # entire training loop for us.

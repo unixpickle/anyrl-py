@@ -102,11 +102,16 @@ class _VarSync:
         Synchronize all the variables.
         """
         rank = MPI.COMM_WORLD.Get_rank()
-        for var, ph, assign in zip(self._variables, self._placeholders, self._assigns):
-            if rank == 0:
-                MPI.COMM_WORLD.bcast(sess.run(var))
-            else:
-                sess.run(assign, feed_dict={ph: MPI.COMM_WORLD.bcast(None)})
+        if rank == 0:
+            for val in sess.run(self._variables):
+                MPI.COMM_WORLD.Bcast(val)
+        else:
+            feed = {}
+            for ph in self._placeholders:
+                buf = np.zeros([x.value for x in ph.get_shape()], dtype=ph.dtype.as_numpy_dtype)
+                MPI.COMM_WORLD.Bcast(buf)
+                feed[ph] = buf
+            sess.run(self._assigns, feed_dict=feed)
 
 
 def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,

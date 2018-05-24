@@ -102,6 +102,10 @@ class BatchedFrameStack(BatchedWrapper):
         return [o.copy() for o in self._history[sub_batch]]
 
 class BatchedObservationWrapper(BatchedWrapper):
+    """
+    The batched analog of ObservationWrapper
+    """
+
     __metaclass__ = ABCMeta
 
     def __init__(self, env, **args):

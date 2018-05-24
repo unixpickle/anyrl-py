@@ -14,12 +14,12 @@ may even be desirable to use a batched framestack wrapper
 on top of the CNN wrapper.
 """
 
+from abc import ABCMeta, abstractmethod
 import gym
 import numpy as np
 
 from anyrl.spaces import StackedBoxSpace
 from ..base import BatchedEnv
-
 
 class BatchedWrapper(BatchedEnv):
     """
@@ -100,3 +100,26 @@ class BatchedFrameStack(BatchedWrapper):
         if self.concat:
             return [np.concatenate(o, axis=-1) for o in self._history[sub_batch]]
         return [o.copy() for o in self._history[sub_batch]]
+
+class BatchedObservationWrapper(BatchedWrapper):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, env, **args):
+        super(BatchedObservationWrapper, self).__init__(env, **args)
+        old_space = env.observation_space
+        low, high = self.observation([old_space.low, old_space.high])
+        self.observation_space = gym.spaces.Box(low, high, dtype=old_space.dtype)
+
+    @abstractmethod
+    def observation(self, obses):
+        pass
+
+    def reset_wait(self, **args):
+        obses = super().reset_wait(**args)
+        obses = self.observation(obses)
+        return obses
+
+    def step_wait(self, **args):
+        obses, rews, dones, infos = super().step_wait(**args)
+        obses = self.observation(obses)
+        return obses, rews, dones, infos

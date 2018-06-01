@@ -102,7 +102,7 @@ class BatchedFrameStack(BatchedWrapper):
         return [o.copy() for o in self._history[sub_batch]]
 
 
-class BatchedObsWrapper(BatchedWrapper):
+class ObsWrapperBatcher(BatchedWrapper):
     """
     A batched version of any gym.ObservationWrapper.
 
@@ -120,20 +120,20 @@ class BatchedObsWrapper(BatchedWrapper):
             the initial env argument.
           kwargs: extra arguments to pass to the wrapper.
         """
-        super(BatchedObsWrapper, self).__init__(env)
+        super(ObsWrapperBatcher, self).__init__(env)
         self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
         self.observation_space = self.wrapper.observation_space
 
     def reset_wait(self, sub_batch=0):
-        obses = super(BatchedObsWrapper, self).reset_wait(sub_batch=sub_batch)
+        obses = super(ObsWrapperBatcher, self).reset_wait(sub_batch=sub_batch)
         return map(self.wrapper.observation, obses)
 
     def step_wait(self, sub_batch=0):
-        obses, rews, dones, infos = super(BatchedObsWrapper, self).step_wait(sub_batch=sub_batch)
+        obses, rews, dones, infos = super(ObsWrapperBatcher, self).step_wait(sub_batch=sub_batch)
         return map(self.wrapper.observation, obses), rews, dones, infos
 
 
-class BatchedActWrapper(BatchedWrapper):
+class ActWrapperBatcher(BatchedWrapper):
     """
     A batched version of any gym.ActionWrapper.
 
@@ -151,13 +151,18 @@ class BatchedActWrapper(BatchedWrapper):
             the initial env argument.
           kwargs: extra arguments to pass to the wrapper.
         """
-        super(BatchedActWrapper, self).__init__(env)
+        super(ActWrapperBatcher, self).__init__(env)
         self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
         self.action_space = self.wrapper.action_space
 
     def step_start(self, actions, sub_batch=0):
-        super(BatchedActWrapper, self).step_start(map(self.wrapper.action, actions),
+        super(ActWrapperBatcher, self).step_start(map(self.wrapper.action, actions),
                                                   sub_batch=sub_batch)
+
+
+# Avoid a breaking change.
+BatchedObsWrapper = ObsWrapperBatcher
+BatchedActWrapper = ActWrapperBatcher
 
 
 class _AttrEnv(gym.Env):

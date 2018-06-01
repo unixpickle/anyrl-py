@@ -100,3 +100,83 @@ class BatchedFrameStack(BatchedWrapper):
         if self.concat:
             return [np.concatenate(o, axis=-1) for o in self._history[sub_batch]]
         return [o.copy() for o in self._history[sub_batch]]
+
+
+class BatchedObsWrapper(BatchedWrapper):
+    """
+    A batched version of any gym.ObservationWrapper.
+
+    This assumes that the ObservationWrapper is stateless.
+    """
+
+    def __init__(self, env, wrap_fn, *args, **kwargs):
+        """
+        Create a new instance.
+
+        Args:
+          env: the BatchedEnv to wrap.
+          wrap_fn: the constructor for the wrapper.
+          args: arguments to pass to the wrapper, after
+            the initial env argument.
+          kwargs: extra arguments to pass to the wrapper.
+        """
+        super(BatchedObsWrapper, self).__init__(env)
+        self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
+        self.observation_space = self.wrapper.observation_space
+
+    def reset_wait(self, sub_batch=0):
+        obses = super(BatchedObsWrapper, self).reset_wait(sub_batch=sub_batch)
+        return map(self.wrapper.observation, obses)
+
+    def step_wait(self, sub_batch=0):
+        obses, rews, dones, infos = super(BatchedObsWrapper, self).step_wait(sub_batch=sub_batch)
+        return map(self.wrapper.observation, obses), rews, dones, infos
+
+
+class BatchedActWrapper(BatchedWrapper):
+    """
+    A batched version of any gym.ActionWrapper.
+
+    This assumes that the ActionWrapper is stateless.
+    """
+
+    def __init__(self, env, wrap_fn, *args, **kwargs):
+        """
+        Create a new instance.
+
+        Args:
+          env: the BatchedEnv to wrap.
+          wrap_fn: the constructor for the wrapper.
+          args: arguments to pass to the wrapper, after
+            the initial env argument.
+          kwargs: extra arguments to pass to the wrapper.
+        """
+        super(BatchedActWrapper, self).__init__(env)
+        self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
+        self.action_space = self.wrapper.action_space
+
+    def step_start(self, actions, sub_batch=0):
+        super(BatchedActWrapper, self).step_start(map(self.wrapper.action, actions),
+                                                  sub_batch=sub_batch)
+
+
+class _AttrEnv(gym.Env):
+    """
+    An environment that inherits various attributes from a
+    batched environment.
+    """
+
+    def __init__(self, env):
+        self.action_space = env.action_space
+        self.observation_space = env.observation_space
+
+    # pylint: disable=W0221
+
+    def reset(self, *args, **kwargs):
+        pass
+
+    def step(self, *args, **kwargs):
+        pass
+
+    def render(self, *args, **kwargs):
+        pass

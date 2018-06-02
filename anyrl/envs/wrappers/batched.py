@@ -108,12 +108,22 @@ class BatchedObservationWrapper(BatchedWrapper):
     Different from `ObsWrapperBatcher` as this calls observation() once with all
     of the observations from the batched environments, allowing you to perform
     optimized observation updates on all observations at once.
+
+    Be sure to modify self.observation_space in your __init__ function if necessary
     """
 
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def observation(self, obses):
+    def observation(self, batched_obses):
+        """
+        Modifies given batched observations into output batched observations
+
+        Arguments
+            batched_obses: List containing batched observations from child observations.
+        Returns: 
+            List containing modified batched observations
+        """
         pass
 
     def reset_wait(self, **args):

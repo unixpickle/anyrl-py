@@ -126,9 +126,9 @@ class BatchedObservationWrapper(BatchedWrapper):
         obses = self.observation(obses)
         return obses, rews, dones, infos
 
-class ObsWrapperBatcher(BatchedWrapper):
+class ObsWrapperBatcher(BatchedObservationWrapper):
     """
-    A batched version of any gym.ObservationWrapper.
+    Converts a gym.ObservationWrapper into a BatchedObservationWrapper
 
     This assumes that the ObservationWrapper is stateless.
     """
@@ -148,14 +148,8 @@ class ObsWrapperBatcher(BatchedWrapper):
         self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
         self.observation_space = self.wrapper.observation_space
 
-    def reset_wait(self, sub_batch=0):
-        obses = super(ObsWrapperBatcher, self).reset_wait(sub_batch=sub_batch)
+    def observation(self, obses):
         return map(self.wrapper.observation, obses)
-
-    def step_wait(self, sub_batch=0):
-        obses, rews, dones, infos = super(ObsWrapperBatcher, self).step_wait(sub_batch=sub_batch)
-        return map(self.wrapper.observation, obses), rews, dones, infos
-
 
 class ActWrapperBatcher(BatchedWrapper):
     """

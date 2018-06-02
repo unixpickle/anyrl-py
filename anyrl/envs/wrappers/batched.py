@@ -103,16 +103,14 @@ class BatchedFrameStack(BatchedWrapper):
 
 class BatchedObservationWrapper(BatchedWrapper):
     """
-    The batched analog of ObservationWrapper
+    The batched analog of ObservationWrapper.
+
+    Different from `ObsWrapperBatcher` as this calls observation() once with all
+    of the observations from the batched environments, allowing you to perform
+    optimized observation updates on all observations at once.
     """
 
     __metaclass__ = ABCMeta
-
-    def __init__(self, env, **args):
-        super(BatchedObservationWrapper, self).__init__(env, **args)
-        old_space = env.observation_space
-        low, high = self.observation([old_space.low, old_space.high])
-        self.observation_space = gym.spaces.Box(low, high, dtype=old_space.dtype)
 
     @abstractmethod
     def observation(self, obses):
@@ -127,3 +125,87 @@ class BatchedObservationWrapper(BatchedWrapper):
         obses, rews, dones, infos = super().step_wait(**args)
         obses = self.observation(obses)
         return obses, rews, dones, infos
+
+class ObsWrapperBatcher(BatchedWrapper):
+    """
+    A batched version of any gym.ObservationWrapper.
+
+    This assumes that the ObservationWrapper is stateless.
+    """
+
+    def __init__(self, env, wrap_fn, *args, **kwargs):
+        """
+        Create a new instance.
+
+        Args:
+          env: the BatchedEnv to wrap.
+          wrap_fn: the constructor for the wrapper.
+          args: arguments to pass to the wrapper, after
+            the initial env argument.
+          kwargs: extra arguments to pass to the wrapper.
+        """
+        super(ObsWrapperBatcher, self).__init__(env)
+        self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
+        self.observation_space = self.wrapper.observation_space
+
+    def reset_wait(self, sub_batch=0):
+        obses = super(ObsWrapperBatcher, self).reset_wait(sub_batch=sub_batch)
+        return map(self.wrapper.observation, obses)
+
+    def step_wait(self, sub_batch=0):
+        obses, rews, dones, infos = super(ObsWrapperBatcher, self).step_wait(sub_batch=sub_batch)
+        return map(self.wrapper.observation, obses), rews, dones, infos
+
+
+class ActWrapperBatcher(BatchedWrapper):
+    """
+    A batched version of any gym.ActionWrapper.
+
+    This assumes that the ActionWrapper is stateless.
+    """
+
+    def __init__(self, env, wrap_fn, *args, **kwargs):
+        """
+        Create a new instance.
+
+        Args:
+          env: the BatchedEnv to wrap.
+          wrap_fn: the constructor for the wrapper.
+          args: arguments to pass to the wrapper, after
+            the initial env argument.
+          kwargs: extra arguments to pass to the wrapper.
+        """
+        super(ActWrapperBatcher, self).__init__(env)
+        self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
+        self.action_space = self.wrapper.action_space
+
+    def step_start(self, actions, sub_batch=0):
+        super(ActWrapperBatcher, self).step_start(map(self.wrapper.action, actions),
+                                                  sub_batch=sub_batch)
+
+
+# Avoid a breaking change.
+BatchedObsWrapper = ObsWrapperBatcher
+BatchedActWrapper = ActWrapperBatcher
+
+
+class _AttrEnv(gym.Env):
+    """
+    An environment that inherits various attributes from a
+    batched environment.
+    """
+
+    def __init__(self, env):
+        self.action_space = env.action_space
+        self.observation_space = env.observation_space
+
+    # pylint: disable=W0221
+
+    def reset(self, *args, **kwargs):
+        pass
+
+    def step(self, *args, **kwargs):
+        pass
+
+    def render(self, *args, **kwargs):
+        pass

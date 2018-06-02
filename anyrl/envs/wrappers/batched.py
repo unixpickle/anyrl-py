@@ -14,12 +14,12 @@ may even be desirable to use a batched framestack wrapper
 on top of the CNN wrapper.
 """
 
+from abc import ABCMeta, abstractmethod
 import gym
 import numpy as np
 
 from anyrl.spaces import StackedBoxSpace
 from ..base import BatchedEnv
-
 
 class BatchedWrapper(BatchedEnv):
     """
@@ -101,10 +101,49 @@ class BatchedFrameStack(BatchedWrapper):
             return [np.concatenate(o, axis=-1) for o in self._history[sub_batch]]
         return [o.copy() for o in self._history[sub_batch]]
 
-
-class ObsWrapperBatcher(BatchedWrapper):
+class BatchedObservationWrapper(BatchedWrapper):
     """
-    A batched version of any gym.ObservationWrapper.
+    The batched analog of ObservationWrapper.
+
+    Different from `ObsWrapperBatcher` as this calls
+    observation() once with all of the observations from the
+    batched environments, allowing you to perform optimized
+    observation updates on all observations at once.
+
+    Be sure to modify self.observation_space in your
+    __init__ function if necessary
+    """
+
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def observation(self, batched_obses):
+        """
+        Modifies given batched observations into output
+        batched observations
+
+        Arguments
+            batched_obses: List containing batched
+            observations from child observations.
+        Returns: 
+            List containing modified batched observations
+        """
+        pass
+
+    def reset_wait(self, **args):
+        obses = super().reset_wait(**args)
+        obses = self.observation(obses)
+        return obses
+
+    def step_wait(self, **args):
+        obses, rews, dones, infos = super().step_wait(**args)
+        obses = self.observation(obses)
+        return obses, rews, dones, infos
+
+class ObsWrapperBatcher(BatchedObservationWrapper):
+    """
+    Converts a gym.ObservationWrapper into a
+    BatchedObservationWrapper
 
     This assumes that the ObservationWrapper is stateless.
     """
@@ -124,14 +163,8 @@ class ObsWrapperBatcher(BatchedWrapper):
         self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
         self.observation_space = self.wrapper.observation_space
 
-    def reset_wait(self, sub_batch=0):
-        obses = super(ObsWrapperBatcher, self).reset_wait(sub_batch=sub_batch)
+    def observation(self, obses):
         return map(self.wrapper.observation, obses)
-
-    def step_wait(self, sub_batch=0):
-        obses, rews, dones, infos = super(ObsWrapperBatcher, self).step_wait(sub_batch=sub_batch)
-        return map(self.wrapper.observation, obses), rews, dones, infos
-
 
 class ActWrapperBatcher(BatchedWrapper):
     """

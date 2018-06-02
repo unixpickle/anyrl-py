@@ -105,11 +105,13 @@ class BatchedObservationWrapper(BatchedWrapper):
     """
     The batched analog of ObservationWrapper.
 
-    Different from `ObsWrapperBatcher` as this calls observation() once with all
-    of the observations from the batched environments, allowing you to perform
-    optimized observation updates on all observations at once.
+    Different from `ObsWrapperBatcher` as this calls
+    observation() once with all of the observations from the
+    batched environments, allowing you to perform optimized
+    observation updates on all observations at once.
 
-    Be sure to modify self.observation_space in your __init__ function if necessary
+    Be sure to modify self.observation_space in your
+    __init__ function if necessary
     """
 
     __metaclass__ = ABCMeta
@@ -117,10 +119,12 @@ class BatchedObservationWrapper(BatchedWrapper):
     @abstractmethod
     def observation(self, batched_obses):
         """
-        Modifies given batched observations into output batched observations
+        Modifies given batched observations into output
+        batched observations
 
         Arguments
-            batched_obses: List containing batched observations from child observations.
+            batched_obses: List containing batched
+            observations from child observations.
         Returns: 
             List containing modified batched observations
         """
@@ -138,7 +142,8 @@ class BatchedObservationWrapper(BatchedWrapper):
 
 class ObsWrapperBatcher(BatchedObservationWrapper):
     """
-    Converts a gym.ObservationWrapper into a BatchedObservationWrapper
+    Converts a gym.ObservationWrapper into a
+    BatchedObservationWrapper
 
     This assumes that the ObservationWrapper is stateless.
     """

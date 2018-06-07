@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 import time
 
-from .rollers import _reduce_states, _inject_state, _reduce_model_outs
+from .util import reduce_states, inject_state, reduce_model_outs
 
 
 class Player(ABC):
@@ -205,11 +205,11 @@ class BatchedPlayer(Player):
             self._total_rewards[sub_batch][i] += rew
             transitions.append({
                 'obs': self._last_obses[sub_batch][i],
-                'model_outs': _reduce_model_outs(model_outs, i),
+                'model_outs': reduce_model_outs(model_outs, i),
                 'rewards': [rew],
                 'new_obs': (obs if not done else None),
                 'info': info,
-                'start_state': _reduce_states(self._cur_states[sub_batch], i),
+                'start_state': reduce_states(self._cur_states[sub_batch], i),
                 'episode_id': self._episode_ids[sub_batch][i],
                 'episode_step': self._episode_steps[sub_batch][i],
                 'end_time': end_time,
@@ -217,7 +217,7 @@ class BatchedPlayer(Player):
                 'total_reward': self._total_rewards[sub_batch][i]
             })
             if done:
-                _inject_state(model_outs['states'], self.model.start_state(1), i)
+                inject_state(model_outs['states'], self.model.start_state(1), i)
                 self._episode_ids[sub_batch][i] = self._next_episode_id
                 self._next_episode_id += 1
                 self._episode_steps[sub_batch][i] = 0

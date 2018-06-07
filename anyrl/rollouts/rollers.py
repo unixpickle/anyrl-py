@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import time
 
 from .rollout import empty_rollout
+from .util import reduce_states, inject_state, reduce_model_outs
 
 
 class Roller(ABC):
@@ -131,7 +132,7 @@ class TruncatedRoller(Roller):
         for batch_idx, states in enumerate(self._last_states):
             rollout_batch = []
             for env_idx in range(self.batched_env.num_envs_per_sub_batch):
-                sub_state = _reduce_states(states, env_idx)
+                sub_state = reduce_states(states, env_idx)
                 prev_steps = self._prev_steps[batch_idx][env_idx]
                 prev_reward = self._prev_reward[batch_idx][env_idx]
                 rollout = empty_rollout(sub_state,
@@ -187,7 +188,7 @@ class TruncatedRoller(Roller):
         for prev in [self._prev_steps, self._prev_reward]:
             prev[batch_idx][env_idx] = 0
         start_state = self.model.start_state(1)
-        _inject_state(self._last_states[batch_idx], start_state, env_idx)
+        inject_state(self._last_states[batch_idx], start_state, env_idx)
 
         rollout = empty_rollout(start_state)
         running[batch_idx][env_idx] = rollout
@@ -206,7 +207,7 @@ class TruncatedRoller(Roller):
         """
         Reduce the model_outs to be put into a Rollout.
         """
-        res = _reduce_model_outs(model_outs, env_idx)
+        res = reduce_model_outs(model_outs, env_idx)
         if self.drop_states:
             res['states'] = None
         return res
@@ -290,43 +291,3 @@ class EpisodeRoller(TruncatedRoller):
         Check if any environment is not masked out.
         """
         return any([any(masks) for masks in self._env_mask])
-
-
-def _reduce_states(state_batch, env_idx):
-    """
-    Reduce a batch of states to a batch of one state.
-    """
-    if state_batch is None:
-        return None
-    elif isinstance(state_batch, tuple):
-        return tuple(_reduce_states(s, env_idx) for s in state_batch)
-    return state_batch[env_idx: env_idx+1].copy()
-
-
-def _inject_state(state_batch, state, env_idx):
-    """
-    Replace the state at the given index with a new state.
-    """
-    if state_batch is None:
-        return
-    elif isinstance(state_batch, tuple):
-        return tuple(_inject_state(sb, s, env_idx)
-                     for sb, s in zip(state_batch, state))
-    state_batch[env_idx: env_idx+1] = state
-
-
-def _reduce_model_outs(model_outs, env_idx):
-    """
-    Reduce a batch of model outputs to a batch of one
-    model output.
-    """
-    out = dict()
-    for key in model_outs:
-        val = model_outs[key]
-        if val is None:
-            out[key] = None
-        elif isinstance(val, tuple):
-            out[key] = _reduce_states(val, env_idx)
-        else:
-            out[key] = val[env_idx: env_idx+1].copy()
-    return out

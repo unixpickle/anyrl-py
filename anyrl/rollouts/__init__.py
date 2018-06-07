@@ -9,5 +9,6 @@ from .players import Player, BasicPlayer, NStepPlayer, BatchedPlayer
 from .replay import ReplayBuffer, UniformReplayBuffer, PrioritizedReplayBuffer
 from .rollers import Roller, BasicRoller, TruncatedRoller, EpisodeRoller
 from .rollout import Rollout, empty_rollout
+from .util import inject_state, reduce_model_outs, reduce_states
 
 __all__ = dir()

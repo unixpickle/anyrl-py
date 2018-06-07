@@ -21,6 +21,7 @@ import numpy as np
 from anyrl.spaces import StackedBoxSpace
 from ..base import BatchedEnv
 
+
 class BatchedWrapper(BatchedEnv):
     """
     A BatchedEnv that, by default, forwards all calls to a
@@ -101,6 +102,7 @@ class BatchedFrameStack(BatchedWrapper):
             return [np.concatenate(o, axis=-1) for o in self._history[sub_batch]]
         return [o.copy() for o in self._history[sub_batch]]
 
+
 class BatchedObservationWrapper(BatchedWrapper):
     """
     The batched analog of ObservationWrapper.
@@ -125,7 +127,7 @@ class BatchedObservationWrapper(BatchedWrapper):
         Arguments
             batched_obses: List containing batched
             observations from child observations.
-        Returns: 
+        Returns:
             List containing modified batched observations
         """
         pass
@@ -139,6 +141,7 @@ class BatchedObservationWrapper(BatchedWrapper):
         obses, rews, dones, infos = super().step_wait(**args)
         obses = self.observation(obses)
         return obses, rews, dones, infos
+
 
 class ObsWrapperBatcher(BatchedObservationWrapper):
     """
@@ -165,6 +168,7 @@ class ObsWrapperBatcher(BatchedObservationWrapper):
 
     def observation(self, obses):
         return map(self.wrapper.observation, obses)
+
 
 class ActWrapperBatcher(BatchedWrapper):
     """

@@ -137,20 +137,16 @@ class ModelTester:
     def _test_batch(self, rollouts, batch):
         """
         Test that the batch is consistent with the
-        rollouts and with its own mask.
+        rollouts.
         """
         feed_dict = batch['feed_dict']
-        actor_outs, critic_outs, mask = self.session.run(self.batch_outputs,
-                                                         feed_dict)
+        actor_outs, critic_outs = self.session.run(self.batch_outputs, feed_dict)
+        assert len(actor_outs) == len(critic_outs)
+        assert len(actor_outs) == len(batch['rollout_idxs'])
+        assert len(actor_outs) == len(batch['timestep_idxs'])
         for i, (action, value) in enumerate(zip(actor_outs, critic_outs)):
             rollout_idx = batch['rollout_idxs'][i]
             timestep_idx = batch['timestep_idxs'][i]
-            assert mask[i] == 0 or mask[i] == 1
-            if mask[i] == 0:
-                assert rollout_idx == 0
-                assert timestep_idx == 0
-                continue
-            assert mask[i] == 1
             model_out = rollouts[rollout_idx].model_outs[timestep_idx]
             step_action = np.array(model_out['action_params'][0])
             step_value = model_out['values'][0]

@@ -29,7 +29,7 @@ class PPO(A2C):
         super(PPO, self).__init__(model, **a2c_kwargs)
 
     def _create_objective(self, vf_coeff, entropy_reg):
-        actor, critic, mask = self.model.batch_outputs()
+        actor, critic = self.model.batch_outputs()
 
         dist = self.model.action_dist
         new_log_probs = dist.log_prob(actor, self._actions)
@@ -39,13 +39,13 @@ class PPO(A2C):
         clipped_samples = _clipped_samples(new_log_probs, old_log_probs,
                                            self._advs, self._epsilon)
         critic_error = self._target_vals - critic
-        self.actor_loss = -util.masked_mean(mask, clipped_obj)
-        self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
-        self.entropy = util.masked_mean(mask, dist.entropy(actor))
-        self.num_clipped = tf.cast(util.masked_sum(mask, clipped_samples), tf.int32)
+        self.actor_loss = -tf.reduce_mean(clipped_obj)
+        self.critic_loss = tf.reduce_mean(tf.square(critic_error))
+        self.entropy = tf.reduce_mean(dist.entropy(actor))
+        self.num_clipped = tf.cast(tf.reduce_sum(clipped_samples), tf.int32)
         self.objective = (entropy_reg * self.entropy - self.actor_loss -
                           vf_coeff * self.critic_loss)
-        self.explained_var = self._compute_explained_var(mask)
+        self.explained_var = self._compute_explained_var()
 
     def feed_dict(self, rollouts, batch=None, advantages=None, targets=None):
         if batch is None:

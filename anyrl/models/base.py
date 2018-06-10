@@ -65,13 +65,9 @@ class TFActorCritic(Model):
     @abstractmethod
     def batch_outputs(self):
         """
-        Return three TF tensors: actor_outs, critic_outs,
-        mask.
+        Return two TF tensors: actor_outs, critic_outs.
 
-        The mask is a Tensor of 0's and 1's, where 1
-        indicates that the sample is valid.
-
-        Both mask and critic_outs should be 1-D.
+        The critic_outs Tensor should be 1-D.
         The actor_outs shape depends on the shape of
         action distribution parameters.
 
@@ -96,8 +92,6 @@ class TFActorCritic(Model):
         There is a one-to-one correspondence between
         samples in the batch and values in the Tensors
         produced by batch_outputs.
-        Masked samples should have 0's in rollout_idxs and
-        timestep_idxs.
 
         Args:
           rollouts: a list of (partial) rollouts

@@ -45,21 +45,3 @@ ignored-modules=numpy,mpi4py
 
 disable=C,R
 ```
-
-# TODO
-
-Here is the current TODO list, organized by sub-module:
-
-* `models`
-  * Unify CNN and MLP models with a single base class.
-  * Unshared actor-critics for TRPO and the like.
-* `rollouts`
-  * Optimize for sub-batches in `BatchedPlayer`.
-* `algos`
-  * TRPO
-  * PPO: allow clipping for value function
-* `spaces`
-  * Dict
-* `tests`
-  * Benchmarks for rollouts
-  * Benchmarks for training

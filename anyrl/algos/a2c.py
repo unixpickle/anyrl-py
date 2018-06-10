@@ -81,21 +81,21 @@ class A2C:
         """
         Build up the objective graph.
         """
-        actor, critic, mask = self.model.batch_outputs()
+        actor, critic = self.model.batch_outputs()
         dist = self.model.action_dist
         log_probs = dist.log_prob(actor, self._actions)
         entropies = dist.entropy(actor)
         critic_error = self._target_vals - critic
-        self.actor_loss = -util.masked_mean(mask, log_probs * self._advs)
-        self.critic_loss = util.masked_mean(mask, tf.square(critic_error))
-        self.entropy = util.masked_mean(mask, entropies)
+        self.actor_loss = -tf.reduce_mean(log_probs * self._advs)
+        self.critic_loss = tf.reduce_mean(tf.square(critic_error))
+        self.entropy = tf.reduce_mean(entropies)
         self.objective = (entropy_reg * self.entropy - self.actor_loss -
                           vf_coeff * self.critic_loss)
-        self.explained_var = self._compute_explained_var(mask)
+        self.explained_var = self._compute_explained_var()
 
-    def _compute_explained_var(self, mask):
-        variance = (util.masked_mean(mask, tf.square(self._target_vals)) -
-                    tf.square(util.masked_mean(mask, self._target_vals)))
+    def _compute_explained_var(self):
+        variance = (tf.reduce_mean(tf.square(self._target_vals)) -
+                    tf.square(tf.reduce_mean(self._target_vals)))
         return 1 - (self.critic_loss / variance)
 
     # TODO: API that supports schedules and runs the

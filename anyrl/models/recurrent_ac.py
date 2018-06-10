@@ -21,6 +21,8 @@ class RecurrentAC(TFActorCritic):
       seq_lens_ph: placeholder of sequence lengths
       is_init_state_ph: placeholder of booleans indicating
         if sequences start with an initial state.
+      mask_ph: placeholder for timestep mask. Is a 2-D
+        boolean Tensor, [batch x timesteps].
 
     Subclasses should set several attributes on init:
       init_state_vars: variable or tuple of variables
@@ -30,8 +32,6 @@ class RecurrentAC(TFActorCritic):
       obs_ph: placeholder for input sequences
       first_state_ph: placeholder or tuple of placeholders
         for the states at the beginning of the sequences.
-      mask_ph: placeholder for timestep mask. Should be of
-        shape (None, None).
       actor_out: actor output sequences
       critic_out: critic output sequences. Should be of
         shape (None, None).
@@ -46,6 +46,7 @@ class RecurrentAC(TFActorCritic):
 
         self.seq_lens_ph = tf.placeholder(tf.int32, shape=(None,))
         self.is_init_state_ph = tf.placeholder(tf.bool, shape=(None,))
+        self.mask_ph = tf.placeholder(tf.bool, (None, None))
 
         # Set this to a variable or a tuple of variables
         # for your model's initial state.
@@ -62,11 +63,6 @@ class RecurrentAC(TFActorCritic):
         # If a value in _is_init_state is True, then the
         # corresponding entry here is ignored.
         self.first_state_ph = None
-
-        # Set this to a placeholder for a batch of mask
-        # sequences to ignore timesteps in variable-length
-        # sequences.
-        self.mask_ph = None
 
         # Set these to the model outputs.
         self.actor_out = None
@@ -131,9 +127,9 @@ class RecurrentAC(TFActorCritic):
         out_count = seq_shape[0] * seq_shape[1]
         actor_shape = (out_count,) + self.action_dist.param_shape
         critic_shape = (out_count,)
-        return (tf.reshape(self.actor_out, actor_shape),
-                tf.reshape(self.critic_out, critic_shape),
-                tf.reshape(self.mask_ph, critic_shape))
+        masks = tf.reshape(self.mask_ph, critic_shape)
+        return (tf.boolean_mask(tf.reshape(self.actor_out, actor_shape), masks),
+                tf.boolean_mask(tf.reshape(self.critic_out, critic_shape), masks))
 
     def batches(self, rollouts, batch_size=None):
         sizes = [r.num_steps for r in rollouts]
@@ -150,9 +146,9 @@ class RecurrentAC(TFActorCritic):
                 empty_obs = np.zeros(np.array(obs_seq[0]).shape)
                 obs_seqs.append(_pad(obs_seq, max_len, value=empty_obs))
                 is_inits.append(not rollout.trunc_start)
-                masks.append(_pad([1]*rollout.num_steps, max_len))
-                rollout_idxs.extend(_pad([rollout_idx]*rollout.num_steps, max_len))
-                timestep_idxs.extend(_pad(list(range(rollout.num_steps)), max_len))
+                masks.append(_pad([True] * rollout.num_steps, max_len))
+                rollout_idxs.extend([rollout_idx] * rollout.num_steps)
+                timestep_idxs.extend(range(rollout.num_steps))
             feed_dict = {
                 self.obs_ph: obs_seqs,
                 self.is_init_state_ph: is_inits,
@@ -214,7 +210,6 @@ class RNNCellAC(RecurrentAC):
         super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
         obs_seq_shape = (None, None) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(input_dtype, obs_seq_shape)
-        self.mask_ph = tf.placeholder(tf.float32, (None, None))
 
         with tf.variable_scope('cell_input'):
             cell_input = self.cell_input_sequences()

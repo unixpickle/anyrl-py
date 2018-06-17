@@ -130,9 +130,9 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
         terms = optimizer.minimize(ppo.model.session,
                                    feed_dict=feed_dict,
                                    terms=[ppo.actor_loss, ppo.explained_var, ppo.entropy,
-                                          ppo.num_clipped])
+                                          ppo.clipped_frac])
         if log_fn and MPI.COMM_WORLD.Get_rank() == 0:
-            log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%d' %
+            log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%f' %
                    (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
         return terms
     return ppo._training_loop(optimize_fn=_optimize_fn,

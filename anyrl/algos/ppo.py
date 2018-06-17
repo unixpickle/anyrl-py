@@ -72,30 +72,53 @@ class PPO(A2C):
         by calling log_fn with string log messages.
 
         Returns:
-          A list of tuples, where each tuple is:
-            (actor_loss, explained, entropy, clipped).
+          A dict of metadata from training, with keys:
+            'actor_loss': a list containing the mean actor
+              loss at each iteration.
+            'explained_var': a list containing the
+              explained variation at each iteration.
+            'entropy': a list containing the mean entropy
+              at each iteration.
+            'clipped': a list containing the number of
+              clipped samples at each iteration.
 
-          The returned list of tuples correspond to each
-            iteration of training.
+          More keys may be added in the future.
+        """
+        def _optimize_fn(batch_idx, feed_dict):
+            terms = (self.actor_loss, self.explained_var, self.entropy,
+                     self.num_clipped, optimize_op)
+            terms = self.model.session.run(terms, feed_dict)
+            if log_fn is not None:
+                log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%d' %
+                       (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
+            return terms[:-1]
+        return self._training_loop(optimize_fn=_optimize_fn,
+                                   rollouts=rollouts,
+                                   batch_size=batch_size,
+                                   num_iter=num_iter,
+                                   extra_feed_dict=extra_feed_dict)
+
+    def _training_loop(self, optimize_fn, rollouts, batch_size, num_iter, extra_feed_dict):
+        """
+        Run a generic PPO training loop.
+
+        The optimize_fn takes (batch_idx, feed_dict) and
+        returns (actor, explained, entropy, clipped).
         """
         batch_idx = 0
         batches = self.model.batches(rollouts, batch_size=batch_size)
         advantages = self.adv_est.advantages(rollouts)
         targets = self.adv_est.targets(rollouts)
-        result = []
+        result = {key: [] for key in ['actor_loss', 'explained_var', 'entropy', 'clipped']}
         for batch in batches:
-            terms = (self.actor_loss, self.explained_var, self.entropy,
-                     self.num_clipped, optimize_op)
             feed_dict = self.feed_dict(rollouts, batch,
                                        advantages=advantages,
                                        targets=targets)
             if extra_feed_dict:
                 feed_dict.update(extra_feed_dict)
-            terms = self.model.session.run(terms, feed_dict)
-            if log_fn is not None:
-                log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%d' %
-                       (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
-            result.append(terms[:4])
+            terms = optimize_fn(batch_idx, feed_dict)
+            for name, term in zip(['actor_loss', 'explained_var', 'entropy', 'clipped'], terms):
+                result[name].append(term)
             batch_idx += 1
             if batch_idx == num_iter:
                 break

@@ -121,24 +121,12 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
 
     If log_fn is set, logging is done on rank 0.
 
-    Returns:
-      A list of tuples, where each tuple is:
-        (actor_loss, explained, entropy, clipped).
-
-      The returned list of tuples correspond to each
-        iteration of training.
+    This is exactly like to PPO.run_optimize(), except
+    that it uses an MPIOptimizer. Since this is not a
+    method on the PPO class, the first argument is a PPO
+    instance.
     """
-    batch_idx = 0
-    batches = ppo.model.batches(rollouts, batch_size=batch_size)
-    advantages = ppo.adv_est.advantages(rollouts)
-    targets = ppo.adv_est.targets(rollouts)
-    result = []
-    for batch in batches:
-        feed_dict = ppo.feed_dict(rollouts, batch,
-                                  advantages=advantages,
-                                  targets=targets)
-        if extra_feed_dict:
-            feed_dict.update(extra_feed_dict)
+    def _optimize_fn(batch_idx, feed_dict):
         terms = optimizer.minimize(ppo.model.session,
                                    feed_dict=feed_dict,
                                    terms=[ppo.actor_loss, ppo.explained_var, ppo.entropy,
@@ -146,8 +134,9 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
         if log_fn and MPI.COMM_WORLD.Get_rank() == 0:
             log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%d' %
                    (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
-        result.append(terms)
-        batch_idx += 1
-        if batch_idx == num_iter:
-            break
-    return result
+        return terms
+    return ppo._training_loop(optimize_fn=_optimize_fn,
+                              rollouts=rollouts,
+                              batch_size=batch_size,
+                              num_iter=num_iter,
+                              extra_feed_dict=extra_feed_dict)

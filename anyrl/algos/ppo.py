@@ -79,17 +79,19 @@ class PPO(A2C):
               at each iteration.
             'clipped': a list containing the fraction of
               clipped samples at each iteration.
+            'batch_size': a list containing the number of
+              timestep samples per batch.
 
           More keys may be added in the future.
         """
-        def _optimize_fn(batch_idx, feed_dict):
+        def _optimize_fn(batch_idx, batch, feed_dict):
             terms = (self.actor_loss, self.explained_var, self.entropy,
                      self.clipped_frac, optimize_op)
             terms = self.model.session.run(terms, feed_dict)
             if log_fn is not None:
                 log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%f' %
                        (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
-            return terms[:-1]
+            return terms[:-1] + (len(batch['timestep_idxs']),)
         return self._training_loop(optimize_fn=_optimize_fn,
                                    rollouts=rollouts,
                                    batch_size=batch_size,
@@ -100,22 +102,30 @@ class PPO(A2C):
         """
         Run a generic PPO training loop.
 
-        The optimize_fn takes (batch_idx, feed_dict) and
-        returns (actor, explained, entropy, clipped).
+        The optimize_fn takes (batch_idx, batch, feed_dict)
+        and returns a tuple with these elements:
+          actor: the actor loss.
+          explained: the explained variation.
+          entropy: the mean entropy.
+          clipped: the clipped fraction.
+          batch_size: the input batch size.
         """
+        assert num_iter > 0
         batch_idx = 0
         batches = self.model.batches(rollouts, batch_size=batch_size)
         advantages = self.adv_est.advantages(rollouts)
         targets = self.adv_est.targets(rollouts)
-        result = {key: [] for key in ['actor_loss', 'explained_var', 'entropy', 'clipped']}
+        term_names = ['actor_loss', 'explained_var', 'entropy', 'clipped', 'batch_size']
+        result = {key: [] for key in term_names}
         for batch in batches:
             feed_dict = self.feed_dict(rollouts, batch,
                                        advantages=advantages,
                                        targets=targets)
             if extra_feed_dict:
                 feed_dict.update(extra_feed_dict)
-            terms = optimize_fn(batch_idx, feed_dict)
-            for name, term in zip(['actor_loss', 'explained_var', 'entropy', 'clipped'], terms):
+            terms = optimize_fn(batch_idx, batch, feed_dict)
+            assert len(terms) == 5, 'missing or extraneous step results'
+            for name, term in zip(term_names, terms):
                 result[name].append(term)
             batch_idx += 1
             if batch_idx == num_iter:

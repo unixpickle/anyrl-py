@@ -126,7 +126,7 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
     method on the PPO class, the first argument is a PPO
     instance.
     """
-    def _optimize_fn(batch_idx, feed_dict):
+    def _optimize_fn(batch_idx, batch, feed_dict):
         terms = optimizer.minimize(ppo.model.session,
                                    feed_dict=feed_dict,
                                    terms=[ppo.actor_loss, ppo.explained_var, ppo.entropy,
@@ -134,7 +134,9 @@ def mpi_ppo(ppo, optimizer, rollouts, batch_size=None, num_iter=12, log_fn=None,
         if log_fn and MPI.COMM_WORLD.Get_rank() == 0:
             log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%f' %
                    (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
-        return terms
+        batch_size = len(batch['timestep_idxs'])
+        batch_size = MPI.COMM_WORLD.allreduce(batch_size, op=MPI.SUM) / MPI.COMM_WORLD.Get_size()
+        return terms + (batch_size,)
     return ppo._training_loop(optimize_fn=_optimize_fn,
                               rollouts=rollouts,
                               batch_size=batch_size,

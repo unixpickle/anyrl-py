@@ -197,11 +197,6 @@ class ActWrapperBatcher(BatchedWrapper):
                                                   sub_batch=sub_batch)
 
 
-# Avoid a breaking change.
-BatchedObsWrapper = ObsWrapperBatcher
-BatchedActWrapper = ActWrapperBatcher
-
-
 class _AttrEnv(gym.Env):
     """
     An environment that inherits various attributes from a

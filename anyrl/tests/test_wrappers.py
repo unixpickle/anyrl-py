@@ -119,6 +119,25 @@ def test_stack_3():
     assert (obs2[:, :, 2:] == obs3[:, :, :4]).all()
 
 
+def test_stack_3_strided():
+    """
+    Test FrameStackEnv for 3 frames with a stride of 2.
+    """
+    low = np.zeros((4, 5, 2))
+    high = np.zeros((4, 5, 2)) + 0xff
+    env = FrameStackEnv(ShapeEnv(low, high), 3, stride=2)
+    assert env.observation_space.shape == (4, 5, 6)
+    obses = [env.reset()]
+    for _ in range(5):
+        new_obs, _, _, _ = env.step(0)
+        for obs in obses:
+            assert not (obs == new_obs).all()
+        obses.append(new_obs)
+    assert (obses[-1][:, :, :-2] == obses[-3][:, :, 2:]).all()
+    assert (obses[-2][:, :, :-2] == obses[-4][:, :, 2:]).all()
+    assert (obses[-3][:, :, :-2] == obses[-5][:, :, 2:]).all()
+
+
 def test_stack_3_no_concat():
     """
     Test FrameStackEnv for 3 frames with no concatenation.
@@ -132,6 +151,28 @@ def test_stack_3_no_concat():
     obs2, _, _, _, = env.step(0)
     assert np.allclose(obs2[0], obs1[0])
     assert not np.allclose(obs2[-1], obs1[0])
+
+
+def test_stack_3_no_concat_strided():
+    """
+    Test FrameStackEnv for 3 frames with no concatenation
+    and a stride of 2.
+    """
+    low = np.zeros((4, 5, 2))
+    high = np.zeros((4, 5, 2)) + 0xff
+    env = FrameStackEnv(ShapeEnv(low, high), 3, concat=False, stride=2)
+    assert env.observation_space.box.shape == (4, 5, 2)
+    assert env.observation_space.count == 3
+    obses = [env.reset()]
+    for _ in range(5):
+        new_obs, _, _, _ = env.step(0)
+        new_obs = np.array(new_obs)
+        for obs in obses:
+            assert not (obs == new_obs).all()
+        obses.append(new_obs)
+    assert (obses[-1][:-1] == obses[-3][1:]).all()
+    assert (obses[-2][:-1] == obses[-4][1:]).all()
+    assert (obses[-3][:-1] == obses[-5][1:]).all()
 
 
 def test_max_2():
@@ -171,16 +212,17 @@ def test_resize_even():
     assert np.allclose(actual, expected)
 
 
-@pytest.mark.parametrize('concat', [False, True])
-def test_batched_stack(concat):
+@pytest.mark.parametrize('concat,stride', [(False, 1), (False, 2), (True, 1), (True, 2)])
+def test_batched_stack(concat, stride):
     """
     Test that BatchedFrameStack is equivalent to a regular
     batched FrameStackEnv.
     """
     envs = [lambda idx=i: SimpleEnv(idx+2, (3, 2, 5), 'float32') for i in range(6)]
     env1 = BatchedFrameStack(batched_gym_env(envs, num_sub_batches=3, sync=True),
-                             concat=concat)
-    env2 = batched_gym_env([lambda env=e: FrameStackEnv(env(), concat=concat) for e in envs],
+                             concat=concat, stride=stride)
+    env2 = batched_gym_env([lambda env=e: FrameStackEnv(env(), concat=concat, stride=stride)
+                            for e in envs],
                            num_sub_batches=3, sync=True)
     for j in range(50):
         for i in range(3):

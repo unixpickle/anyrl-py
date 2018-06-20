@@ -64,7 +64,7 @@ class BatchedFrameStack(BatchedWrapper):
     The batched analog of FrameStackEnv.
     """
 
-    def __init__(self, env, num_images=2, concat=True):
+    def __init__(self, env, num_images=2, concat=True, stride=1):
         super(BatchedFrameStack, self).__init__(env)
         self.concat = concat
         if hasattr(self, 'observation_space'):
@@ -76,18 +76,20 @@ class BatchedFrameStack(BatchedWrapper):
             else:
                 self.observation_space = StackedBoxSpace(old, num_images)
         self._num_images = num_images
+        self._stride = stride
+        self._history_size = 1 + (num_images - 1) * stride
         self._history = [None] * env.num_sub_batches
 
     def reset_wait(self, sub_batch=0):
         obses = super(BatchedFrameStack, self).reset_wait(sub_batch=sub_batch)
-        self._history[sub_batch] = [[o]*self._num_images for o in obses]
+        self._history[sub_batch] = [[o]*self._history_size for o in obses]
         return self._packed_obs(sub_batch)
 
     def step_wait(self, sub_batch=0):
         obses, rews, dones, infos = super(BatchedFrameStack, self).step_wait(sub_batch=sub_batch)
         for i, (obs, done) in enumerate(zip(obses, dones)):
             if done:
-                self._history[sub_batch][i] = [obs] * self._num_images
+                self._history[sub_batch][i] = [obs] * self._history_size
             else:
                 self._history[sub_batch][i].append(obs)
                 self._history[sub_batch][i] = self._history[sub_batch][i][1:]
@@ -99,8 +101,8 @@ class BatchedFrameStack(BatchedWrapper):
         inner dimension.
         """
         if self.concat:
-            return [np.concatenate(o, axis=-1) for o in self._history[sub_batch]]
-        return [o.copy() for o in self._history[sub_batch]]
+            return [np.concatenate(o[::self._stride], axis=-1) for o in self._history[sub_batch]]
+        return [o[::self._stride].copy() for o in self._history[sub_batch]]
 
 
 class BatchedObservationWrapper(BatchedWrapper):

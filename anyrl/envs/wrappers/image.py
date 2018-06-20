@@ -83,7 +83,7 @@ class FrameStackEnv(gym.Wrapper):
     is repeated in order to complete the stack.
     """
 
-    def __init__(self, env, num_images=2, concat=True):
+    def __init__(self, env, num_images=2, concat=True, stride=1):
         """
         Create a frame stacking environment.
 
@@ -96,6 +96,8 @@ class FrameStackEnv(gym.Wrapper):
             If False, the stacked frames are simply put
             together in a list. In this case, a special
             observation space, StackedBoxSpace, is used.
+          stride: the temporal stride. A value larger than
+            one indicates that frames should be skipped.
         """
         super(FrameStackEnv, self).__init__(env)
         self.concat = concat
@@ -107,22 +109,25 @@ class FrameStackEnv(gym.Wrapper):
         else:
             self.observation_space = StackedBoxSpace(old_space, num_images)
         self._num_images = num_images
+        self._stride = stride
+        self._history_size = 1 + (num_images - 1) * stride
         self._history = []
 
     def reset(self, **kwargs):
         obs = self.env.reset(**kwargs)
-        self._history = [obs] * self._num_images
-        if self.concat:
-            return np.concatenate(self._history, axis=-1)
-        return self._history.copy()
+        self._history = [obs] * self._history_size
+        return self._cur_obs()
 
     def step(self, action):
         obs, rew, done, info = self.env.step(action)
         self._history.append(obs)
         self._history = self._history[1:]
+        return self._cur_obs(), rew, done, info
+
+    def _cur_obs(self):
         if self.concat:
-            return np.concatenate(self._history, axis=-1), rew, done, info
-        return self._history.copy(), rew, done, info
+            return np.concatenate(self._history[::self._stride], axis=-1)
+        return self._history[::self._stride].copy()
 
 
 class MaxEnv(gym.Wrapper):

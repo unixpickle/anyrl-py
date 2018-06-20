@@ -37,7 +37,7 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1, sync=Fal
     sub_batches = []
     batch_size = len(env_fns) // num_sub_batches
     for i in range(num_sub_batches):
-        batch_fns = env_fns[i*batch_size: (i+1)*batch_size]
+        batch_fns = env_fns[i * batch_size:(i + 1) * batch_size]
         if sync:
             envs = [fn() for fn in batch_fns]
         else:

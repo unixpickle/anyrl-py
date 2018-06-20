@@ -276,7 +276,7 @@ class FloatBuffer:
     def _bin(self, bin_idx):
         if bin_idx == len(self._bin_sums) - 1:
             return self._buffer[self._bin_size * bin_idx:]
-        return self._buffer[self._bin_size * bin_idx: self._bin_size * (bin_idx + 1)]
+        return self._buffer[self._bin_size * bin_idx:self._bin_size * (bin_idx + 1)]
 
     def _recompute_min(self):
         if self._used < self._capacity:

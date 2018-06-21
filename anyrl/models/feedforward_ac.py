@@ -143,7 +143,7 @@ class CNN(FeedforwardAC):
                  actor_init=tf.zeros_initializer(),
                  critic_init=tf.zeros_initializer()):
         """
-        Create an CNN model.
+        Create a CNN model.
 
         Args:
           session: TF session.

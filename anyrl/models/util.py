@@ -84,6 +84,12 @@ def nature_cnn(obs_batch, dense=tf.layers.dense):
         cnn_3 = tf.layers.conv2d(cnn_2, 64, 3, 1, **conv_kwargs)
     flat_size = product([x.value for x in cnn_3.get_shape()[1:]])
     flat_in = tf.reshape(cnn_3, (tf.shape(cnn_3)[0], int(flat_size)))
+
+    # The orthogonal initializer appears to be unstable
+    # for large matrices. With ortho init, I see huge
+    # max outputs for some environments.
+    del conv_kwargs['kernel_initializer']
+
     return dense(flat_in, 512, **conv_kwargs)
 
 

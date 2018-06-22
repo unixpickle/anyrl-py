@@ -12,7 +12,7 @@ import pytest
 import tensorflow as tf
 
 from anyrl.envs import batched_gym_env
-from anyrl.envs.wrappers import (RL2Env, DownsampleEnv, GrayscaleEnv, FrameStackEnv,
+from anyrl.envs.wrappers import (RL2Env, DownsampleEnv, GrayscaleEnv, FrameSkipEnv, FrameStackEnv,
                                  MaxEnv, ResizeImageEnv, BatchedFrameStack, ObservationPadEnv,
                                  LoggedEnv)
 from anyrl.tests import SimpleEnv
@@ -173,6 +173,38 @@ def test_stack_3_no_concat_strided():
     assert (obses[-1][:-1] == obses[-3][1:]).all()
     assert (obses[-2][:-1] == obses[-4][1:]).all()
     assert (obses[-3][:-1] == obses[-5][1:]).all()
+
+
+def test_skip():
+    """
+    Test a FrameSkipEnv wrapper.
+    """
+    # Timestep limit is 5.
+    env = SimpleEnv(4, (3, 2, 5), 'float32')
+    act1 = np.random.uniform(high=255.0, size=(3, 2, 5))
+    act2 = np.random.uniform(high=255.0, size=(3, 2, 5))
+    obs1 = env.reset()
+    rew1 = 0.0
+    rew2 = 0.0
+    for _ in range(3):
+        obs2, rew, _, _ = env.step(act1)
+        rew1 += rew
+    for _ in range(2):
+        obs3, rew, done, _ = env.step(act2)
+        rew2 += rew
+    assert done
+
+    env = FrameSkipEnv(env, num_frames=3)
+    actual_obs1 = env.reset()
+    assert np.allclose(actual_obs1, obs1)
+    actual_obs2, actual_rew1, done, _ = env.step(act1)
+    assert not done
+    assert actual_rew1 == rew1
+    assert np.allclose(actual_obs2, obs2)
+    actual_obs3, actual_rew2, done, _ = env.step(act2)
+    assert done
+    assert actual_rew2 == rew2
+    assert np.allclose(actual_obs3, obs3)
 
 
 def test_max_2():

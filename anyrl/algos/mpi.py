@@ -31,7 +31,7 @@ class MPIOptimizer:
         self.apply = optimizer.apply_gradients(apply_in)
         optimizer_vars = [v for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
                           if v not in old_variables]
-        self._var_sync = _VarSync([v for _, v in self.grads] + optimizer_vars)
+        self._var_sync = VarSync([v for _, v in self.grads] + optimizer_vars)
 
     def minimize(self, sess, feed_dict=None, terms=None):
         """
@@ -86,9 +86,10 @@ class MPIOptimizer:
         self._var_sync.sync(sess)
 
 
-class _VarSync:
+class VarSync:
     """
-    An object that can synchronize vars between MPI nodes.
+    An object that can synchronize TensorFlow variables
+    between MPI nodes.
     """
 
     def __init__(self, variables):

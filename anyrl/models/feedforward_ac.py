@@ -2,6 +2,8 @@
 Stateless neural network models.
 """
 
+from abc import abstractmethod
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.layers import fully_connected  # pylint: disable=E0611
@@ -22,17 +24,10 @@ class FeedforwardAC(TFActorCritic):
       critic_out: critic output batch. Should be of shape
         (None,).
     """
-
-    def __init__(self, session, action_dist, obs_vectorizer):
-        """
-        Construct a feed-forward model.
-        """
-        super(FeedforwardAC, self).__init__(session, action_dist, obs_vectorizer)
-
-        # Set these in your constructor.
-        self.obs_ph = None
-        self.actor_out = None
-        self.critic_out = None
+    # Set these in your constructor.
+    obs_ph = None
+    actor_out = None
+    critic_out = None
 
     def scale_outputs(self, scale):
         """
@@ -79,7 +74,60 @@ class FeedforwardAC(TFActorCritic):
             }
 
 
-class MLP(FeedforwardAC):
+class HeadFeedforwardAC(FeedforwardAC):
+    """
+    A base class for feedforward models that feed inputs
+    into a base network which is then fed into actor and
+    critic heads.
+    """
+
+    def __init__(self,
+                 sess,
+                 action_dist,
+                 obs_vectorizer,
+                 obs_batch,
+                 actor_init,
+                 critic_init):
+        super(HeadFeedforwardAC, self).__init__(sess, action_dist, obs_vectorizer)
+        with tf.variable_scope('base'):
+            self.base_out = self.base(obs_batch)
+        with tf.variable_scope('actor'):
+            self.actor_out = self.actor(self.base_out, actor_init)
+        with tf.variable_scope('critic'):
+            self.critic_out = self.critic(self.base_out, critic_init)
+
+    @abstractmethod
+    def base(self, obs_batch):
+        """
+        Apply the shared part of the model.
+
+        Returns:
+          A batch that is fed into actor() and critic().
+        """
+        pass
+
+    def actor(self, base, initializer):
+        """
+        Turn the output from base() into action params.
+        """
+        out_size = product(self.action_dist.param_shape)
+        actor_out = fully_connected(base, out_size,
+                                    activation_fn=None,
+                                    weights_initializer=initializer)
+        batch = tf.shape(actor_out)[0]
+        return tf.reshape(actor_out, (batch,) + self.action_dist.param_shape)
+
+    def critic(self, base, initializer):
+        """
+        Turn the output from base() into values.
+        """
+        critic_out = fully_connected(base, 1,
+                                     activation_fn=None,
+                                     weights_initializer=initializer)
+        return tf.reshape(critic_out, (tf.shape(critic_out)[0],))
+
+
+class MLP(HeadFeedforwardAC):
     """
     A multi-layer perceptron actor-critic model.
     """
@@ -104,29 +152,18 @@ class MLP(FeedforwardAC):
           actor_init: initializer for the actor head.
           critic_init: initializer for the critic head.
         """
-        super(MLP, self).__init__(session, action_dist, obs_vectorizer)
-
         in_batch_shape = (None,) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(tf.float32, shape=in_batch_shape)
+        self.layer_sizes = layer_sizes
+        self.activation = activation
+        super(MLP, self).__init__(session, action_dist, obs_vectorizer,
+                                  self.obs_ph, actor_init, critic_init)
 
-        self.base_out = simple_mlp(self.obs_ph, layer_sizes, activation)
-
-        with tf.variable_scope('actor'):
-            out_size = product(action_dist.param_shape)
-            actor_out = fully_connected(self.base_out, out_size,
-                                        activation_fn=None,
-                                        weights_initializer=actor_init)
-            batch = tf.shape(actor_out)[0]
-            self.actor_out = tf.reshape(actor_out, (batch,) + action_dist.param_shape)
-
-        with tf.variable_scope('critic'):
-            critic_out = fully_connected(self.base_out, 1,
-                                         activation_fn=None,
-                                         weights_initializer=critic_init)
-            self.critic_out = tf.reshape(critic_out, (tf.shape(critic_out)[0],))
+    def base(self, obs_batch):
+        return simple_mlp(obs_batch, self.layer_sizes, self.activation)
 
 
-class CNN(FeedforwardAC):
+class CNN(HeadFeedforwardAC):
     """
     A convolutional actor-critic model.
 
@@ -154,18 +191,11 @@ class CNN(FeedforwardAC):
           actor_init: initializer for the actor head.
           critic_init: initializer for the critic head.
         """
-        super(CNN, self).__init__(session, action_dist, obs_vectorizer)
-
         in_batch_shape = (None,) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(input_dtype, shape=in_batch_shape)
         obs_batch = tf.cast(self.obs_ph, tf.float32) * input_scale
-
-        with tf.variable_scope('base'):
-            self.base_out = self.base(obs_batch)
-        with tf.variable_scope('actor'):
-            self.actor_out = self.actor(self.base_out, actor_init)
-        with tf.variable_scope('critic'):
-            self.critic_out = self.critic(self.base_out, critic_init)
+        super(CNN, self).__init__(session, action_dist, obs_vectorizer,
+                                  obs_batch, actor_init, critic_init)
 
     def base(self, obs_batch):
         """
@@ -174,26 +204,6 @@ class CNN(FeedforwardAC):
         critic().
         """
         return nature_cnn(obs_batch)
-
-    def actor(self, base, initializer):
-        """
-        Turn the output from base() into action params.
-        """
-        out_size = product(self.action_dist.param_shape)
-        actor_out = fully_connected(base, out_size,
-                                    activation_fn=None,
-                                    weights_initializer=initializer)
-        batch = tf.shape(actor_out)[0]
-        return tf.reshape(actor_out, (batch,) + self.action_dist.param_shape)
-
-    def critic(self, base, initializer):
-        """
-        Turn the output from base() into values.
-        """
-        critic_out = fully_connected(base, 1,
-                                     activation_fn=None,
-                                     weights_initializer=initializer)
-        return tf.reshape(critic_out, (tf.shape(critic_out)[0],))
 
 
 def _frames_from_rollouts(rollouts):

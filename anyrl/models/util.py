@@ -93,6 +93,36 @@ def nature_cnn(obs_batch, dense=tf.layers.dense):
     return dense(flat_in, 512, **conv_kwargs)
 
 
+def impala_cnn(images, depths=(16, 32, 32)):
+    """
+    Apply the CNN architecture from the IMPALA paper.
+
+    The result is a batch of feature vectors.
+    """
+    def residual_block(inputs):
+        depth = inputs.get_shape()[-1].value
+        out = tf.nn.relu(inputs)
+        out = tf.layers.conv2d(out, depth, 3, padding='same', activation=tf.nn.relu)
+        out = tf.layers.conv2d(out, depth, 3, padding='same')
+        return out + inputs
+
+    def conv_sequence(inputs, depth):
+        out = tf.layers.conv2d(inputs, depth, 3, padding='same', activation=tf.nn.relu)
+        out = tf.layers.max_pooling2d(out, pool_size=3, strides=2, padding='same')
+        out = residual_block(out)
+        out = residual_block(out)
+        return out
+
+    out = images
+    for depth in depths:
+        out = conv_sequence(out, depth)
+    out = tf.layers.flatten(out)
+    out = tf.nn.relu(out)
+    out = tf.layers.dense(out, 256, activation=tf.nn.relu)
+
+    return out
+
+
 def nature_huber_loss(residuals):
     """
     Compute the Huber loss as used for Nature DQN.

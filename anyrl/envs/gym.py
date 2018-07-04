@@ -67,14 +67,12 @@ class AsyncGymEnv(AsyncEnv):
             self._obs_buf = None
         self._pipe, other_end = Pipe()
         self._proc = Process(target=self._worker,
-                             args=(other_end,
-                                   self._obs_buf,
-                                   cloudpickle.dumps(make_env)),
+                             args=(other_end, self._obs_buf),
                              daemon=True)
         self._proc.start()
         self._running_cmd = None
         other_end.close()
-        self._pipe.send(('action_space', None))
+        self._pipe.send(cloudpickle.dumps(make_env))
         self.action_space = self._get_response()
 
     def reset_start(self):
@@ -136,22 +134,21 @@ class AsyncGymEnv(AsyncEnv):
         return obs.reshape(shape).copy()
 
     @classmethod
-    def _worker(cls, pipe, obs_buf, make_env):
+    def _worker(cls, pipe, obs_buf):
         """
         Entry-point for the sub-process.
         """
+        make_env = pipe.recv()
         try:
             env = cloudpickle.loads(make_env)()
         except BaseException as exc:
-            pipe.recv()
             pipe.send(exc)
             return
+        pipe.send(env.action_space)
         try:
             while True:
                 cmd, action = pipe.recv()
-                if cmd == 'action_space':
-                    pipe.send(env.action_space)
-                elif cmd == 'reset':
+                if cmd == 'reset':
                     pipe.send(cls._sendable_observation(env.reset(), obs_buf))
                 elif cmd == 'step':
                     obs, rew, done, info = env.step(action)

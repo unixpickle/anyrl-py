@@ -109,7 +109,7 @@ class JointEnv(gym.Env):
     This can be used for joint-training.
     """
 
-    def __init__(self, env_fns):
+    def __init__(self, env_fns, env_names=None):
         """
         Create a joint environment.
 
@@ -117,8 +117,12 @@ class JointEnv(gym.Env):
           env_fns: a sequence of callables that construct
             new environments. All environments must have
             the same spaces.
+          env_names: if specified, a sequence of names for
+            the env_fns. The name is included in the info
+            dict under 'env_name'.
         """
         self.env_fns = env_fns
+        self.env_names = env_names
         self.env = None
         self.env_idx = 0
         env = env_fns[0]()
@@ -139,6 +143,8 @@ class JointEnv(gym.Env):
         obs, rew, done, info = self.env.step(action)
         info = info.copy()
         info['env_idx'] = self.env_idx
+        if self.env_names is not None:
+            info['env_name'] = self.env_names[self.env_idx]
         return obs, rew, done, info
 
     def render(self, mode='human'):

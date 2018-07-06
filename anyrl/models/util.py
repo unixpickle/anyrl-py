@@ -107,7 +107,7 @@ def impala_cnn(images, depths=(16, 32, 32)):
         return out + inputs
 
     def conv_sequence(inputs, depth):
-        out = tf.layers.conv2d(inputs, depth, 3, padding='same', activation=tf.nn.relu)
+        out = tf.layers.conv2d(inputs, depth, 3, padding='same')
         out = tf.layers.max_pooling2d(out, pool_size=3, strides=2, padding='same')
         out = residual_block(out)
         out = residual_block(out)

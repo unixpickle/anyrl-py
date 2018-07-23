@@ -13,7 +13,7 @@ from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell
 
 from anyrl.models import MLP, RNNCellAC
 from anyrl.rollouts import BasicRoller
-from anyrl.spaces import gym_space_distribution, gym_space_vectorizer
+from anyrl.spaces import gym_spaces
 from anyrl.tests import TupleCartPole
 
 
@@ -47,13 +47,10 @@ def run_ac_test(maker):
     """
     env = TupleCartPole()
     try:
-        action_space = env.action_space
-        observation_space = env.observation_space
+        spaces = gym_spaces(env)
     finally:
         env.close()
-    action_dist = gym_space_distribution(action_space)
-    obs_vectorizer = gym_space_vectorizer(observation_space)
-    ModelTester(lambda sess: maker(sess, action_dist, obs_vectorizer)).test_all()
+    ModelTester(lambda sess: maker(sess, *spaces)).test_all()
 
 
 class ModelTester:

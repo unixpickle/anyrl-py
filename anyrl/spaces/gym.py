@@ -89,3 +89,20 @@ def gym_space_vectorizer(space):
     if isinstance(space, StackedBoxSpace):
         return BoxStacker(space.box.shape, space.count)
     return gym_space_distribution(space)
+
+
+def gym_spaces(env):
+    """
+    Get an action distribution and an observation
+    vectorizer for a gym environment.
+
+    Args:
+      env: any object with an observation_space and
+        action_space attribute.
+
+    Returns:
+      A tuple (action_dist, obs_vectorizer):
+        action_dist: a Distribution for actions.
+        obs_vectorizer: a Vectorizer for observations.
+    """
+    return gym_space_distribution(env.action_space), gym_space_vectorizer(env.observation_space)

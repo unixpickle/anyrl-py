@@ -121,16 +121,16 @@ class BatchedObservationWrapper(BatchedWrapper):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def observation(self, batched_obses):
+    def observation(self, obses):
         """
         Modifies given batched observations into output
         batched observations
 
-        Arguments
-            batched_obses: List containing batched
-            observations from child observations.
+        Args:
+          obses: a list or array of observations.
+
         Returns:
-            List containing modified batched observations
+          A list or array of modified observations.
         """
         pass
 

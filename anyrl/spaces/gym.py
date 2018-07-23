@@ -35,6 +35,7 @@ class StackedBoxSpace(gym.Space):
     """
 
     def __init__(self, box, count):
+        super(StackedBoxSpace, self).__init__(dtype=box.dtype)
         self.box = box
         self.count = count
 

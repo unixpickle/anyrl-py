@@ -22,10 +22,15 @@ class PPO(A2C):
     def __init__(self,
                  model,
                  epsilon=0.2,
+                 value_epsilon=None,
+                 value_clip_fn=util.symmetric_clipped_value_loss,
                  **a2c_kwargs):
         self._epsilon = epsilon
+        self._value_epsilon = value_epsilon
+        self._value_clip_fn = value_clip_fn
         param_shape = (None,) + model.action_dist.param_shape
         self._orig_action_params = tf.placeholder(tf.float32, param_shape)
+        self._orig_values = tf.placeholder(tf.float32, (None,))
         super(PPO, self).__init__(model, **a2c_kwargs)
 
     def _create_objective(self, vf_coeff, entropy_reg):
@@ -36,9 +41,12 @@ class PPO(A2C):
         old_log_probs = dist.log_prob(self._orig_action_params, self._actions)
         clipped_obj = clipped_objective(new_log_probs, old_log_probs,
                                         self._advs, self._epsilon)
-        critic_error = self._target_vals - critic
+        self.critic_losses, self.value_clipped_frac = self._value_clip_fn(critic,
+                                                                          self._orig_values,
+                                                                          self._target_vals,
+                                                                          self._value_epsilon)
         self.actor_loss = -tf.reduce_mean(clipped_obj)
-        self.critic_loss = tf.reduce_mean(tf.square(critic_error))
+        self.critic_loss = tf.reduce_mean(self.critic_losses)
         self.entropy = tf.reduce_mean(dist.entropy(actor))
         self.clipped_frac = _clipped_frac(new_log_probs, old_log_probs, self._advs, self._epsilon)
         self.objective = (entropy_reg * self.entropy - self.actor_loss -
@@ -53,7 +61,9 @@ class PPO(A2C):
                                                advantages=advantages,
                                                targets=targets)
         orig_outs = util.select_model_out_from_batch('action_params', rollouts, batch)
+        orig_vals = util.select_model_out_from_batch('values', rollouts, batch)
         feed_dict[self._orig_action_params] = orig_outs
+        feed_dict[self._orig_values] = orig_vals
         return feed_dict
 
     # pylint: disable=W0221
@@ -79,6 +89,9 @@ class PPO(A2C):
               at each iteration.
             'clipped': a list containing the fraction of
               clipped samples at each iteration.
+            'value_clipped': a list containing the
+              fraction of clipped value function targets
+              at each iterations.
             'batch_size': a list containing the number of
               timestep samples per batch.
 
@@ -86,11 +99,11 @@ class PPO(A2C):
         """
         def _optimize_fn(batch_idx, batch, feed_dict):
             terms = (self.actor_loss, self.explained_var, self.entropy,
-                     self.clipped_frac, optimize_op)
+                     self.clipped_frac, self.value_clipped_frac, optimize_op)
             terms = self.model.session.run(terms, feed_dict)
             if log_fn is not None:
-                log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%f' %
-                       (batch_idx, -terms[0], terms[1], terms[2], terms[3]))
+                log_fn('batch %d: actor=%f explained=%f entropy=%f clipped=%f value_clipped=%f' %
+                       (batch_idx, -terms[0], terms[1], terms[2], terms[3], terms[4]))
             return terms[:-1] + (len(batch['timestep_idxs']),)
         return self._training_loop(optimize_fn=_optimize_fn,
                                    rollouts=rollouts,
@@ -103,19 +116,16 @@ class PPO(A2C):
         Run a generic PPO training loop.
 
         The optimize_fn takes (batch_idx, batch, feed_dict)
-        and returns a tuple with these elements:
-          actor: the actor loss.
-          explained: the explained variation.
-          entropy: the mean entropy.
-          clipped: the clipped fraction.
-          batch_size: the input batch size.
+        and returns a dict of meta-data compatible with
+        run_optimize().
         """
         assert num_iter > 0
         batch_idx = 0
         batches = self.model.batches(rollouts, batch_size=batch_size)
         advantages = self.adv_est.advantages(rollouts)
         targets = self.adv_est.targets(rollouts)
-        term_names = ['actor_loss', 'explained_var', 'entropy', 'clipped', 'batch_size']
+        term_names = ['actor_loss', 'explained_var', 'entropy', 'clipped', 'batch_size',
+                      'value_clipped']
         result = {key: [] for key in term_names}
         for batch in batches:
             feed_dict = self.feed_dict(rollouts, batch,
@@ -124,7 +134,7 @@ class PPO(A2C):
             if extra_feed_dict:
                 feed_dict.update(extra_feed_dict)
             terms = optimize_fn(batch_idx, batch, feed_dict)
-            assert len(terms) == 5, 'missing or extraneous step results'
+            assert len(terms) == 6, 'missing or extraneous step results'
             for name, term in zip(term_names, terms):
                 result[name].append(term)
             batch_idx += 1

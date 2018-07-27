@@ -2,7 +2,7 @@
 Ways of running gym environments.
 """
 
-from multiprocessing import Pipe, Array, Process
+from multiprocessing import Array, Pipe, Process
 
 import cloudpickle
 import gym.spaces
@@ -29,11 +29,7 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1, sync=Fal
     """
     assert len(env_fns) % num_sub_batches == 0
     if not sync and observation_space is None:
-        env = env_fns[0]()
-        try:
-            observation_space = env.observation_space
-        finally:
-            env.close()
+        observation_space = _fetch_obs_space(env_fns[0])
     sub_batches = []
     batch_size = len(env_fns) // num_sub_batches
     for i in range(num_sub_batches):
@@ -46,6 +42,33 @@ def batched_gym_env(env_fns, observation_space=None, num_sub_batches=1, sync=Fal
     if sync:
         return BatchedGymEnv(sub_batches)
     return BatchedAsyncEnv(sub_batches)
+
+
+def _fetch_obs_space(env_fn):
+    def _worker_fn(pipe, fn_data):
+        try:
+            env = cloudpickle.loads(fn_data)()
+        except BaseException as exc:
+            pipe.send((None, exc))
+            return
+        try:
+            space = env.observation_space
+            pipe.send((space, None))
+        finally:
+            env.close()
+    parent_pipe, child_pipe = Pipe()
+    proc = Process(target=_worker_fn, args=(child_pipe, cloudpickle.dumps(env_fn)))
+    proc.start()
+    child_pipe.close()
+    try:
+        space, exc = parent_pipe.recv()
+    except EOFError:
+        raise RuntimeError('worker has died')
+    finally:
+        proc.join()
+    if exc is not None:
+        raise RuntimeError('exception from environment') from exc
+    return space
 
 
 class AsyncGymEnv(AsyncEnv):

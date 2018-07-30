@@ -109,3 +109,29 @@ def test_env_exception():
     except RuntimeError:
         return
     pytest.fail('should have gotten exception')
+
+
+def test_async_creation_exit():
+    """
+    Test that an exception is forwarded when the
+    environment constructor exits.
+    """
+    try:
+        batched_gym_env([lambda: sys.exit(1)] * 4)
+    except RuntimeError:
+        return
+    pytest.fail('should have gotten exception')
+
+
+def test_async_creation_exception():
+    """
+    Test that an exception is forwarded when the
+    environment constructor fails.
+    """
+    try:
+        def raiser():
+            raise ValueError('hello world')
+        batched_gym_env([raiser] * 4)
+    except RuntimeError:
+        return
+    pytest.fail('should have gotten exception')

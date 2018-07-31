@@ -6,6 +6,8 @@ import os
 import pickle
 import tensorflow as tf
 
+from .atomic import atomic_pickle
+
 
 def load_vars(sess, path, conditional=True, relaxed=False, log_fn=print, var_list=None):
     """
@@ -67,11 +69,4 @@ def save_vars(sess, path, var_list=None):
     """
     var_list = var_list or tf.trainable_variables()
     exported = {x.name: sess.run(x) for x in var_list}
-    tmp_path = os.path.join(path + '.anyrl.swp')
-    try:
-        with open(tmp_path, 'wb+') as out_file:
-            pickle.dump(exported, out_file)
-        os.rename(tmp_path, path)
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+    atomic_pickle(exported, path)

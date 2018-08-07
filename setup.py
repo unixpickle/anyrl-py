@@ -29,7 +29,7 @@ setup(
     install_requires=[
         'numpy>=1.0.0,<2.0.0',
         'cloudpickle>=0.4.0',
-        'gym>=0.9.6,<0.10.0',
+        'gym>=0.9.6,<0.11.0',
         'pandas>=0.20.0,<0.21.0'
     ],
     extras_require={

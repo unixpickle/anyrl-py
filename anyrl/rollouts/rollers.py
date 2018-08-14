@@ -100,8 +100,8 @@ class TruncatedRoller(Roller):
         inner_dim = self.batched_env.num_envs_per_sub_batch
         outer_dim = self.batched_env.num_sub_batches
         self._last_obs = []
-        self._prev_steps = [[0]*inner_dim for _ in range(outer_dim)]
-        self._prev_reward = [[0]*inner_dim for _ in range(outer_dim)]
+        self._prev_steps = [[0] * inner_dim for _ in range(outer_dim)]
+        self._prev_reward = [[0] * inner_dim for _ in range(outer_dim)]
         for i in range(outer_dim):
             self.batched_env.reset_start(sub_batch=i)
         for i in range(outer_dim):
@@ -253,7 +253,7 @@ class EpisodeRoller(TruncatedRoller):
         super(EpisodeRoller, self).reset()
         inner_dim = self.batched_env.num_envs_per_sub_batch
         outer_dim = self.batched_env.num_sub_batches
-        self._env_mask = [[True]*inner_dim for _ in range(outer_dim)]
+        self._env_mask = [[True] * inner_dim for _ in range(outer_dim)]
 
     def rollouts(self):
         """

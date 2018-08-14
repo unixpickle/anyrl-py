@@ -29,7 +29,7 @@ def _dummy_rollout(pred_vals, rewards):
     rewards.
     """
     model_outs = [{'values': [x]} for x in pred_vals]
-    return Rollout(observations=[[1]]*len(pred_vals),
+    return Rollout(observations=[[1]] * len(pred_vals),
                    model_outs=model_outs,
                    rewards=rewards,
                    start_state=None)

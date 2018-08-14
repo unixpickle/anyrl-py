@@ -283,9 +283,9 @@ def test_obs_pad_centered():
     padded = ObservationPadEnv(env, (3, 5))
     assert padded.observation_space.shape == (3, 5)
     assert np.allclose(padded.observation_space.low,
-                       np.array([[0, 1, 2, 5, 0], [0, 3, 4, 0, 0], [0]*5]))
+                       np.array([[0, 1, 2, 5, 0], [0, 3, 4, 0, 0], [0] * 5]))
     assert np.allclose(padded.observation_space.high,
-                       np.array([[0, 12, 21, 15, 0], [0, 31, 14, 10, 0], [0]*5]))
+                       np.array([[0, 12, 21, 15, 0], [0, 31, 14, 10, 0], [0] * 5]))
 
 
 def test_obs_pad_uncentered():
@@ -297,9 +297,9 @@ def test_obs_pad_uncentered():
     padded = ObservationPadEnv(env, (3, 5), center=False)
     assert padded.observation_space.shape == (3, 5)
     assert np.allclose(padded.observation_space.low,
-                       np.array([[1, 2, 5, 0, 0], [3, 4, 0, 0, 0], [0]*5]))
+                       np.array([[1, 2, 5, 0, 0], [3, 4, 0, 0, 0], [0] * 5]))
     assert np.allclose(padded.observation_space.high,
-                       np.array([[12, 21, 15, 0, 0], [31, 14, 10, 0, 0], [0]*5]))
+                       np.array([[12, 21, 15, 0, 0], [31, 14, 10, 0, 0], [0] * 5]))
 
 
 def test_logged_single_env():

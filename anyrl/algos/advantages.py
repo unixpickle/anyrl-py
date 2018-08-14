@@ -50,7 +50,7 @@ class GAE(AdvantageEstimator):
             advs = []
             for i in range(rollout.num_steps)[::-1]:
                 delta = rollout.rewards[i] - rollout.predicted_value(i)
-                if i+1 < len(rollout.model_outs):
+                if i + 1 < len(rollout.model_outs):
                     delta += self.discount * rollout.predicted_value(i + 1)
                 adv *= self.lam * self.discount
                 adv += delta

@@ -152,7 +152,7 @@ def test_ep_batches(stateful, state_tuple, limits):
                         stateful=stateful,
                         state_tuple=state_tuple)
 
-    batched_env = batched_gym_env([env_fn]*21, num_sub_batches=7, sync=True)
+    batched_env = batched_gym_env([env_fn] * 21, num_sub_batches=7, sync=True)
     ep_roller = EpisodeRoller(batched_env, model, **limits)
     actual = ep_roller.rollouts()
 

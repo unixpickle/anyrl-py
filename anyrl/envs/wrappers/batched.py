@@ -82,7 +82,7 @@ class BatchedFrameStack(BatchedWrapper):
 
     def reset_wait(self, sub_batch=0):
         obses = super(BatchedFrameStack, self).reset_wait(sub_batch=sub_batch)
-        self._history[sub_batch] = [[o]*self._history_size for o in obses]
+        self._history[sub_batch] = [[o] * self._history_size for o in obses]
         return self._packed_obs(sub_batch)
 
     def step_wait(self, sub_batch=0):

@@ -95,7 +95,7 @@ def mpi_ppo_loop(ppo,
       rollout_fn: a function that is called with every
         batch of rollouts before the rollouts are used.
     """
-    from .mpi import is_mpi_root, log_on_mpi_root
+    from .mpi import is_mpi_root, mpi_log
 
     sess = ppo.model.session
 
@@ -103,7 +103,7 @@ def mpi_ppo_loop(ppo,
     optimizer = MPIOptimizer(tf.train.AdamOptimizer(learning_rate=lr), -ppo.objective,
                              var_list=ppo.variables)
 
-    log_on_mpi_root('Initializing optimizer variables...')
+    mpi_log('Initializing optimizer variables...')
     sess.run([v.initializer for v in optimizer.optimizer_vars])
 
     if save_path and is_mpi_root():
@@ -112,10 +112,10 @@ def mpi_ppo_loop(ppo,
     if load_fn is not None:
         load_fn()
 
-    log_on_mpi_root('Syncing parameters...')
+    mpi_log('Syncing parameters...')
     optimizer.sync_from_root(sess)
 
-    log_on_mpi_root('Training...')
+    mpi_log('Training...')
     for i in itertools.count():
         mpi_ppo_round(ppo,
                       optimizer,
@@ -128,7 +128,7 @@ def mpi_ppo_loop(ppo,
         if save_path and i % save_interval == 0 and is_mpi_root():
             save_vars(sess, save_path, var_list=ppo.variables)
 
-        log_on_mpi_root('done iteration %d' % i)
+        mpi_log('done iteration %d' % i)
 
 
 def mpi_ppo_round(ppo,
@@ -153,7 +153,7 @@ def mpi_ppo_round(ppo,
       rollout_fn: a function that is called with every
         batch of rollouts before the rollouts are used.
     """
-    from .mpi import log_on_mpi_root
+    from .mpi import mpi_log
 
     rollouts = roller.rollouts()
     for rollout in rollouts:
@@ -172,6 +172,6 @@ def mpi_ppo_round(ppo,
     results = mpi_ppo(ppo, optimizer, rollouts,
                       batch_size=total_steps // num_batches,
                       num_iter=num_iters)
-    log_on_mpi_root('explained=%f final_explained=%f clipped=%f entropy=%f' %
-                    (results['explained_var'][0], results['explained_var'][-1],
-                        results['clipped'][-1], results['entropy'][0]))
+    mpi_log('explained=%f final_explained=%f clipped=%f entropy=%f' %
+            (results['explained_var'][0], results['explained_var'][-1],
+             results['clipped'][-1], results['entropy'][0]))

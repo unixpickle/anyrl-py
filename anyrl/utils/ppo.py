@@ -9,7 +9,7 @@ from anyrl.algos.mpi import MPIOptimizer, mpi_ppo
 from anyrl.rollouts import TruncatedRoller
 import tensorflow as tf
 
-from .state import load_vars, save_vars
+from .tf_state import load_vars, save_vars
 
 
 def ppo_cli_args(parser):

@@ -96,6 +96,11 @@ class VarSync:
         self._variables = variables
         self._placeholders = [tf.placeholder(v.dtype.base_dtype, shape=v.get_shape())
                               for v in variables]
+
+        # Workaround for https://github.com/tensorflow/tensorflow/issues/21856
+        for var, ph in zip(self._variables, self._placeholders):
+            ph.set_shape(var.get_shape())
+
         self._assigns = [tf.assign(v, ph) for v, ph in zip(variables, self._placeholders)]
 
     def sync(self, sess):

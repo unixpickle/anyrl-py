@@ -25,7 +25,7 @@ class MPIOptimizer:
         self.placeholders = []
         apply_in = []
         for grad, var in self.grads:
-            placeholder = tf.placeholder(dtype=grad.dtype, shape=grad.shape)
+            placeholder = tf.placeholder(dtype=grad.dtype, shape=grad.get_shape())
             self.placeholders.append(placeholder)
             apply_in.append((placeholder, var))
         self.apply = optimizer.apply_gradients(apply_in)

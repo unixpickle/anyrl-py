@@ -10,7 +10,7 @@ with codecs.open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='anyrl',
-    version='0.12.18',
+    version='0.12.19',
     description='A library for Reinforcement Learning',
     long_description=LONG_DESCRIPTION,
     url='https://github.com/unixpickle/anyrl-py',

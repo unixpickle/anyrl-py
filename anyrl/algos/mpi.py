@@ -19,8 +19,11 @@ class MPIOptimizer:
         self.grads = [pair for pair in optimizer.compute_gradients(loss, var_list=var_list)
                       if pair[0] is not None]
 
-        # TODO: make sure gradients will be ordered
-        # deterministically.
+        # Sparse gradients are usually tf.IndexedSlices,
+        # which is not compatible with allreduce et al.
+        for i, grad in enumerate(self.grads.copy()):
+            if not isinstance(grad[0], tf.Tensor):
+                self.grads[i] = (tf.constant(0.0) + grad[0], grad[1])
 
         self.placeholders = []
         apply_in = []

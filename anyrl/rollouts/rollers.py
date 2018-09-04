@@ -247,10 +247,10 @@ class EpisodeRoller(TruncatedRoller):
         # episode.
         self._env_mask = None
 
-        super(EpisodeRoller, self).__init__(batched_env, model, 0, drop_states=drop_states)
+        super().__init__(batched_env, model, 0, drop_states=drop_states)
 
     def reset(self):
-        super(EpisodeRoller, self).reset()
+        super().reset()
         inner_dim = self.batched_env.num_envs_per_sub_batch
         outer_dim = self.batched_env.num_sub_batches
         self._env_mask = [[True] * inner_dim for _ in range(outer_dim)]
@@ -273,8 +273,7 @@ class EpisodeRoller(TruncatedRoller):
         comp_dest = completed
         if not self._env_mask[batch_idx][env_idx]:
             comp_dest = []
-        super(EpisodeRoller, self)._complete_rollout(comp_dest, running,
-                                                     batch_idx, env_idx)
+        super()._complete_rollout(comp_dest, running, batch_idx, env_idx)
         if self._criteria_met(completed):
             self._env_mask[batch_idx][env_idx] = False
 

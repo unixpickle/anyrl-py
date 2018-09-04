@@ -71,11 +71,11 @@ class NaturalSoftmax(CategoricalSoftmax):
     """
 
     def __init__(self, num_options, low=0, epsilon=1e-4):
-        super(NaturalSoftmax, self).__init__(num_options, low=low)
+        super().__init__(num_options, low=low)
         self.epsilon = epsilon
 
     def log_prob(self, param_batch, sample_vecs):
-        log_probs = super(NaturalSoftmax, self).log_prob(param_batch, sample_vecs)
+        log_probs = super().log_prob(param_batch, sample_vecs)
         probs = tf.exp(log_probs) + self.epsilon
         neg_grads = -1 / (self.num_options * probs)
         natural_grads = tf.tile(tf.expand_dims(neg_grads, axis=1), (1, self.num_options))

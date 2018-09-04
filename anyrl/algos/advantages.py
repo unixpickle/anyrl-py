@@ -60,6 +60,6 @@ class GAE(AdvantageEstimator):
 
     def targets(self, rollouts):
         if self.target_lam is None:
-            return super(GAE, self).targets(rollouts)
+            return super().targets(rollouts)
         proxy = GAE(lam=self.target_lam, discount=self.discount)
         return proxy.targets(rollouts)

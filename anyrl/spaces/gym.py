@@ -20,7 +20,7 @@ class UnsupportedGymSpace(Exception):
 
     def __init__(self, space):
         msg = 'unsupported Gym space: ' + str(space)
-        super(UnsupportedGymSpace, self).__init__(msg)
+        super().__init__(msg)
         self.space = space
 
 
@@ -35,7 +35,7 @@ class StackedBoxSpace(gym.Space):
     """
 
     def __init__(self, box, count):
-        super(StackedBoxSpace, self).__init__(shape=None, dtype=box.dtype)
+        super().__init__(shape=None, dtype=box.dtype)
         self.box = box
         self.count = count
 

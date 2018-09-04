@@ -33,7 +33,7 @@ class LoggedEnv(gym.Wrapper):
 
         If the log file already exists, it is appended to.
         """
-        super(LoggedEnv, self).__init__(env)
+        super().__init__(env)
         self._start_time = time.time()
         self._use_locking = use_locking
         self._file_desc = os.open(log_path, os.O_RDWR | os.O_CREAT)

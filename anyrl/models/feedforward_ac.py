@@ -88,7 +88,7 @@ class HeadFeedforwardAC(FeedforwardAC):
                  obs_batch,
                  actor_init,
                  critic_init):
-        super(HeadFeedforwardAC, self).__init__(sess, action_dist, obs_vectorizer)
+        super().__init__(sess, action_dist, obs_vectorizer)
         with tf.variable_scope('base'):
             self.base_out = self.base(obs_batch)
         with tf.variable_scope('actor'):
@@ -156,8 +156,8 @@ class MLP(HeadFeedforwardAC):
         self.obs_ph = tf.placeholder(tf.float32, shape=in_batch_shape)
         self.layer_sizes = layer_sizes
         self.activation = activation
-        super(MLP, self).__init__(session, action_dist, obs_vectorizer,
-                                  self.obs_ph, actor_init, critic_init)
+        super().__init__(session, action_dist, obs_vectorizer,
+                         self.obs_ph, actor_init, critic_init)
 
     def base(self, obs_batch):
         return simple_mlp(obs_batch, self.layer_sizes, self.activation)
@@ -194,8 +194,8 @@ class CNN(HeadFeedforwardAC):
         in_batch_shape = (None,) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(input_dtype, shape=in_batch_shape)
         obs_batch = tf.cast(self.obs_ph, tf.float32) * input_scale
-        super(CNN, self).__init__(session, action_dist, obs_vectorizer,
-                                  obs_batch, actor_init, critic_init)
+        super().__init__(session, action_dist, obs_vectorizer,
+                         obs_batch, actor_init, critic_init)
 
     def base(self, obs_batch):
         """

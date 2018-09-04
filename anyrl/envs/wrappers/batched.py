@@ -65,7 +65,7 @@ class BatchedFrameStack(BatchedWrapper):
     """
 
     def __init__(self, env, num_images=2, concat=True, stride=1):
-        super(BatchedFrameStack, self).__init__(env)
+        super().__init__(env)
         self.concat = concat
         if hasattr(self, 'observation_space'):
             old = self.observation_space
@@ -81,12 +81,12 @@ class BatchedFrameStack(BatchedWrapper):
         self._history = [None] * env.num_sub_batches
 
     def reset_wait(self, sub_batch=0):
-        obses = super(BatchedFrameStack, self).reset_wait(sub_batch=sub_batch)
+        obses = super().reset_wait(sub_batch=sub_batch)
         self._history[sub_batch] = [[o] * self._history_size for o in obses]
         return self._packed_obs(sub_batch)
 
     def step_wait(self, sub_batch=0):
-        obses, rews, dones, infos = super(BatchedFrameStack, self).step_wait(sub_batch=sub_batch)
+        obses, rews, dones, infos = super().step_wait(sub_batch=sub_batch)
         for i, (obs, done) in enumerate(zip(obses, dones)):
             if done:
                 self._history[sub_batch][i] = [obs] * self._history_size
@@ -164,7 +164,7 @@ class ObsWrapperBatcher(BatchedObservationWrapper):
             the initial env argument.
           kwargs: extra arguments to pass to the wrapper.
         """
-        super(ObsWrapperBatcher, self).__init__(env)
+        super().__init__(env)
         self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
         self.observation_space = self.wrapper.observation_space
 
@@ -190,13 +190,13 @@ class ActWrapperBatcher(BatchedWrapper):
             the initial env argument.
           kwargs: extra arguments to pass to the wrapper.
         """
-        super(ActWrapperBatcher, self).__init__(env)
+        super().__init__(env)
         self.wrapper = wrap_fn(_AttrEnv(env), *args, **kwargs)
         self.action_space = self.wrapper.action_space
 
     def step_start(self, actions, sub_batch=0):
-        super(ActWrapperBatcher, self).step_start(map(self.wrapper.action, actions),
-                                                  sub_batch=sub_batch)
+        super().step_start(map(self.wrapper.action, actions),
+                           sub_batch=sub_batch)
 
 
 class _AttrEnv(gym.Env):

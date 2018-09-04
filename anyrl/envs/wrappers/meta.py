@@ -35,7 +35,7 @@ class RL2Env(gym.Wrapper):
         """
         if warmup_eps < 0:
             warmup_eps += num_eps
-        super(RL2Env, self).__init__(env)
+        super().__init__(env)
         self.first_action = first_action
         self.observation_space = spaces.Tuple([
             env.observation_space,

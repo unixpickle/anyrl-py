@@ -71,7 +71,7 @@ class DistQNetwork(TFQNetwork):
           dense: the dense layer for use throughout the
             network.
         """
-        super(DistQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
+        super().__init__(session, num_actions, obs_vectorizer, name)
         self.dueling = dueling
         self.dense = dense
         self.dist = ActionDist(num_atoms, min_val, max_val)
@@ -182,8 +182,8 @@ class MLPDistQNetwork(DistQNetwork):
                  dense=tf.layers.dense):
         self.layer_sizes = layer_sizes
         self.activation = activation
-        super(MLPDistQNetwork, self).__init__(session, num_actions, obs_vectorizer, name, num_atoms,
-                                              min_val, max_val, dueling=dueling, dense=dense)
+        super().__init__(session, num_actions, obs_vectorizer, name, num_atoms,
+                         min_val, max_val, dueling=dueling, dense=dense)
 
     def base(self, obs_batch):
         return simple_mlp(obs_batch, self.layer_sizes, self.activation, dense=self.dense)
@@ -211,9 +211,9 @@ class NatureDistQNetwork(DistQNetwork):
                  input_scale=1 / 0xff):
         self._input_dtype = input_dtype
         self.input_scale = input_scale
-        super(NatureDistQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                                 num_atoms, min_val, max_val,
-                                                 dueling=dueling, dense=dense)
+        super().__init__(session, num_actions, obs_vectorizer, name,
+                         num_atoms, min_val, max_val,
+                         dueling=dueling, dense=dense)
 
     @property
     def input_dtype(self):

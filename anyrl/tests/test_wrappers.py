@@ -350,7 +350,7 @@ class ShapeEnv(gym.Env):
     """
 
     def __init__(self, low, high):
-        super(ShapeEnv, self).__init__()
+        super().__init__()
         self.observation_space = gym.spaces.Box(low, high, dtype=low.dtype)
 
     def reset(self):

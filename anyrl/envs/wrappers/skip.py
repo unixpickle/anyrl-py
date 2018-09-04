@@ -14,7 +14,7 @@ class FrameSkipEnv(gym.Wrapper):
     """
 
     def __init__(self, env, num_frames=4):
-        super(FrameSkipEnv, self).__init__(env)
+        super().__init__(env)
         self.num_frames = num_frames
 
     def reset(self, **kwargs):

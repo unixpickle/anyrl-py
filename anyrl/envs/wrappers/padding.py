@@ -25,7 +25,7 @@ class ObservationPadEnv(gym.ObservationWrapper):
             the original image at the beginning of the
             padded image (e.g. the top-left corner).
         """
-        super(ObservationPadEnv, self).__init__(env)
+        super().__init__(env)
         self._padded_shape = padded_shape
         self._center = center
         old_space = self.observation_space
@@ -70,7 +70,7 @@ class MultiBinaryPadEnv(gym.ActionWrapper):
           num_actions: the number of actions in the padded
             action space.
         """
-        super(MultiBinaryPadEnv, self).__init__(env)
+        super().__init__(env)
         assert num_actions >= env.action_space.n
         self._num_actions = num_actions
         self.action_space = gym.spaces.MultiBinary(num_actions)

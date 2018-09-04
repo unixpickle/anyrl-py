@@ -42,7 +42,7 @@ class RecurrentAC(TFActorCritic):
         """
         Construct a recurrent model.
         """
-        super(RecurrentAC, self).__init__(session, action_dist, obs_vectorizer)
+        super().__init__(session, action_dist, obs_vectorizer)
 
         self.seq_lens_ph = tf.placeholder(tf.int32, shape=(None,))
         self.is_init_state_ph = tf.placeholder(tf.bool, shape=(None,))
@@ -207,7 +207,7 @@ class RNNCellAC(RecurrentAC):
     """
 
     def __init__(self, session, action_dist, obs_vectorizer, make_cell, input_dtype=tf.float32):
-        super(RNNCellAC, self).__init__(session, action_dist, obs_vectorizer)
+        super().__init__(session, action_dist, obs_vectorizer)
         obs_seq_shape = (None, None) + obs_vectorizer.out_shape
         self.obs_ph = tf.placeholder(input_dtype, obs_seq_shape)
 
@@ -294,8 +294,8 @@ class CNNRNNCellAC(RNNCellAC):
                  input_scale=1/0xff, input_dtype=tf.uint8, cnn_fn=nature_cnn):
         self.cnn_fn = cnn_fn
         self.input_scale = input_scale
-        super(CNNRNNCellAC, self).__init__(session, action_dist, obs_vectorizer, make_cell,
-                                           input_dtype=input_dtype)
+        super().__init__(session, action_dist, obs_vectorizer, make_cell,
+                         input_dtype=input_dtype)
 
     def cell_input_sequences(self):
         """

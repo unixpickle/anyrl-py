@@ -24,7 +24,7 @@ class ScalarQNetwork(TFQNetwork):
 
     def __init__(self, session, num_actions, obs_vectorizer, name,
                  dueling=False, dense=tf.layers.dense, loss_fn=tf.square):
-        super(ScalarQNetwork, self).__init__(session, num_actions, obs_vectorizer, name)
+        super().__init__(session, num_actions, obs_vectorizer, name)
         self.dueling = dueling
         self.dense = dense
         self.loss_fn = loss_fn
@@ -137,8 +137,8 @@ class MLPQNetwork(ScalarQNetwork):
         """
         self.layer_sizes = layer_sizes
         self.activation = activation
-        super(MLPQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                          dueling=dueling, dense=dense, loss_fn=loss_fn)
+        super().__init__(session, num_actions, obs_vectorizer, name,
+                         dueling=dueling, dense=dense, loss_fn=loss_fn)
 
     def base(self, obs_batch):
         return simple_mlp(obs_batch, self.layer_sizes, self.activation, dense=self.dense)
@@ -161,8 +161,8 @@ class NatureQNetwork(ScalarQNetwork):
                  input_scale=1 / 0xff):
         self._input_dtype = input_dtype
         self.input_scale = input_scale
-        super(NatureQNetwork, self).__init__(session, num_actions, obs_vectorizer, name,
-                                             dueling=dueling, dense=dense, loss_fn=loss_fn)
+        super().__init__(session, num_actions, obs_vectorizer, name,
+                         dueling=dueling, dense=dense, loss_fn=loss_fn)
 
     @property
     def input_dtype(self):
@@ -183,8 +183,8 @@ class EpsGreedyQNetwork(TFQNetwork):
     """
 
     def __init__(self, model, epsilon):
-        super(EpsGreedyQNetwork, self).__init__(model.session, model.num_actions,
-                                                model.obs_vectorizer, model.name)
+        super().__init__(model.session, model.num_actions,
+                         model.obs_vectorizer, model.name)
         self.model = model
         self.epsilon = epsilon
 

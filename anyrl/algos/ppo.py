@@ -31,7 +31,7 @@ class PPO(A2C):
         param_shape = (None,) + model.action_dist.param_shape
         self._orig_action_params = tf.placeholder(tf.float32, param_shape)
         self._orig_values = tf.placeholder(tf.float32, (None,))
-        super(PPO, self).__init__(model, **a2c_kwargs)
+        super().__init__(model, **a2c_kwargs)
 
     def _create_objective(self, vf_coeff, entropy_reg):
         actor, critic = self.model.batch_outputs()
@@ -56,10 +56,10 @@ class PPO(A2C):
     def feed_dict(self, rollouts, batch=None, advantages=None, targets=None):
         if batch is None:
             batch = next(self.model.batches(rollouts))
-        feed_dict = super(PPO, self).feed_dict(rollouts,
-                                               batch=batch,
-                                               advantages=advantages,
-                                               targets=targets)
+        feed_dict = super().feed_dict(rollouts,
+                                      batch=batch,
+                                      advantages=advantages,
+                                      targets=targets)
         orig_outs = util.select_model_out_from_batch('action_params', rollouts, batch)
         orig_vals = util.select_model_out_from_batch('values', rollouts, batch)
         feed_dict[self._orig_action_params] = orig_outs

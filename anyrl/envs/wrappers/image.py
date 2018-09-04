@@ -24,7 +24,7 @@ class DownsampleEnv(gym.ObservationWrapper):
           rate: (int) the downsample rate.
             New sizes are floor(old_size/rate).
         """
-        super(DownsampleEnv, self).__init__(env)
+        super().__init__(env)
         self._rate = rate
         old_space = env.observation_space
         self.observation_space = gym.spaces.Box(self.observation(old_space.low),
@@ -53,7 +53,7 @@ class GrayscaleEnv(gym.ObservationWrapper):
           integers: if True, the pixels are in [0, 255].
             Otherwise, they are in [0.0, 1.0].
         """
-        super(GrayscaleEnv, self).__init__(env)
+        super().__init__(env)
         old_space = env.observation_space
         self._integers = integers
         self._keep_depth = keep_depth
@@ -99,7 +99,7 @@ class FrameStackEnv(gym.Wrapper):
           stride: the temporal stride. A value larger than
             one indicates that frames should be skipped.
         """
-        super(FrameStackEnv, self).__init__(env)
+        super().__init__(env)
         self.concat = concat
         old_space = env.observation_space
         if concat:
@@ -137,7 +137,7 @@ class MaxEnv(gym.Wrapper):
     """
 
     def __init__(self, env, num_images=2):
-        super(MaxEnv, self).__init__(env)
+        super().__init__(env)
         self._num_images = num_images
         self._history = []
 
@@ -170,7 +170,7 @@ class ResizeImageEnv(gym.ObservationWrapper):
           method: an interpolation method. Defaults to
             tf.image.ResizeMethod.AREA.
         """
-        super(ResizeImageEnv, self).__init__(env)
+        super().__init__(env)
         import tensorflow as tf
         config = tf.ConfigProto(device_count={'GPU': 0})
         self._sess = tf.Session(config=config)

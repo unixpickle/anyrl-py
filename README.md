@@ -32,16 +32,10 @@ This project relies on TensorFlow for models and training algorithms. However, a
 
 # Style
 
-I use `autopep8` and `pylint`. Here is the command you can use to run autopep8:
+I use `autopep8` and `flake8`. Here is the command you can use to run autopep8:
 
 ```
 autopep8 --recursive --in-place --max-line-length 100 .
 ```
 
-I recommend the following lines in your pylintrc:
-
-```
-ignored-modules=numpy,mpi4py
-
-disable=C,R
-```
+I recommend the following flag for flake8: `--max-line-length=100`

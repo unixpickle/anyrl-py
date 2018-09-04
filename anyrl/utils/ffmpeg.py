@@ -134,7 +134,7 @@ def video_dimensions(path):
       A (width, height) pair.
     """
     for line in _ffmpeg_output_lines(path):
-        if not 'Video:' in line:
+        if 'Video:' not in line:
             continue
         match = re.search(' ([0-9]+)x([0-9]+)(,| )', line)
         if match:
@@ -151,7 +151,7 @@ def video_fps(path):
         second in the video.
     """
     for line in _ffmpeg_output_lines(path):
-        if not 'Video:' in line:
+        if 'Video:' not in line:
             continue
         match = re.search(' ([0-9\\.]*) fps,', line)
         if match:

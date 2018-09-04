@@ -40,7 +40,7 @@ class LoggedEnv(gym.Wrapper):
         self._file = os.fdopen(self._file_desc, 'r+t')
         try:
             self._initialize_file()
-        except:
+        except:  # noqa: E722
             self._file.close()
             raise
         self._cur_timesteps = 0

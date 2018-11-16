@@ -124,8 +124,8 @@ class PPO(A2C):
         batches = self.model.batches(rollouts, batch_size=batch_size)
         advantages = self.adv_est.advantages(rollouts)
         targets = self.adv_est.targets(rollouts)
-        term_names = ['actor_loss', 'explained_var', 'entropy', 'clipped', 'batch_size',
-                      'value_clipped']
+        term_names = ['actor_loss', 'explained_var', 'entropy', 'clipped', 'value_clipped',
+                      'batch_size']
         result = {key: [] for key in term_names}
         for batch in batches:
             feed_dict = self.feed_dict(rollouts, batch,

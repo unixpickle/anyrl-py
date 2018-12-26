@@ -45,6 +45,36 @@ def export_video(path, width, height, fps, frames, verbose=True):
         ffmpeg_proc.wait()
 
 
+def export_audio(path, sample_rate, samples, verbose=True):
+    """
+    Export an audio file from a stream of samples.
+
+    Args:
+      path: the output video path.
+      sample_rate: samples per second.
+      samples: an iterator of buffers of audio samples.
+        Each buffer is float array where samples are in
+        [-1, 1].
+    """
+    audio_reader, audio_writer = os.pipe()
+
+    audio_format = ['-ar', str(sample_rate), '-ac', '1', '-f', 's16le']
+    audio_params = audio_format + ['-probesize', '32', '-thread_queue_size', '60', '-i',
+                                   'pipe:%i' % audio_reader]
+    output_params = ['-f', 'wav', '-pix_fmt', 'yuv420p', path]
+    kwargs = {}
+    if not verbose:
+        kwargs = {'stderr': subprocess.DEVNULL, 'stdout': subprocess.DEVNULL}
+    ffmpeg_proc = subprocess.Popen(['ffmpeg', '-y', *audio_params, *output_params],
+                                   pass_fds=(audio_reader,), stdin=subprocess.DEVNULL, **kwargs)
+    try:
+        for buf in samples:
+            os.write(audio_writer, bytes((buf * (2 ** 15 - 1)).astype('int16')))
+    finally:
+        os.close(audio_writer)
+        ffmpeg_proc.wait()
+
+
 def import_video(path):
     """
     Get an iterator over the frames of a video.
